@@ -9,20 +9,20 @@ The code uses the VTK library for output; an vtkOverlappingAMR dataset is used d
 
 ## Usage
 
-The manuscript detailing the GPU-native algorithm is under review. Validation was restricted to lid-driven cavity benchmarks in 2D and 3D. Reynolds number is specified by modification of the kinematic viscosity during calcluation of the relaxation-rate. This allows for specification of the following (in the cppspec.h file): u_lid (lid velocity), Re_c (Reynolds number), L_c (characteristic length, usually left as 1.0 m). If any of these are modified, the program must be recompiled to take effect. Lid velocity should be left small to ensure validity of the Lattice Boltzmann simulation (keep in mind $\text{Ma} = u_{\text{lid}} / c_s$). Velocity sets are chosen in 'lbm.h' bu modifying the ld_q variable. This step can be skipped for 2D simulations since only D2Q9 is available right now.
+The manuscript detailing the GPU-native algorithm is under review. Validation was restricted to lid-driven cavity benchmarks in 2D and 3D. Reynolds number is specified by modification of the kinematic viscosity during calcluation of the relaxation-rate. This allows for specification of the following (in the cppspec.h file): u_lid (lid velocity), Re_c (Reynolds number), L_c (characteristic length, usually left as 1.0 m). If any of these are modified, the program must be recompiled to take effect. Lid velocity should be left small to ensure validity of the Lattice Boltzmann simulation (keep in mind $\text{Ma} = u_{\text{lid}} / c_s$). Velocity sets are chosen in 'lbm.h' by modifying the ld_q variable. This step can be skipped for 2D simulations since only D2Q9 is available right now.
    
 There are four implemented compilation options:
 1. N_PRECISION (0 is for single precision, 1 is double precision)
 2. N_DIM (2 or 3)
 3. MAX_LEVELS (determines the size of the grid hierarchy)
-4. P_DIR_NAME (where output is directed, default is  ../out/). Other options in the Makefile are unused for now.
+4. P_DIR_NAME (where output is directed, default is  ../out/).
 
 Other options that must be modified in 'cppspec.h' are (I'll be turning these into compilation options eventually):
 - Nx (coarse grid resolution)
 - P_REFINE (how many iterations should pass between calls to refinement/coarsening)
-- P_PRINT (how many iterations should pass before simulation is terminated and solution printed)
+- P_PRINT (how many iterations should pass before simulation is terminated and solution is printed)
 - N_PRINT_LEVELS (how many grid levels should be printed)
-- P_SHOW_REFINE (print refinement/coarsening info to console)
+- P_SHOW_REFINE (whether (1) or not (0) refinement/coarsening info should be printed to console)
 
 A sample command for compilation is:
 `make N_PRECISION=0 N_DIM=2 MAX_LEVELS=3`. Run this command in the 'src' directory. This will produce an executable 'a.out' which is simply run with `./a.out`. Once the simulation is terminated, the solution is printed and can be viewed with software such as Paraview (make sure that your choice of software can read .vthb files).
@@ -33,7 +33,7 @@ I intend to develop this code further as research with the Turbulence Research L
 
 # Citation
 
-Please use the following BibTeX citation if you use this code in your research:
+Please use the following BibTeX citation if you use this code or AMR methodology in your research:
 
     @misc{jaber2023gpunative,
     title={GPU-Native Adaptive Mesh Refinement with Application to Lattice Boltzmann Simulations}, 
