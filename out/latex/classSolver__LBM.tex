@@ -1,0 +1,223 @@
+\hypertarget{classSolver__LBM}{}\section{Solver\+\_\+\+L\+BM Class Reference}
+\label{classSolver__LBM}\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+
+
+{\ttfamily \#include $<$solver.\+h$>$}
+
+
+
+Inheritance diagram for Solver\+\_\+\+L\+BM\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=150pt]{classSolver__LBM__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Solver\+\_\+\+L\+BM\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=150pt]{classSolver__LBM__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{classSolver__LBM_abf91dd13737bd2232d191e21c20cbc33}{S\+\_\+\+Set\+Values\+Debug} (int i\+\_\+dev, int L, \hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} v)
+\item 
+int \hyperlink{classSolver__LBM_a05326a4c80d68bd0f7e70186fb8c4c38}{S\+\_\+\+Set\+Initial\+Conditions} (int i\+\_\+dev, int L, bool init)
+\item 
+int \hyperlink{classSolver__LBM_ac172ea0929788514a72ee6b42befe84c}{S\+\_\+\+ComputeU} (int i\+\_\+dev, int L)
+\item 
+int \hyperlink{classSolver__LBM_a9d31d1d8602462a3134a320c9e3d7c2c}{S\+\_\+\+ComputeW} (int i\+\_\+dev, int L)
+\item 
+int \hyperlink{classSolver__LBM_ab8c4daacb227f1ac1bf6a54097d65bd3}{S\+\_\+\+Collide} (int i\+\_\+dev, int L)
+\item 
+int \hyperlink{classSolver__LBM_ad301e7ccad5f700a94a12762f92939db}{S\+\_\+\+Stream} (int i\+\_\+dev, int L)
+\item 
+int \hyperlink{classSolver__LBM_acacdadaa96b72ca8a7f13a657a25c6f1}{S\+\_\+\+Compute\+Eq} (int i\+\_\+dev, int L)
+\item 
+void \hyperlink{classSolver__LBM_a1ae0246ed9aa764eafce29a5f7ef7d42}{S\+\_\+\+Interpolate} (int i\+\_\+dev, int L, int var)
+\item 
+void \hyperlink{classSolver__LBM_ae4487d21dd9b3f94a4e6e367b37698fa}{S\+\_\+\+Average} (int i\+\_\+dev, int L, int var)
+\item 
+int \hyperlink{classSolver__LBM_ac8195f75a91e0c41f3b7908cebc5c8d6}{S\+\_\+\+Init} ()
+\item 
+int \hyperlink{classSolver__LBM_a215918c1e81dc85315651948bbc86173}{S\+\_\+\+Initialize} (int i\+\_\+dev, int L)
+\item 
+int \hyperlink{classSolver__LBM_a9f5927018c5068edc1f31ead745a6e05}{S\+\_\+\+Advance} (int i\+\_\+dev, int L, std\+::ofstream $\ast$file, double $\ast$tmp=0)
+\item 
+int \hyperlink{classSolver__LBM_a9c7637ab5e8dde0e9c957661758a738e}{S\+\_\+\+Compute\+Ref\+Criteria} (int i\+\_\+dev, int L, int var)
+\item 
+int \hyperlink{classSolver__LBM_a8809dbbf5653c40202da0611afb6dcaa}{S\+\_\+\+Evaluate\+Ref\+Criteria} (int i\+\_\+dev, int var)
+\item 
+void \hyperlink{classSolver__LBM_a59e8d7c94e3895a3586972bdbf0ebb77}{S\+\_\+\+Update\+Mesh} (int var, std\+::ofstream $\ast$file)
+\item 
+\hyperlink{classSolver__LBM_a8fed041efa5cee6ff2eaba9c23406074}{Solver\+\_\+\+L\+BM} (\hyperlink{classMesh}{Mesh} $\ast$\hyperlink{classSolver_a9b516765134fb4193329639761924cf7}{mesh})
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} \hyperlink{classSolver__LBM_a1ece0e58740be29fcaea526f7da7fe4a}{dx\+\_\+vec} \mbox{[}\hyperlink{cppspec_8h_add784659439a8dd6b1423406171414d3}{M\+A\+X\+\_\+\+L\+E\+V\+E\+LS}\mbox{]}
+\item 
+\hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} \hyperlink{classSolver__LBM_ad5b36057b2d1db724ff10f4dd6b59105}{tau\+\_\+vec} \mbox{[}\hyperlink{cppspec_8h_add784659439a8dd6b1423406171414d3}{M\+A\+X\+\_\+\+L\+E\+V\+E\+LS}\mbox{]}
+\end{DoxyCompactItemize}
+\subsection*{Additional Inherited Members}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classSolver__LBM_a8fed041efa5cee6ff2eaba9c23406074}\label{classSolver__LBM_a8fed041efa5cee6ff2eaba9c23406074}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{Solver\+\_\+\+L\+B\+M()}{Solver\_LBM()}}
+{\footnotesize\ttfamily Solver\+\_\+\+L\+B\+M\+::\+Solver\+\_\+\+L\+BM (\begin{DoxyParamCaption}\item[{\hyperlink{classMesh}{Mesh} $\ast$}]{mesh }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classSolver__LBM_a9f5927018c5068edc1f31ead745a6e05}\label{classSolver__LBM_a9f5927018c5068edc1f31ead745a6e05}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Advance@{S\+\_\+\+Advance}}
+\index{S\+\_\+\+Advance@{S\+\_\+\+Advance}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Advance()}{S\_Advance()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Advance (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{std\+::ofstream $\ast$}]{file,  }\item[{double $\ast$}]{tmp = {\ttfamily 0} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a4bbad207af5ea842a472a35049d4fbb9}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_ae4487d21dd9b3f94a4e6e367b37698fa}\label{classSolver__LBM_ae4487d21dd9b3f94a4e6e367b37698fa}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Average@{S\+\_\+\+Average}}
+\index{S\+\_\+\+Average@{S\+\_\+\+Average}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Average()}{S\_Average()}}
+{\footnotesize\ttfamily void Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Average (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{int}]{var }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a19b326267dbafa8b000b92a449c32b79}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_ab8c4daacb227f1ac1bf6a54097d65bd3}\label{classSolver__LBM_ab8c4daacb227f1ac1bf6a54097d65bd3}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Collide@{S\+\_\+\+Collide}}
+\index{S\+\_\+\+Collide@{S\+\_\+\+Collide}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Collide()}{S\_Collide()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Collide (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_acacdadaa96b72ca8a7f13a657a25c6f1}\label{classSolver__LBM_acacdadaa96b72ca8a7f13a657a25c6f1}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Compute\+Eq@{S\+\_\+\+Compute\+Eq}}
+\index{S\+\_\+\+Compute\+Eq@{S\+\_\+\+Compute\+Eq}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Compute\+Eq()}{S\_ComputeEq()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Compute\+Eq (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_a9c7637ab5e8dde0e9c957661758a738e}\label{classSolver__LBM_a9c7637ab5e8dde0e9c957661758a738e}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Compute\+Ref\+Criteria@{S\+\_\+\+Compute\+Ref\+Criteria}}
+\index{S\+\_\+\+Compute\+Ref\+Criteria@{S\+\_\+\+Compute\+Ref\+Criteria}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Compute\+Ref\+Criteria()}{S\_ComputeRefCriteria()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Compute\+Ref\+Criteria (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{int}]{var }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a28e21b098bfcf7c69a9664a8a4413960}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_ac172ea0929788514a72ee6b42befe84c}\label{classSolver__LBM_ac172ea0929788514a72ee6b42befe84c}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+ComputeU@{S\+\_\+\+ComputeU}}
+\index{S\+\_\+\+ComputeU@{S\+\_\+\+ComputeU}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Compute\+U()}{S\_ComputeU()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+ComputeU (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_a9d31d1d8602462a3134a320c9e3d7c2c}\label{classSolver__LBM_a9d31d1d8602462a3134a320c9e3d7c2c}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+ComputeW@{S\+\_\+\+ComputeW}}
+\index{S\+\_\+\+ComputeW@{S\+\_\+\+ComputeW}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Compute\+W()}{S\_ComputeW()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+ComputeW (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_a8809dbbf5653c40202da0611afb6dcaa}\label{classSolver__LBM_a8809dbbf5653c40202da0611afb6dcaa}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Evaluate\+Ref\+Criteria@{S\+\_\+\+Evaluate\+Ref\+Criteria}}
+\index{S\+\_\+\+Evaluate\+Ref\+Criteria@{S\+\_\+\+Evaluate\+Ref\+Criteria}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Evaluate\+Ref\+Criteria()}{S\_EvaluateRefCriteria()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Evaluate\+Ref\+Criteria (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{var }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a1b5b498836d6226bc425fb67bb7940d7}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_ac8195f75a91e0c41f3b7908cebc5c8d6}\label{classSolver__LBM_ac8195f75a91e0c41f3b7908cebc5c8d6}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Init@{S\+\_\+\+Init}}
+\index{S\+\_\+\+Init@{S\+\_\+\+Init}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Init()}{S\_Init()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Init (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a354e0d709ec8c548be9e72add961c9f6}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_a215918c1e81dc85315651948bbc86173}\label{classSolver__LBM_a215918c1e81dc85315651948bbc86173}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Initialize@{S\+\_\+\+Initialize}}
+\index{S\+\_\+\+Initialize@{S\+\_\+\+Initialize}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Initialize()}{S\_Initialize()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Initialize (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a52e834a160622462bec7c40054702270}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_a1ae0246ed9aa764eafce29a5f7ef7d42}\label{classSolver__LBM_a1ae0246ed9aa764eafce29a5f7ef7d42}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Interpolate@{S\+\_\+\+Interpolate}}
+\index{S\+\_\+\+Interpolate@{S\+\_\+\+Interpolate}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Interpolate()}{S\_Interpolate()}}
+{\footnotesize\ttfamily void Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Interpolate (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{int}]{var }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a5b3e7308e48b43f75b09ddd425e11cfd}{Solver}.
+
+\mbox{\Hypertarget{classSolver__LBM_a05326a4c80d68bd0f7e70186fb8c4c38}\label{classSolver__LBM_a05326a4c80d68bd0f7e70186fb8c4c38}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Set\+Initial\+Conditions@{S\+\_\+\+Set\+Initial\+Conditions}}
+\index{S\+\_\+\+Set\+Initial\+Conditions@{S\+\_\+\+Set\+Initial\+Conditions}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Set\+Initial\+Conditions()}{S\_SetInitialConditions()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Set\+Initial\+Conditions (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{bool}]{init }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_abf91dd13737bd2232d191e21c20cbc33}\label{classSolver__LBM_abf91dd13737bd2232d191e21c20cbc33}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Set\+Values\+Debug@{S\+\_\+\+Set\+Values\+Debug}}
+\index{S\+\_\+\+Set\+Values\+Debug@{S\+\_\+\+Set\+Values\+Debug}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Set\+Values\+Debug()}{S\_SetValuesDebug()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Set\+Values\+Debug (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L,  }\item[{\hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t}}]{v }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_ad301e7ccad5f700a94a12762f92939db}\label{classSolver__LBM_ad301e7ccad5f700a94a12762f92939db}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Stream@{S\+\_\+\+Stream}}
+\index{S\+\_\+\+Stream@{S\+\_\+\+Stream}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Stream()}{S\_Stream()}}
+{\footnotesize\ttfamily int Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Stream (\begin{DoxyParamCaption}\item[{int}]{i\+\_\+dev,  }\item[{int}]{L }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{classSolver__LBM_a59e8d7c94e3895a3586972bdbf0ebb77}\label{classSolver__LBM_a59e8d7c94e3895a3586972bdbf0ebb77}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!S\+\_\+\+Update\+Mesh@{S\+\_\+\+Update\+Mesh}}
+\index{S\+\_\+\+Update\+Mesh@{S\+\_\+\+Update\+Mesh}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{S\+\_\+\+Update\+Mesh()}{S\_UpdateMesh()}}
+{\footnotesize\ttfamily void Solver\+\_\+\+L\+B\+M\+::\+S\+\_\+\+Update\+Mesh (\begin{DoxyParamCaption}\item[{int}]{var,  }\item[{std\+::ofstream $\ast$}]{file }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}}
+
+
+
+Implements \hyperlink{classSolver_a8c73af137ee8c7ab25d8195448088a7b}{Solver}.
+
+
+
+\subsection{Member Data Documentation}
+\mbox{\Hypertarget{classSolver__LBM_a1ece0e58740be29fcaea526f7da7fe4a}\label{classSolver__LBM_a1ece0e58740be29fcaea526f7da7fe4a}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!dx\+\_\+vec@{dx\+\_\+vec}}
+\index{dx\+\_\+vec@{dx\+\_\+vec}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{dx\+\_\+vec}{dx\_vec}}
+{\footnotesize\ttfamily \hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} Solver\+\_\+\+L\+B\+M\+::dx\+\_\+vec\mbox{[}\hyperlink{cppspec_8h_add784659439a8dd6b1423406171414d3}{M\+A\+X\+\_\+\+L\+E\+V\+E\+LS}\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classSolver__LBM_ad5b36057b2d1db724ff10f4dd6b59105}\label{classSolver__LBM_ad5b36057b2d1db724ff10f4dd6b59105}} 
+\index{Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}!tau\+\_\+vec@{tau\+\_\+vec}}
+\index{tau\+\_\+vec@{tau\+\_\+vec}!Solver\+\_\+\+L\+BM@{Solver\+\_\+\+L\+BM}}
+\subsubsection{\texorpdfstring{tau\+\_\+vec}{tau\_vec}}
+{\footnotesize\ttfamily \hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} Solver\+\_\+\+L\+B\+M\+::tau\+\_\+vec\mbox{[}\hyperlink{cppspec_8h_add784659439a8dd6b1423406171414d3}{M\+A\+X\+\_\+\+L\+E\+V\+E\+LS}\mbox{]}\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+inc/\hyperlink{solver_8h}{solver.\+h}\end{DoxyCompactItemize}

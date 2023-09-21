@@ -1,0 +1,187 @@
+\hypertarget{lbm_8h}{}\section{inc/lbm.h File Reference}
+\label{lbm_8h}\index{inc/lbm.\+h@{inc/lbm.\+h}}
+{\ttfamily \#include \char`\"{}cppspec.\+h\char`\"{}}\newline
+Include dependency graph for lbm.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{lbm_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{lbm_8h__dep__incl}
+\end{center}
+\end{figure}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{lbm_8h_acfb5feff3d74c31fd8abe42a30a1f769}{l\+\_\+dq}~27
+\begin{DoxyCompactList}\small\item\em Number of particle velocity vectors in the discretized particle velocity set. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_a7702b5f02aa4d220fad9dea224c4b519}{l\+\_\+dq\+\_\+max}~27
+\begin{DoxyCompactList}\small\item\em Number of particle velocity vectors requried for complete connectivity. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_aba8902900fa07ff44dbb4a739c0e5163}{cs}~0.\+5773503F
+\begin{DoxyCompactList}\small\item\em Macro definition for lattice speed of sound (1/sqrt(3)). \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}{cs2}~0.\+3333333F
+\begin{DoxyCompactList}\small\item\em Macro definition for \hyperlink{lbm_8h_aba8902900fa07ff44dbb4a739c0e5163}{cs} squared. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_ae7a226ba3e1299f9c0bdf1cc76e7d5d8}{cs4}~0.\+1111111F
+\begin{DoxyCompactList}\small\item\em Macro definition for \hyperlink{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}{cs2} squared. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_ab4bd27eb9c007776af9764a4ee4971d4}{cso2}~3.\+0000000F
+\begin{DoxyCompactList}\small\item\em Macro definition for inverse of \hyperlink{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}{cs2}. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_aa684160cf8490a8372628d8178eb0efa}{hcso2}~1.\+5000000F
+\begin{DoxyCompactList}\small\item\em Macro definition for half of \hyperlink{lbm_8h_ab4bd27eb9c007776af9764a4ee4971d4}{cso2}. \end{DoxyCompactList}\item 
+\#define \hyperlink{lbm_8h_a64b5e00638a22c45514a8fb8a9554209}{hcso4}~4.\+5000000F
+\begin{DoxyCompactList}\small\item\em Macro definition for half of inverse of \hyperlink{lbm_8h_ae7a226ba3e1299f9c0bdf1cc76e7d5d8}{cs4}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const double \hyperlink{lbm_8h_aedababd215e10df9a0429120bba1660a}{w} \mbox{[}2\mbox{]}\mbox{[}27\mbox{]}
+\begin{DoxyCompactList}\small\item\em Array of Gauss-\/\+Hermite quadrature weights for corresponding discrete particle velocity set. \end{DoxyCompactList}\item 
+const double \hyperlink{lbm_8h_ab572a119792cba4003eee82b59009257}{c} \mbox{[}2\mbox{]}\mbox{[}27 $\ast$3\mbox{]}
+\begin{DoxyCompactList}\small\item\em Array of velocity vectors for corresponding discrete particle velocity set. \end{DoxyCompactList}\item 
+const int \hyperlink{lbm_8h_a1f1eab5cc6ba79f67155799525885861}{pb} \mbox{[}2\mbox{]}\mbox{[}27\mbox{]}
+\begin{DoxyCompactList}\small\item\em Array of indices for reflected velocity vectors for corresponding discrete particle velocity set. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{lbm_8h_aba8902900fa07ff44dbb4a739c0e5163}\label{lbm_8h_aba8902900fa07ff44dbb4a739c0e5163}} 
+\index{lbm.\+h@{lbm.\+h}!cs@{cs}}
+\index{cs@{cs}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{cs}{cs}}
+{\footnotesize\ttfamily \#define cs~0.\+5773503F}
+
+
+
+Macro definition for lattice speed of sound (1/sqrt(3)). 
+
+\mbox{\Hypertarget{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}\label{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}} 
+\index{lbm.\+h@{lbm.\+h}!cs2@{cs2}}
+\index{cs2@{cs2}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{cs2}{cs2}}
+{\footnotesize\ttfamily \#define cs2~0.\+3333333F}
+
+
+
+Macro definition for \hyperlink{lbm_8h_aba8902900fa07ff44dbb4a739c0e5163}{cs} squared. 
+
+\mbox{\Hypertarget{lbm_8h_ae7a226ba3e1299f9c0bdf1cc76e7d5d8}\label{lbm_8h_ae7a226ba3e1299f9c0bdf1cc76e7d5d8}} 
+\index{lbm.\+h@{lbm.\+h}!cs4@{cs4}}
+\index{cs4@{cs4}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{cs4}{cs4}}
+{\footnotesize\ttfamily \#define cs4~0.\+1111111F}
+
+
+
+Macro definition for \hyperlink{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}{cs2} squared. 
+
+\mbox{\Hypertarget{lbm_8h_ab4bd27eb9c007776af9764a4ee4971d4}\label{lbm_8h_ab4bd27eb9c007776af9764a4ee4971d4}} 
+\index{lbm.\+h@{lbm.\+h}!cso2@{cso2}}
+\index{cso2@{cso2}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{cso2}{cso2}}
+{\footnotesize\ttfamily \#define cso2~3.\+0000000F}
+
+
+
+Macro definition for inverse of \hyperlink{lbm_8h_aee6f45fcdff121ba7a5621ce6181ac86}{cs2}. 
+
+\mbox{\Hypertarget{lbm_8h_aa684160cf8490a8372628d8178eb0efa}\label{lbm_8h_aa684160cf8490a8372628d8178eb0efa}} 
+\index{lbm.\+h@{lbm.\+h}!hcso2@{hcso2}}
+\index{hcso2@{hcso2}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{hcso2}{hcso2}}
+{\footnotesize\ttfamily \#define hcso2~1.\+5000000F}
+
+
+
+Macro definition for half of \hyperlink{lbm_8h_ab4bd27eb9c007776af9764a4ee4971d4}{cso2}. 
+
+\mbox{\Hypertarget{lbm_8h_a64b5e00638a22c45514a8fb8a9554209}\label{lbm_8h_a64b5e00638a22c45514a8fb8a9554209}} 
+\index{lbm.\+h@{lbm.\+h}!hcso4@{hcso4}}
+\index{hcso4@{hcso4}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{hcso4}{hcso4}}
+{\footnotesize\ttfamily \#define hcso4~4.\+5000000F}
+
+
+
+Macro definition for half of inverse of \hyperlink{lbm_8h_ae7a226ba3e1299f9c0bdf1cc76e7d5d8}{cs4}. 
+
+\mbox{\Hypertarget{lbm_8h_acfb5feff3d74c31fd8abe42a30a1f769}\label{lbm_8h_acfb5feff3d74c31fd8abe42a30a1f769}} 
+\index{lbm.\+h@{lbm.\+h}!l\+\_\+dq@{l\+\_\+dq}}
+\index{l\+\_\+dq@{l\+\_\+dq}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{l\+\_\+dq}{l\_dq}}
+{\footnotesize\ttfamily \#define l\+\_\+dq~27}
+
+
+
+Number of particle velocity vectors in the discretized particle velocity set. 
+
+When \hyperlink{cppspec_8h_a327d0faa306d7663502be8df312a815e}{N\+\_\+\+D\+IM} = 2, this is equal to 9 (i.\+e. D2\+Q9). In 3D, this value is set to 19 by default (i.\+e. D3\+Q19) but can be set to 27 for D3\+Q27 as well. \mbox{\Hypertarget{lbm_8h_a7702b5f02aa4d220fad9dea224c4b519}\label{lbm_8h_a7702b5f02aa4d220fad9dea224c4b519}} 
+\index{lbm.\+h@{lbm.\+h}!l\+\_\+dq\+\_\+max@{l\+\_\+dq\+\_\+max}}
+\index{l\+\_\+dq\+\_\+max@{l\+\_\+dq\+\_\+max}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{l\+\_\+dq\+\_\+max}{l\_dq\_max}}
+{\footnotesize\ttfamily \#define l\+\_\+dq\+\_\+max~27}
+
+
+
+Number of particle velocity vectors requried for complete connectivity. 
+
+This value is equal to \hyperlink{lbm_8h_acfb5feff3d74c31fd8abe42a30a1f769}{l\+\_\+dq} in 2D but equal to the D3\+Q27 amount in 3D (whereas \hyperlink{lbm_8h_acfb5feff3d74c31fd8abe42a30a1f769}{l\+\_\+dq} can take on separate values for D3\+Q19 and D3\+Q27). 
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{lbm_8h_ab572a119792cba4003eee82b59009257}\label{lbm_8h_ab572a119792cba4003eee82b59009257}} 
+\index{lbm.\+h@{lbm.\+h}!c@{c}}
+\index{c@{c}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{c}{c}}
+{\footnotesize\ttfamily const double c\mbox{[}2\mbox{]}\mbox{[}27 $\ast$3\mbox{]}}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}
+=
+\{\{ 0,1,0,-1,0,1,-1,-1,1,   0,0,1,0,-1,1,1,-1,-1\},
+\{ 0,1,-1,0,0,0,0,1,-1,1,-1,0,0,1,-1,1,-1,0,0,1,-1,1,-1,1,-1,-1,1,   0,0,0,1,-1,0,0,1,-1,0,0,1,-1,-1,1,0,0,1
+      ,-1,1,-1,1,-1,-1,1,1,-1,   0,0,0,0,0,1,-1,0,0,1,-1,1,-1,0,0,-1,1,-1,1,1,-1,-1,1,1,-1,1,-1 \}\}
+\end{DoxyCode}
+
+
+Array of velocity vectors for corresponding discrete particle velocity set. 
+
+\mbox{\Hypertarget{lbm_8h_a1f1eab5cc6ba79f67155799525885861}\label{lbm_8h_a1f1eab5cc6ba79f67155799525885861}} 
+\index{lbm.\+h@{lbm.\+h}!pb@{pb}}
+\index{pb@{pb}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{pb}{pb}}
+{\footnotesize\ttfamily const int pb\mbox{[}2\mbox{]}\mbox{[}27\mbox{]}}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}
+=
+\{\{0,3,4,1,2,7,8,5,6\},
+\{0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17,20,19,22,21,24,23,26,25\}\}
+\end{DoxyCode}
+
+
+Array of indices for reflected velocity vectors for corresponding discrete particle velocity set. 
+
+\mbox{\Hypertarget{lbm_8h_aedababd215e10df9a0429120bba1660a}\label{lbm_8h_aedababd215e10df9a0429120bba1660a}} 
+\index{lbm.\+h@{lbm.\+h}!w@{w}}
+\index{w@{w}!lbm.\+h@{lbm.\+h}}
+\subsubsection{\texorpdfstring{w}{w}}
+{\footnotesize\ttfamily const double w\mbox{[}2\mbox{]}\mbox{[}27\mbox{]}}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}
+= 
+\{\{4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0\},
+
+
+
+\{8.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.
+      0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0
+      /216.0,1.0/216.0,1.0/216.0,1.0/216.0\}\}
+\end{DoxyCode}
+
+
+Array of Gauss-\/\+Hermite quadrature weights for corresponding discrete particle velocity set. 
+

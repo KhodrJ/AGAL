@@ -1,0 +1,457 @@
+\hypertarget{mesh_8h}{}\section{inc/mesh.h File Reference}
+\label{mesh_8h}\index{inc/mesh.\+h@{inc/mesh.\+h}}
+{\ttfamily \#include \char`\"{}cppspec.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}lbm.\+h\char`\"{}}\newline
+Include dependency graph for mesh.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mesh_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=177pt]{mesh_8h__dep__incl}
+\end{center}
+\end{figure}
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classMesh}{Mesh}
+\begin{DoxyCompactList}\small\item\em The mesh class. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{mesh_8h_abc6c2c98ea8adb0f4f86cc65376a92c6}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED}~0
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is unrefined. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_ad7eb161e8411b6d1c5323e08f94cbeca}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO}~9
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is unrefined by possibly violating a quality-\/control criterion. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a9a62df1058077bce4db0d72d9146a28c}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED}~1
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is refined. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a69ce872b476f502cbe80db24a104fa41}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD}~2
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is refined and has at least one refined child. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_add82df4941e230cb83f4737b31207c3d}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM}~3
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is refined permanently (mainly for near-\/wall stability). \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a302ea61cf675f06725e367907dfc7fb7}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM}~10
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is refined permanently (mainly for near-\/wall stability). \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_af2d286018fc7442a20b7525b39829c1f}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE}~4
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is marked for refinement. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a0656aa177812f4b7aa35121197e60038}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN}~5
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is marked for coarsening. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a88587c2c945f1135189c3bd59b4f34bd}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW}~6
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block was newly inserted (as a child). \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_ae403a731f76ee11227a686c5aa3770e0}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE}~7
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block will be removed (as a child). \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_abec9ea9c0a2893d8ee04a695ed155a95}{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE}~8
+\begin{DoxyCompactList}\small\item\em Indicates cell-\/block is inactive in the simulation. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a1a188abc73dbd5a4ee12addffb550f2f}{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F}~0
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a7f94fa8ca1abcfaec3ed6122459bd478}{V\+\_\+\+I\+N\+T\+E\+RP}~U\+N\+I\+F\+O\+R\+M\+\_\+\+Fs		1
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a8ba83547ea695457721123ee457d3332}{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F}~2
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a0a98278da8a7ebc85f3bb387ab9a4bfe}{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs}~3
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a78dcc090e2a73c495fc39a8be424c018}{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F}~4
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a12461b570df9612c34767dfe93232490}{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs}~5
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_ad75741e1a7841d54c98aaf4670e3468a}{V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F}~0
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a89a126a1107e3ca976cee1fde7af77e4}{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM}~0
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a51c6161c29676b87695bab3438ddd06c}{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}~2
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a6df941794c7052c2ba063eaab92e48e9}{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE}~\hyperlink{mesh_8h_a51c6161c29676b87695bab3438ddd06c}{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}
+\begin{DoxyCompactList}\small\item\em A. \end{DoxyCompactList}\item 
+\#define \hyperlink{mesh_8h_a5465378332c79eb52e353600ad3dfe99}{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}~0
+\item 
+\#define \hyperlink{mesh_8h_a5465378332c79eb52e353600ad3dfe99}{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}~1
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class T $>$ }\\\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{mesh_8h_a6fa64fed754b5aa2db345680d30c34ba}{Cu\+\_\+\+Reset\+To\+Value} (int N, T $\ast$arr, T val)
+\begin{DoxyCompactList}\small\item\em Reset values of G\+PU array. \end{DoxyCompactList}\item 
+{\footnotesize template$<$class T $>$ }\\\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{mesh_8h_afe0417e381d21a938cc312cfad4d816e}{Cu\+\_\+\+Contract\+By\+Frac} (int N, T $\ast$arr, int frac, T $\ast$arr2)
+\begin{DoxyCompactList}\small\item\em Contract array elements by a specified amount. \end{DoxyCompactList}\item 
+{\footnotesize template$<$class T $>$ }\\\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{mesh_8h_a478831a86e6d0a1151ee26218d9cf0eb}{Cu\+\_\+\+Fill\+Linear} (int N, T $\ast$arr)
+\begin{DoxyCompactList}\small\item\em Fill an array with a value equal to the index. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const int \hyperlink{mesh_8h_a10f21bd2ce1bac58c942c5bb17c1b026}{str2aschild} \mbox{[}2\mbox{]}\mbox{[}8\mbox{]}
+\item 
+const double \hyperlink{mesh_8h_a2cd23a9c4c130f6ceec68bc7a97dba6c}{dx\+\_\+vec} \mbox{[}2\mbox{]}\mbox{[}3 $\ast$8\mbox{]}
+\item 
+const int \hyperlink{mesh_8h_a7ee37d8276f9af262711df33fea3f6cc}{child\+\_\+id\+\_\+switch} \mbox{[}\hyperlink{cppspec_8h_a39646502414a17a8518d029263259eee}{N\+\_\+\+C\+H\+I\+L\+D\+R\+EN}\mbox{]}
+\item 
+int \hyperlink{mesh_8h_a5f5bf4c2b26e229a3053120991eff3bf}{child\+\_\+nbrs} \mbox{[}2\mbox{]}\mbox{[}8 $\ast$27\mbox{]}
+\item 
+int \hyperlink{mesh_8h_aca31b22b369316a7b07d015b30c59239}{child\+\_\+nbrs\+\_\+I} \mbox{[}2\mbox{]}\mbox{[}8 $\ast$27\mbox{]}
+\item 
+int \hyperlink{mesh_8h_aebda8a2ee3ebd37db947206b7cf982d6}{advancement\+\_\+ids} \mbox{[}2\mbox{]}\mbox{[}27 $\ast$27\mbox{]}
+\item 
+int \hyperlink{mesh_8h_a9056ba1955d628cdc00230d6ab5c80d3}{interp\+\_\+ids} \mbox{[}2\mbox{]}\mbox{[}8 $\ast$8\mbox{]}
+\item 
+\hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} \hyperlink{mesh_8h_ae94f0f7281620ce67c60ae012cd52ee8}{interp\+\_\+coeffs} \mbox{[}2\mbox{]}\mbox{[}(8 $\ast$8) $\ast$8\mbox{]}
+\item 
+const double \hyperlink{mesh_8h_a55c0e97fcc9a3a4896115c0b088cc5f0}{init\+\_\+grid\+\_\+x} \mbox{[}\hyperlink{cppspec_8h_ab6471b0dc18a88669e137a1223f9cad8}{Nx2}\mbox{]}
+\item 
+const double \hyperlink{mesh_8h_a7c4c84405f89d81bb9c14771db38bf04}{init\+\_\+grid\+\_\+y} \mbox{[}\hyperlink{cppspec_8h_ab6471b0dc18a88669e137a1223f9cad8}{Nx2}\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{mesh_8h_a6df941794c7052c2ba063eaab92e48e9}\label{mesh_8h_a6df941794c7052c2ba063eaab92e48e9}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE}}
+\index{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE}{V\_ADV\_TYPE}}
+{\footnotesize\ttfamily \#define V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+PE~\hyperlink{mesh_8h_a51c6161c29676b87695bab3438ddd06c}{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a51c6161c29676b87695bab3438ddd06c}\label{mesh_8h_a51c6161c29676b87695bab3438ddd06c}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}}
+\index{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC}{V\_ADV\_TYPE\_CUBIC}}
+{\footnotesize\ttfamily \#define V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+C\+U\+B\+IC~2}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a89a126a1107e3ca976cee1fde7af77e4}\label{mesh_8h_a89a126a1107e3ca976cee1fde7af77e4}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM}}
+\index{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM@{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM}{V\_ADV\_TYPE\_UNIFORM}}
+{\footnotesize\ttfamily \#define V\+\_\+\+A\+D\+V\+\_\+\+T\+Y\+P\+E\+\_\+\+U\+N\+I\+F\+O\+RM~0}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_ad75741e1a7841d54c98aaf4670e3468a}\label{mesh_8h_ad75741e1a7841d54c98aaf4670e3468a}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F@{V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F}}
+\index{V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F@{V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F}{V\_AVERAGE\_F}}
+{\footnotesize\ttfamily \#define V\+\_\+\+A\+V\+E\+R\+A\+G\+E\+\_\+F~0}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a7f94fa8ca1abcfaec3ed6122459bd478}\label{mesh_8h_a7f94fa8ca1abcfaec3ed6122459bd478}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+RP@{V\+\_\+\+I\+N\+T\+E\+RP}}
+\index{V\+\_\+\+I\+N\+T\+E\+RP@{V\+\_\+\+I\+N\+T\+E\+RP}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+RP}{V\_INTERP}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+RP~U\+N\+I\+F\+O\+R\+M\+\_\+\+Fs		1}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a78dcc090e2a73c495fc39a8be424c018}\label{mesh_8h_a78dcc090e2a73c495fc39a8be424c018}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F}}
+\index{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F}{V\_INTERP\_ADDED\_F}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+F~4}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a12461b570df9612c34767dfe93232490}\label{mesh_8h_a12461b570df9612c34767dfe93232490}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs}}
+\index{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs}{V\_INTERP\_ADDED\_Fs}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+A\+D\+D\+E\+D\+\_\+\+Fs~5}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a8ba83547ea695457721123ee457d3332}\label{mesh_8h_a8ba83547ea695457721123ee457d3332}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F}}
+\index{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F}{V\_INTERP\_CUBIC\_F}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+F~2}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a0a98278da8a7ebc85f3bb387ab9a4bfe}\label{mesh_8h_a0a98278da8a7ebc85f3bb387ab9a4bfe}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs}}
+\index{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs}{V\_INTERP\_CUBIC\_Fs}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+C\+U\+B\+I\+C\+\_\+\+Fs~3}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_a1a188abc73dbd5a4ee12addffb550f2f}\label{mesh_8h_a1a188abc73dbd5a4ee12addffb550f2f}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F}}
+\index{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F@{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F}{V\_INTERP\_UNIFORM\_F}}
+{\footnotesize\ttfamily \#define V\+\_\+\+I\+N\+T\+E\+R\+P\+\_\+\+U\+N\+I\+F\+O\+R\+M\+\_\+F~0}
+
+
+
+A. 
+
+\mbox{\Hypertarget{mesh_8h_abec9ea9c0a2893d8ee04a695ed155a95}\label{mesh_8h_abec9ea9c0a2893d8ee04a695ed155a95}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE}{V\_REF\_ID\_INACTIVE}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+I\+N\+A\+C\+T\+I\+VE~8}
+
+
+
+Indicates cell-\/block is inactive in the simulation. 
+
+\mbox{\Hypertarget{mesh_8h_a0656aa177812f4b7aa35121197e60038}\label{mesh_8h_a0656aa177812f4b7aa35121197e60038}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN}{V\_REF\_ID\_MARK\_COARSEN}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+C\+O\+A\+R\+S\+EN~5}
+
+
+
+Indicates cell-\/block is marked for coarsening. 
+
+\mbox{\Hypertarget{mesh_8h_af2d286018fc7442a20b7525b39829c1f}\label{mesh_8h_af2d286018fc7442a20b7525b39829c1f}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE}{V\_REF\_ID\_MARK\_REFINE}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+M\+A\+R\+K\+\_\+\+R\+E\+F\+I\+NE~4}
+
+
+
+Indicates cell-\/block is marked for refinement. 
+
+\mbox{\Hypertarget{mesh_8h_a88587c2c945f1135189c3bd59b4f34bd}\label{mesh_8h_a88587c2c945f1135189c3bd59b4f34bd}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW}{V\_REF\_ID\_NEW}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+N\+EW~6}
+
+
+
+Indicates cell-\/block was newly inserted (as a child). 
+
+\mbox{\Hypertarget{mesh_8h_a9a62df1058077bce4db0d72d9146a28c}\label{mesh_8h_a9a62df1058077bce4db0d72d9146a28c}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED}{V\_REF\_ID\_REFINED}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+ED~1}
+
+
+
+Indicates cell-\/block is refined. 
+
+\mbox{\Hypertarget{mesh_8h_add82df4941e230cb83f4737b31207c3d}\label{mesh_8h_add82df4941e230cb83f4737b31207c3d}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM}{V\_REF\_ID\_REFINED\_PERM}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+P\+E\+RM~3}
+
+
+
+Indicates cell-\/block is refined permanently (mainly for near-\/wall stability). 
+
+\mbox{\Hypertarget{mesh_8h_a69ce872b476f502cbe80db24a104fa41}\label{mesh_8h_a69ce872b476f502cbe80db24a104fa41}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD}{V\_REF\_ID\_REFINED\_WCHILD}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+LD~2}
+
+
+
+Indicates cell-\/block is refined and has at least one refined child. 
+
+\mbox{\Hypertarget{mesh_8h_a302ea61cf675f06725e367907dfc7fb7}\label{mesh_8h_a302ea61cf675f06725e367907dfc7fb7}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM}{V\_REF\_ID\_REFINED\_WCHILD\_PERM}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+F\+I\+N\+E\+D\+\_\+\+W\+C\+H\+I\+L\+D\+\_\+\+P\+E\+RM~10}
+
+
+
+Indicates cell-\/block is refined permanently (mainly for near-\/wall stability). 
+
+\mbox{\Hypertarget{mesh_8h_ae403a731f76ee11227a686c5aa3770e0}\label{mesh_8h_ae403a731f76ee11227a686c5aa3770e0}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE}{V\_REF\_ID\_REMOVE}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+R\+E\+M\+O\+VE~7}
+
+
+
+Indicates cell-\/block will be removed (as a child). 
+
+\mbox{\Hypertarget{mesh_8h_abc6c2c98ea8adb0f4f86cc65376a92c6}\label{mesh_8h_abc6c2c98ea8adb0f4f86cc65376a92c6}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED}{V\_REF\_ID\_UNREFINED}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+ED~0}
+
+
+
+Indicates cell-\/block is unrefined. 
+
+\mbox{\Hypertarget{mesh_8h_ad7eb161e8411b6d1c5323e08f94cbeca}\label{mesh_8h_ad7eb161e8411b6d1c5323e08f94cbeca}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO}}
+\index{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO@{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO}{V\_REF\_ID\_UNREFINED\_VIO}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+F\+\_\+\+I\+D\+\_\+\+U\+N\+R\+E\+F\+I\+N\+E\+D\+\_\+\+V\+IO~9}
+
+
+
+Indicates cell-\/block is unrefined by possibly violating a quality-\/control criterion. 
+
+\mbox{\Hypertarget{mesh_8h_a5465378332c79eb52e353600ad3dfe99}\label{mesh_8h_a5465378332c79eb52e353600ad3dfe99}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE@{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}}
+\index{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE@{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}{V\_RESCALE\_TYPE}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE~0}
+
+\mbox{\Hypertarget{mesh_8h_a5465378332c79eb52e353600ad3dfe99}\label{mesh_8h_a5465378332c79eb52e353600ad3dfe99}} 
+\index{mesh.\+h@{mesh.\+h}!V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE@{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}}
+\index{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE@{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE}{V\_RESCALE\_TYPE}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \#define V\+\_\+\+R\+E\+S\+C\+A\+L\+E\+\_\+\+T\+Y\+PE~1}
+
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{mesh_8h_afe0417e381d21a938cc312cfad4d816e}\label{mesh_8h_afe0417e381d21a938cc312cfad4d816e}} 
+\index{mesh.\+h@{mesh.\+h}!Cu\+\_\+\+Contract\+By\+Frac@{Cu\+\_\+\+Contract\+By\+Frac}}
+\index{Cu\+\_\+\+Contract\+By\+Frac@{Cu\+\_\+\+Contract\+By\+Frac}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{Cu\+\_\+\+Contract\+By\+Frac()}{Cu\_ContractByFrac()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\+\_\+\+\_\+global\+\_\+\+\_\+ void Cu\+\_\+\+Contract\+By\+Frac (\begin{DoxyParamCaption}\item[{int}]{N,  }\item[{T $\ast$}]{arr,  }\item[{int}]{frac,  }\item[{T $\ast$}]{arr2 }\end{DoxyParamCaption})}
+
+
+
+Contract array elements by a specified amount. 
+
+Retrieve elements of an array and store only a fraction of them (skipping over others) in a destination array not necessarily the same as the input. 
+\begin{DoxyParams}{Parameters}
+{\em N} & is the length of the input array. \\
+\hline
+{\em arr} & is the input array. \\
+\hline
+{\em frac} & is the integer inverse of the fraction (i.\+e. to skip every N entries, frac should be set to N for a fraction of 1/N). \\
+\hline
+{\em arr2} & is the destination array. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{mesh_8h_a478831a86e6d0a1151ee26218d9cf0eb}\label{mesh_8h_a478831a86e6d0a1151ee26218d9cf0eb}} 
+\index{mesh.\+h@{mesh.\+h}!Cu\+\_\+\+Fill\+Linear@{Cu\+\_\+\+Fill\+Linear}}
+\index{Cu\+\_\+\+Fill\+Linear@{Cu\+\_\+\+Fill\+Linear}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{Cu\+\_\+\+Fill\+Linear()}{Cu\_FillLinear()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\+\_\+\+\_\+global\+\_\+\+\_\+ void Cu\+\_\+\+Fill\+Linear (\begin{DoxyParamCaption}\item[{int}]{N,  }\item[{T $\ast$}]{arr }\end{DoxyParamCaption})}
+
+
+
+Fill an array with a value equal to the index. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em N} & is the length of the input array. \\
+\hline
+{\em arr} & is the input array. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{mesh_8h_a6fa64fed754b5aa2db345680d30c34ba}\label{mesh_8h_a6fa64fed754b5aa2db345680d30c34ba}} 
+\index{mesh.\+h@{mesh.\+h}!Cu\+\_\+\+Reset\+To\+Value@{Cu\+\_\+\+Reset\+To\+Value}}
+\index{Cu\+\_\+\+Reset\+To\+Value@{Cu\+\_\+\+Reset\+To\+Value}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{Cu\+\_\+\+Reset\+To\+Value()}{Cu\_ResetToValue()}}
+{\footnotesize\ttfamily template$<$class T $>$ \\
+\+\_\+\+\_\+global\+\_\+\+\_\+ void Cu\+\_\+\+Reset\+To\+Value (\begin{DoxyParamCaption}\item[{int}]{N,  }\item[{T $\ast$}]{arr,  }\item[{T}]{val }\end{DoxyParamCaption})}
+
+
+
+Reset values of G\+PU array. 
+
+Reset the values of an array in G\+PU memory to a particular value. 
+\begin{DoxyParams}{Parameters}
+{\em N} & is the length of the array. \\
+\hline
+{\em arr} & is a pointer to the array. \\
+\hline
+{\em val} & is the value being set. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{mesh_8h_aebda8a2ee3ebd37db947206b7cf982d6}\label{mesh_8h_aebda8a2ee3ebd37db947206b7cf982d6}} 
+\index{mesh.\+h@{mesh.\+h}!advancement\+\_\+ids@{advancement\+\_\+ids}}
+\index{advancement\+\_\+ids@{advancement\+\_\+ids}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{advancement\+\_\+ids}{advancement\_ids}}
+{\footnotesize\ttfamily int advancement\+\_\+ids\mbox{[}2\mbox{]}\mbox{[}27 $\ast$27\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a7ee37d8276f9af262711df33fea3f6cc}\label{mesh_8h_a7ee37d8276f9af262711df33fea3f6cc}} 
+\index{mesh.\+h@{mesh.\+h}!child\+\_\+id\+\_\+switch@{child\+\_\+id\+\_\+switch}}
+\index{child\+\_\+id\+\_\+switch@{child\+\_\+id\+\_\+switch}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{child\+\_\+id\+\_\+switch}{child\_id\_switch}}
+{\footnotesize\ttfamily const int child\+\_\+id\+\_\+switch\mbox{[}\hyperlink{cppspec_8h_a39646502414a17a8518d029263259eee}{N\+\_\+\+C\+H\+I\+L\+D\+R\+EN}\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a5f5bf4c2b26e229a3053120991eff3bf}\label{mesh_8h_a5f5bf4c2b26e229a3053120991eff3bf}} 
+\index{mesh.\+h@{mesh.\+h}!child\+\_\+nbrs@{child\+\_\+nbrs}}
+\index{child\+\_\+nbrs@{child\+\_\+nbrs}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{child\+\_\+nbrs}{child\_nbrs}}
+{\footnotesize\ttfamily int child\+\_\+nbrs\mbox{[}2\mbox{]}\mbox{[}8 $\ast$27\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_aca31b22b369316a7b07d015b30c59239}\label{mesh_8h_aca31b22b369316a7b07d015b30c59239}} 
+\index{mesh.\+h@{mesh.\+h}!child\+\_\+nbrs\+\_\+I@{child\+\_\+nbrs\+\_\+I}}
+\index{child\+\_\+nbrs\+\_\+I@{child\+\_\+nbrs\+\_\+I}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{child\+\_\+nbrs\+\_\+I}{child\_nbrs\_I}}
+{\footnotesize\ttfamily int child\+\_\+nbrs\+\_\+I\mbox{[}2\mbox{]}\mbox{[}8 $\ast$27\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a2cd23a9c4c130f6ceec68bc7a97dba6c}\label{mesh_8h_a2cd23a9c4c130f6ceec68bc7a97dba6c}} 
+\index{mesh.\+h@{mesh.\+h}!dx\+\_\+vec@{dx\+\_\+vec}}
+\index{dx\+\_\+vec@{dx\+\_\+vec}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{dx\+\_\+vec}{dx\_vec}}
+{\footnotesize\ttfamily const double dx\+\_\+vec\mbox{[}2\mbox{]}\mbox{[}3 $\ast$8\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a55c0e97fcc9a3a4896115c0b088cc5f0}\label{mesh_8h_a55c0e97fcc9a3a4896115c0b088cc5f0}} 
+\index{mesh.\+h@{mesh.\+h}!init\+\_\+grid\+\_\+x@{init\+\_\+grid\+\_\+x}}
+\index{init\+\_\+grid\+\_\+x@{init\+\_\+grid\+\_\+x}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{init\+\_\+grid\+\_\+x}{init\_grid\_x}}
+{\footnotesize\ttfamily const double init\+\_\+grid\+\_\+x\mbox{[}\hyperlink{cppspec_8h_ab6471b0dc18a88669e137a1223f9cad8}{Nx2}\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a7c4c84405f89d81bb9c14771db38bf04}\label{mesh_8h_a7c4c84405f89d81bb9c14771db38bf04}} 
+\index{mesh.\+h@{mesh.\+h}!init\+\_\+grid\+\_\+y@{init\+\_\+grid\+\_\+y}}
+\index{init\+\_\+grid\+\_\+y@{init\+\_\+grid\+\_\+y}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{init\+\_\+grid\+\_\+y}{init\_grid\_y}}
+{\footnotesize\ttfamily const double init\+\_\+grid\+\_\+y\mbox{[}\hyperlink{cppspec_8h_ab6471b0dc18a88669e137a1223f9cad8}{Nx2}\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_ae94f0f7281620ce67c60ae012cd52ee8}\label{mesh_8h_ae94f0f7281620ce67c60ae012cd52ee8}} 
+\index{mesh.\+h@{mesh.\+h}!interp\+\_\+coeffs@{interp\+\_\+coeffs}}
+\index{interp\+\_\+coeffs@{interp\+\_\+coeffs}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{interp\+\_\+coeffs}{interp\_coeffs}}
+{\footnotesize\ttfamily \hyperlink{cppspec_8h_af529d360dfac9b9578aa719418a53a21}{ufloat\+\_\+t} interp\+\_\+coeffs\mbox{[}2\mbox{]}\mbox{[}(8 $\ast$8) $\ast$8\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a9056ba1955d628cdc00230d6ab5c80d3}\label{mesh_8h_a9056ba1955d628cdc00230d6ab5c80d3}} 
+\index{mesh.\+h@{mesh.\+h}!interp\+\_\+ids@{interp\+\_\+ids}}
+\index{interp\+\_\+ids@{interp\+\_\+ids}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{interp\+\_\+ids}{interp\_ids}}
+{\footnotesize\ttfamily int interp\+\_\+ids\mbox{[}2\mbox{]}\mbox{[}8 $\ast$8\mbox{]}}
+
+\mbox{\Hypertarget{mesh_8h_a10f21bd2ce1bac58c942c5bb17c1b026}\label{mesh_8h_a10f21bd2ce1bac58c942c5bb17c1b026}} 
+\index{mesh.\+h@{mesh.\+h}!str2aschild@{str2aschild}}
+\index{str2aschild@{str2aschild}!mesh.\+h@{mesh.\+h}}
+\subsubsection{\texorpdfstring{str2aschild}{str2aschild}}
+{\footnotesize\ttfamily const int str2aschild\mbox{[}2\mbox{]}\mbox{[}8\mbox{]}}
+
