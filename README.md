@@ -22,15 +22,15 @@ The "confmake.sh" file defines compilation options and runs the Makefile automat
 8. If the root grid is too fine, the output may become unacceptably large and N_LEVEL_START should be adjusted. For example, setting N_Q=19, MAX_LEVELS=4, N_LEVEL_START=1 (i.e., start on grid 1 instead of 0) and Nx=64 results in a solver with root grid resolution 128^3, refinement up to effective resolution 512 and an output with resolution 64^3.
 9. The chosen refinement parameters were fixed for all test cases, but these can be modified freely. N_CONN_TYPE is unused for now. Set P_SHOW_REFINE to 0 to disable printing of execution times to console.
 10. Three kinds of probing are available:
-    a. N_PROBE probes the solution on the root grid with probe density N_PROBE_DENSITY at a frequency of N_PROBE_FREQUENCY iterations until the solution converges according to tolerance V_PROBE_TOL.
-    b. N_PROBE_FORCE performs force calculation via the momentum exchange algorithm with frequency N_PROBE_F_FREQUENCY, printed to "forces.txt" in the output directory.
-    c. N_PROBE_AVE performs a time average on the root grid with frequency N_PROBE_AVE_FREQUENCY, starting after a number of iterations N_PROBE_AVE_START has passed.
+    - N_PROBE probes the solution on the root grid with probe density N_PROBE_DENSITY at a frequency of N_PROBE_FREQUENCY iterations until the solution converges according to tolerance V_PROBE_TOL.
+    - N_PROBE_FORCE performs force calculation via the momentum exchange algorithm with frequency N_PROBE_F_FREQUENCY, printed to "forces.txt" in the output directory.
+    - N_PROBE_AVE performs a time average on the root grid with frequency N_PROBE_AVE_FREQUENCY, starting after a number of iterations N_PROBE_AVE_START has passed.
 11. Printing is controlled as follows:
-    a. The output directory path is defined by P_DIR_NAME (default is "../out/results").
-    b. The solution is printed every P_PRINT iterations, and the solution is run for a total of N_PRINT*P_PRINT iterations. The test cases in the preprint relied on a single print (N_PRINT=1) with P_PRINT scaled with Nx. 
-    c. One second in solution time corresponds to 1*Nx iterations.
-    d. N_PRINT_LEVELS controls the number of grids in the hierarchy to be included in the output (e.g., MAX_LEVELS=4 and N_PRINT_LEVELS=2 results in levels 0 and 1 being printed, excluding levels 2 and 3).
-    e. P_SHOW_ADVANCE shows the recursive calls on the console for debugging, P_PRINT_ADVANCE is unused.
+    - The output directory path is defined by P_DIR_NAME (default is "../out/results").
+    - The solution is printed every P_PRINT iterations, and the solution is run for a total of N_PRINT\*P_PRINT iterations. The test cases in the preprint relied on a single print (N_PRINT=1) with P_PRINT scaled with Nx. 
+    - One second in solution time corresponds to 1\*Nx iterations.
+    - N_PRINT_LEVELS controls the number of grids in the hierarchy to be included in the output (e.g., MAX_LEVELS=4 and N_PRINT_LEVELS=2 results in levels 0 and 1 being printed, excluding levels 2 and 3).
+    - P_SHOW_ADVANCE shows the recursive calls on the console for debugging, P_PRINT_ADVANCE is unused.
 12. If the initial and/or boundary conditions were modified, N_REGEN should be set to 1 so that the code generators are called before compilation. Make sure Octave is available in the file path.
 
 Once all of these steps have been checked, simply run `./confmake.sh` from the 'src' directory. This will produce an executable 'a.out' which is executed with `./a.out`. Once the simulation is terminated, the solution is printed and can be viewed with software such as Paraview (make sure that your choice of software can read .vthb files).
