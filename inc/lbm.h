@@ -11,16 +11,18 @@
 
 #include "cppspec.h"
 
+#ifndef N_Q
 #if (N_DIM==2)
-	#define l_dq 9							///< Number of particle velocity vectors in the discretized particle velocity set.
+	#define N_Q 9							///< Number of particle velocity vectors in the discretized particle velocity set.
 									///< When @ref N_DIM = 2, this is equal to 9 (i.e. D2Q9). In 3D, this value is set to 19 by default (i.e. D3Q19) but can be set to 27 for D3Q27 as well.
-	#define l_dq_max 9						///< Number of particle velocity vectors requried for complete connectivity.
-									///< This value is equal to @ref l_dq in 2D but equal to the D3Q27 amount in 3D (whereas @ref l_dq can take on separate values for D3Q19 and D3Q27).
+	#define N_Q_max 9						///< Number of particle velocity vectors requried for complete connectivity.
+									///< This value is equal to @ref N_Q in 2D but equal to the D3Q27 amount in 3D (whereas @ref N_Q can take on separate values for D3Q19 and D3Q27).
 #else
-	#define l_dq 27							///< Number of particle velocity vectors in the discretized particle velocity set.
+	#define N_Q 27							///< Number of particle velocity vectors in the discretized particle velocity set.
 									///< When @ref N_DIM = 2, this is equal to 9 (i.e. D2Q9). In 3D, this value is set to 19 by default (i.e. D3Q19) but can be set to 27 for D3Q27 as well.
-	#define l_dq_max 27						///< Number of particle velocity vectors requried for complete connectivity.
-									///< This value is equal to @ref l_dq in 2D but equal to the D3Q27 amount in 3D (whereas @ref l_dq can take on separate values for D3Q19 and D3Q27).
+	#define N_Q_max 27						///< Number of particle velocity vectors requried for complete connectivity.
+									///< This value is equal to @ref N_Q in 2D but equal to the D3Q27 amount in 3D (whereas @ref N_Q can take on separate values for D3Q19 and D3Q27).
+#endif
 #endif
 
 #if (N_PRECISION==1)
@@ -42,7 +44,7 @@
 //! Array of Gauss-Hermite quadrature weights for corresponding discrete particle velocity set.
 const double	w[2][27] = 
 {{4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0},
-#if (l_dq==19)
+#if (N_Q==19)
 {1.0/3.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/18.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0}};
 #else
 {8.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/54.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0,1.0/216.0}};
@@ -58,6 +60,6 @@ const int	pb[2][27] =
 {{0,3,4,1,2,7,8,5,6},
 {0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17,20,19,22,21,24,23,26,25}};
 
-// NOTE: Access c_id = c[N_DIM-2][p + d*l_dq_max];
+// NOTE: Access c_id = c[N_DIM-2][p + d*N_Q_max];
 
 #endif

@@ -6,36 +6,33 @@
 /**************************************************************************************/
 
 // TODO
-// - Replace "l_dq" with "Nq" in lbm.h and use a separate, tunable variable in the mesh class to store the total number of required macroscopic variables. This is necessary for making the mesh available for more general solvers.
+// - Use a separate, tunable variable in the mesh class to store the total number of required macroscopic variables (or specific 'N_Q' separately). This is necessary for making the mesh available for more general solvers.
 // - Make sure that the connectivity established by the set of velocity vectors 'c' is decoupled in final implementation from the lbm.h so that the mesh class can be used completely separelty with other solvers.
 
 #ifndef MESH_H
 #define MESH_H
 
-#define V_REF_ID_UNREFINED		0	///< Indicates cell-block is unrefined.
-#define V_REF_ID_UNREFINED_VIO		9	///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
-#define V_REF_ID_REFINED		1	///< Indicates cell-block is refined.
-#define V_REF_ID_REFINED_WCHILD		2	///< Indicates cell-block is refined and has at least one refined child.
-#define V_REF_ID_REFINED_PERM		3	///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-#define V_REF_ID_REFINED_WCHILD_PERM	10	///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-#define V_REF_ID_MARK_REFINE		4	///< Indicates cell-block is marked for refinement.
-#define V_REF_ID_MARK_COARSEN		5	///< Indicates cell-block is marked for coarsening.
-#define V_REF_ID_NEW			6	///< Indicates cell-block was newly inserted (as a child).
-#define V_REF_ID_REMOVE			7	///< Indicates cell-block will be removed (as a child).
-#define V_REF_ID_INACTIVE		8	///< Indicates cell-block is inactive in the simulation.
+#define V_REF_ID_UNREFINED		0			///< Indicates cell-block is unrefined.
+#define V_REF_ID_UNREFINED_VIO		9			///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
+#define V_REF_ID_REFINED		1			///< Indicates cell-block is refined.
+#define V_REF_ID_REFINED_WCHILD		2			///< Indicates cell-block is refined and has at least one refined child.
+#define V_REF_ID_REFINED_PERM		3			///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+#define V_REF_ID_REFINED_WCHILD_PERM	10			///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+#define V_REF_ID_MARK_REFINE		4			///< Indicates cell-block is marked for refinement.
+#define V_REF_ID_MARK_COARSEN		5			///< Indicates cell-block is marked for coarsening.
+#define V_REF_ID_NEW			6			///< Indicates cell-block was newly inserted (as a child).
+#define V_REF_ID_REMOVE			7			///< Indicates cell-block will be removed (as a child).
+#define V_REF_ID_INACTIVE		8			///< Indicates cell-block is inactive in the simulation.
 
-#define V_INTERP_UNIFORM_F		0	///< A
-#define V_INTERP UNIFORM_Fs		1	///< A
-#define V_INTERP_CUBIC_F		2	///< A
-#define V_INTERP_CUBIC_Fs		3	///< A
-#define V_INTERP_ADDED_F		4	///< A
-#define V_INTERP_ADDED_Fs		5	///< A
+#define V_INTERP_INTERFACE		0			///< Interpolate to interface cells only.
+#define V_INTERP_ADDED			1			///< Interpolate to newly-added cells.
 
-#define V_AVERAGE_F			0	///< A
+#define V_AVERAGE_INTERFACE		0			///< Average involves interface cells only.
+#define V_AVERAGE_BLOCK			1			///< Average involves whole masked block.
+#define V_AVERAGE_GRID			2			///< Average involves whole grid.
 
-#define V_ADV_TYPE_UNIFORM		0	///< A
-#define V_ADV_TYPE_CUBIC		2	///< A
-#define V_ADV_TYPE			V_ADV_TYPE_CUBIC	///< A
+#define V_ADV_TYPE_STANDARD		0			///< Standard advancement (requires rescaling of DDFs during communication).
+#define V_ADV_TYPE			V_ADV_TYPE_CUBIC	///< Selected advancement type.
 
 #define V_RESCALE_TYPE			0
 #if (V_ADV_TYPE == V_ADV_TYPE_CUBIC)
@@ -45,24 +42,6 @@
 
 #include "cppspec.h"
 #include "lbm.h"
-
-// Child orientations:
-// T = TOP, B = BOT, R = RIGHT, L = LEFT, F = FRONT, Ba = BACK
-// 2D:   0 - TR, 1 - BR, 2 - BL, 3 - TL
-// 3D:   0 - TRF, 1 - TRBa, 2 - TLBa, 3 - TLF, 4 - BRF, 5 - BRBa, 6 - BLBa, 7 - BLF
-// dx: dx_i, dx_ip1,...,dy_i, dy_ip1,...
-const extern int str2aschild[2][8];
-const extern double dx_vec[2][3*8];
-const extern int child_id_switch[N_CHILDREN];
-extern int child_nbrs[2][8*27];
-extern int child_nbrs_I[2][8*27];
-extern int advancement_ids[2][27*27];
-extern int interp_ids[2][8*8];
-extern ufloat_t interp_coeffs[2][(8*8)*8];
-
-// Grid data (relegated to init_grid_data.cu).
-extern const double init_grid_x[Nx2];
-extern const double init_grid_y[Nx2];
 
 //
   // ========================
@@ -303,32 +282,43 @@ class Mesh
 	int		*cells_ID_mask[N_DEV];
 	
 	//! Array of cell-centered density distribution functions (DDFs).
-	///< Stores the @ref l_dq density distribution functions in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
+	///< Stores the @ref N_Q density distribution functions in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
 	ufloat_t 	*cells_f_F[N_DEV];
 	
 #if (S_TYPE==0)
 	//! Temporary storage for DDF updates.
-	//! Stores the @ref l_dq temporary density distribution functions required during solver updates in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
+	//! Stores the @ref N_Q temporary density distribution functions required during solver updates in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
 	ufloat_t 	*cells_f_Fs[N_DEV];
 #endif
 	
+	//! Probed solution field at tn.
+	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
+	ufloat_t	*cells_f_U_probed_tn[N_DEV];
+	
+	//! Probed solution field at tn-dt.
+	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
+	ufloat_t	*cells_f_U_mean[N_DEV];
+	
 	//! Array of cell-centered macroscopic properties.
 	//! For the Lattice Boltzmann solver, this array stores density and up to three components velocity in a structure of arrays format (i.e. rho: c0, c1, c2,..., u: c0, c1, c2,.... and so on).
-	ufloat_t 	*cells_f_U[N_DEV];
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t 	*cells_f_U[N_DEV];
 	
 	//! Array of cell-centered vorticity magnitude.
-	ufloat_t 	*cells_f_W[N_DEV];
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t 	*cells_f_W[N_DEV];
 	
 	//! Array of cell-block spatial coordinates.
 	//! Stores the coordinate of the lower bottom-left corner of the cell-block in a structure of arrays format (i.e. x: cb0, cb1, cb2,..., y: cb0, cb1, cb2,... and so on).
 	ufloat_t 	*cblock_f_X[N_DEV];
 	
 	//! Array of IDs indicating whether index block participates in inteperpolation or averaging.
-	//! Stores an indicator integer (0 - inactive, 1 - active) indicating whether or not the current cell-block is active in interpolation or averaging.
+	//! Stores an indicator integer (0 - inactive, 1 - active) indicating whether or not the current cell-block is active in interpolation / averaging.
 	int		*cblock_ID_mask[N_DEV];
 	
 	//! Array of cell-block child IDs.
 	//! Stores the IDs of children of cell-blocks in a structure of arrays format (i.e. ID of child 0: cb0, cb1, cb2,..., ID of child 1: cb0, cb1, cb2,... and so on). IDs are only valid when non-negative, otherwise, they take on the value @ref N_SKIPID which is negative and indicates that a process involving this (non-existant) child should be skipped.
+	//! [DEPRECATED] Currently unused, will likely remove.
 	//int 		*cblock_ID_child[N_DEV];
 	
 	//! Array of cell-block neighbor IDs.
@@ -338,6 +328,9 @@ class Mesh
 	//! Array of cell-block neighbor's child IDs.
 	//! Stores the IDs of the first child (of zero-child-index) of neighboring cell-blocks in a structure of arrays format (i.e. ID of child 0: cb0, cb1, cb2,..., ID of child 1: cb0, cb1, cb2,... and so on). Non-negative values indicate a valid child cell-block. Values equal to @ref N_SKIPID indicate that a process involving this (non-existant) child should be skipped.
 	int 		*cblock_ID_nbr_child[N_DEV];
+	
+	//! Array of cell-block Ids indicating near-boundary status (0 - not on a boundary, 1 - on a boundary).
+	int		*cblock_ID_onb[N_DEV];
 	
 	//! Array of cell-block refinement IDs.
 	//! Stores the refinement ID for cell-blocks which indicate status during mesh updates. Values are defined by macros V_REF_ID_....
@@ -350,8 +343,15 @@ class Mesh
 	//! Stores the IDs of active cell-blocks, classified among the possible grid hierarchy levels with an array for each level.
 	int		*id_set[N_DEV][MAX_LEVELS];
 	
+	//! Array of coarse cell-block Ids marked for probing.
+	//! Stores the Ids for coarse cell-blocks that are to be probed and still valid (i.e. in interior of domain).
+	int		*id_set_probed[N_DEV];
+	
 	//! Array of active cell-block counts.
 	int		n_ids[N_DEV][MAX_LEVELS+1];
+	
+	//! Probed cell-block counter.
+	int		n_ids_probed[N_DEV];
 	
 	//! Array of largest cell-block IDs per grid level.
 	//! Stores the maximum cell-block ID on a grid level. The element with index @ref MAX_LEVELS represents the largest ID in the array and is used to identify the limit of access in the data arrays (saves time when I don't need to go through all possible cell-cblocks).
@@ -372,11 +372,13 @@ class Mesh
 	
 	//! Temporary array of particle velocity vectors in selected floating-point precision.
 	//! Used to convert particle velocity vectors to the floating-point precision format fixed by @ref N_PRECISION before moving to the GPU.
-	ufloat_t	*c_F;
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t	*c_F;
 	
 	//! Temporary array of Gauss-Hermite weights in selected floating-point precision.
 	//! Used to convert Gauss-Hermite weights to the floating-point precision format fixed by @ref N_PRECISION before moving to the GPU.
-	ufloat_t	*w_F;
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t	*w_F;
 	
 	//! [DEPRECATED] Can't remember what this is for.
 	int		*pb_adjusted;
@@ -407,10 +409,12 @@ class Mesh
 #endif
 	
 	//! GPU counterpart of @ref cells_f_U.
-	ufloat_t 	*c_cells_f_U[N_DEV];
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t 	*c_cells_f_U[N_DEV];
 	
 	//! GPU counterpart of @ref cells_f_W.
-	ufloat_t 	*c_cells_f_W[N_DEV];
+	//! [DEPRECATED] Currently unused, will likely remove.
+	//ufloat_t 	*c_cells_f_W[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_f_X.
 	ufloat_t 	*c_cblock_f_X[N_DEV];
@@ -419,6 +423,7 @@ class Mesh
 	int		*c_cblock_ID_mask[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_child.
+	//! [DEPRECATED] Currently unused, will likely remove.
 	//int 		*c_cblock_ID_child[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_nbr.
@@ -426,6 +431,9 @@ class Mesh
 	
 	//! GPU counterpart of @ref cblock_ID_nbr_child.
 	int 		*c_cblock_ID_nbr_child[N_DEV];
+	
+	//! GPU counterpart of @ref cblock_ID_onb.
+	int		*c_cblock_ID_onb[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_ref.
 	int 		*c_cblock_ID_ref[N_DEV];
@@ -454,9 +462,9 @@ class Mesh
 	//! A Thrust pointer-cast of the device array @ref c_cblock_level.
 	thrust::device_ptr<int> c_cblock_level_dptr[N_DEV];
 
-	ufloat_t	*c_w[N_DEV];		///< Copy of Gauss-Hermite weights from @ref lbm.h stored in GPU memory.
-	ufloat_t	*c_c[N_DEV];		///< Copy of particle vector vectors from @ref lbm.h stored in GPU memory.
-	int		*c_pb[N_DEV];		///< Copy of opposite-velocity-vector indices from @ref lbm.h stored in GPU memory.
+	//ufloat_t	*c_w[N_DEV];		///< Copy of Gauss-Hermite weights from @ref lbm.h stored in GPU memory. [DEPRECATED]
+	//ufloat_t	*c_c[N_DEV];		///< Copy of particle vector vectors from @ref lbm.h stored in GPU memory. [DEPRECATED]
+	//int		*c_pb[N_DEV];		///< Copy of opposite-velocity-vector indices from @ref lbm.h stored in GPU memory. [DEPRECATED]
 		
 	double	*c_mat_interp[N_DEV];	///< Copy of interpolation matrix (auto-selected based on @ref N_DIM).
 	double	*c_mat_fd[N_DEV];	///< Copy of finite-difference matrix (auto-selected based on @ref N_DIM).
@@ -468,6 +476,35 @@ class Mesh
 	  // === Public Member Functions: ===
 	  // ================================
 	//
+	
+	//! Update the mean velocity vectors at the coarsest level. Most relevant for LES simulations for comparison with reference data.
+	/*! Updates the time average for velocity data on the coarsest level.
+            @param i_dev is the ID of the device to be processed.
+	*/
+	int		M_UpdateMeanVelocities(int i_dev, int N_iters_ave);
+	
+	//! Print forces along and perpendicular to flow direction to a text file for the flow-past-square-cylinder case studies. This is a temporary function for the manuscript, will be refined later.
+	/*! Checks neighbors on the coarsest level and computes forces via momentum exchange algorithm.
+            @param i_dev is the ID of the device to be processed.
+            @param out is the target file for output.
+	*/
+	int		M_PrintForces(int i_dev, int L, std::ofstream *out);
+	
+	//! Checks convergence according to probe properties @N_PROBE and @N_PROBE_FREQ.
+	/*! Checks convergence of the solver accroding to a fixed set of probed locations.
+            @param i_dev is the ID of the device to be processed.
+	*/
+	ufloat_t	M_CheckConvergence(int i_dev);
+	
+	//! Computes macroscopic properties from DDFs retrieved from GPU memory. Intermediate step in @M_Print routine.
+	/*! Prints the mesh using VTK's hierarchical box format (.vthb).
+            @param i_dev is the ID of the device to be processed.
+            @param i_kap is the ID of the cell-block whose properties are being computed.
+            @param dx_L is the spatial step size in the block.
+	    @param out is the output array storing the macroscopic properties for all cells in a single cell-block.
+	    @param out2 is the output array storing the y+ values for all cells in a single cell-block (if @S_LES is 1).
+	*/
+	int		M_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out, double *out2);
 	
 	//! Print the mesh.
 	/*! Prints the mesh using VTK's hierarchical box format (.vthb).
@@ -501,20 +538,28 @@ class Mesh
 	*/
 	int		M_RefineAndCoarsenCells(int var, ufloat_t *scale_vec, std::ofstream *file);
 	
+	int		M_Interpolate_Linear_d2q9(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int		M_Interpolate_Linear_d3q19(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int		M_Interpolate_Linear_d3q27(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
 	//! Interpolate values between grid levels.
 	/*! @param i_dev is the ID of the device to be processed.
 	    @param L is the level on which interpolant is being computed. L+1 is the level on which computed values lie.
 	    @param var is an indicator variable (0 - uniformly distribute @ref c_cells_f_F, 1 - uniformly distribute @ref c_cells_f_Fs, 2 - cubic interpolation of @ref c_cells_f_F, 3 - cubic interpolation of @ref c_cells_f_Fs, 4 - cubic interpolation of @ref c_cells_f_F to newly-added cell-blocks).
 	    @param Cscale is the scaling factor (mainly for the LBM solver).
 	*/
-	int		M_Interpolate(int i_dev, int L, int var, ufloat_t Cscale=0);
+	int		M_Interpolate(int i_dev, int L, int var, ufloat_t Cscale=0, ufloat_t Cscale2=0);
+	//int		M_Interpolate_Cubic(int i_dev, int L, int var, ufloat_t Cscale=0);
+	//int		M_Interpolate_Cubic_Explicit(int i_dev, int L, int var, ufloat_t Cscale=0);
 	
+	int		M_Average_d2q9(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int		M_Average_d3q19(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int		M_Average_d3q27(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
 	//! Average between grid levels.
 	/*! @param i_dev is the ID of the device to be processed.
 	    @param L is the level on which average is being computed. L+1 is the level on which retrieved values lie.
 	    @param var is an indicator variable (0 - average @ref c_cells_f_F, 1 - average @ref c_cells_f_Fs).
 	*/
-	int		M_Average(int i_dev, int L, int var, ufloat_t Cscale=0);
+	int		M_Average(int i_dev, int L, int var, ufloat_t Cscale=0, ufloat_t Cscale2=0);
 	
 	//! [DEBUG] Modify specific values in data arrays on the GPU.
 	//! @param var is an indicator for the subroutine to apply.
@@ -567,9 +612,9 @@ class Mesh
 		// Get free and total memory from GPU(s). Get max. no. cells and round to nearest 1024.
 		cudaMemGetInfo(&free_t, &total_t);
 		V_t_bytes = std::ceil( 
-			sizeof(int)*(1) + sizeof(ufloat_t)*(l_dq + (S_TYPE==0?l_dq:0) + 1+N_DIM+1) + 
-			(sizeof(float)*(N_DIM) + sizeof(int)*(2*l_dq_max + 1+1+1) + 
-			sizeof(int)*(2*l_dq_max + 10)
+			sizeof(int)*(1) + sizeof(ufloat_t)*(N_Q + (S_TYPE==0?N_Q:0) + 1) + 
+			(sizeof(float)*(N_DIM) + sizeof(int)*(2*N_Q_max + 1+1+1) + 
+			sizeof(int)*(2*N_Q_max + 10)
 		)/(double)(M_CBLOCK));
 		n_maxcells = (long int)free_t*M_frac / V_t_bytes;
 		n_maxcells = ((n_maxcells + M_maxcells_roundoff/2) / M_maxcells_roundoff) * M_maxcells_roundoff;
@@ -588,16 +633,17 @@ class Mesh
 		{
 			// Allocate memory for pointers.
 			cells_ID_mask[i_dev] = new int[n_maxcells]{1};
-			cells_f_F[i_dev] = new ufloat_t[n_maxcells*l_dq]{0};
+			cells_f_F[i_dev] = new ufloat_t[n_maxcells*N_Q]{0};
 #if (S_TYPE==0)
-			cells_f_Fs[i_dev] = new ufloat_t[n_maxcells*l_dq]{0};
+			cells_f_Fs[i_dev] = new ufloat_t[n_maxcells*N_Q]{0};
 #endif
-			cells_f_U[i_dev] = new ufloat_t[n_maxcells*N_U]{0};
-			cells_f_W[i_dev] = new ufloat_t[n_maxcells]{0};
+			//cells_f_U[i_dev] = new ufloat_t[n_maxcells*N_U]{0}; [DEPRECATED]
+			//cells_f_W[i_dev] = new ufloat_t[n_maxcells]{0}; [DEPRECATED]
 			cblock_f_X[i_dev] = new ufloat_t[n_maxcblocks*N_DIM]{0};
 			cblock_ID_mask[i_dev] = new int[n_maxcblocks]{0};
-			cblock_ID_nbr[i_dev] = new int[n_maxcblocks*l_dq_max]{0};
-			cblock_ID_nbr_child[i_dev] = new int[n_maxcblocks*l_dq_max]{0};
+			cblock_ID_nbr[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
+			cblock_ID_nbr_child[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
+			cblock_ID_onb[i_dev] = new int[n_maxcblocks]{0};
 			cblock_ID_ref[i_dev] = new int[n_maxcblocks]{0};
 			cblock_level[i_dev] = new int[n_maxcblocks]{0};
 			
@@ -610,9 +656,17 @@ class Mesh
 				id_set[i_dev][L] = new int[n_maxcblocks];
 				n_ids[i_dev][L] = 0;
 			}
+			gap_set[i_dev] = new int[n_maxcblocks];
+			n_coarsecblocks = (Nxi[0]*Nxi[1]*Nxi[2])/M_CBLOCK;
 
+			// Probe arrays.
+			id_set_probed[i_dev] = new int[n_coarsecblocks];
+			n_ids_probed[i_dev] = 0;
+			
+			/*
 			// Initialize id_set and id_max to structured grid.
-			n_ids[i_dev][0] = n_coarsecblocks = (N_DIM==2 ? Nx2 : Nx3)/M_CBLOCK;
+			// [DEPRECATED] n_ids[i_dev][0] = n_coarsecblocks = (N_DIM==2 ? Nx2 : Nx3)/M_CBLOCK;
+			n_ids[i_dev][0] = n_coarsecblocks = (Nxi[0]*Nxi[1]*Nxi[2])/M_CBLOCK;
 			id_max[i_dev][0] = id_max[i_dev][MAX_LEVELS] = n_ids[i_dev][0];
 			for (int xi = 0; xi < n_ids[i_dev][0]; xi++)
 				id_set[i_dev][0][xi] = xi;
@@ -622,6 +676,7 @@ class Mesh
 			for (int xi = 0; xi < n_maxcblocks-n_ids[i_dev][0]; xi++)
 				gap_set[i_dev][xi] = (n_maxcblocks-1) - xi;
 			n_gaps[i_dev] = n_maxcblocks-n_ids[i_dev][0];
+			*/
 			
 			for (int L = 0; L < MAX_LEVELS; L++)
 				dxf_vec[L] = (ufloat_t)(dx / pow(2.0, (ufloat_t)L));
@@ -632,16 +687,18 @@ class Mesh
 
 		
 		
-		// Build LBM arrays (with casting for FP32) for copying to devices.
+		// Build LBM arrays (with casting for FP32) for copying to devices. [DEPRECATED]
+		/*
 		std::cout << "[-]\tBuilding LBM arrays in correction floating-point precision...\n";
-		c_F = new ufloat_t[l_dq_max*N_DIM];
-		w_F = new ufloat_t[l_dq_max*N_DIM];
-		for (int p = 0; p < l_dq_max; p++)
+		c_F = new ufloat_t[N_Q_max*N_DIM];
+		w_F = new ufloat_t[N_Q_max*N_DIM];
+		for (int p = 0; p < N_Q_max; p++)
 		{
 			w_F[p] = (ufloat_t)w[N_DIMc][p];
 			for (int d=  0; d < N_DIM; d++)
-				c_F[p + d*l_dq_max] = (ufloat_t)c[N_DIMc][p + d*l_dq_max];
+				c_F[p + d*N_Q_max] = (ufloat_t)c[N_DIMc][p + d*N_Q_max];
 		}
+		*/
 		
 		
 		
@@ -656,16 +713,17 @@ class Mesh
 
 			// Cell data.
 			gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
-			gpuErrchk( cudaMalloc((void **)&c_cells_f_F[i_dev], n_maxcells*l_dq*sizeof(ufloat_t)) );
+			gpuErrchk( cudaMalloc((void **)&c_cells_f_F[i_dev], n_maxcells*N_Q*sizeof(ufloat_t)) );
 #if (S_TYPE==0)
-			gpuErrchk( cudaMalloc((void **)&c_cells_f_Fs[i_dev], n_maxcells*l_dq*sizeof(ufloat_t)) );
+			gpuErrchk( cudaMalloc((void **)&c_cells_f_Fs[i_dev], n_maxcells*N_Q*sizeof(ufloat_t)) );
 #endif
-			gpuErrchk( cudaMalloc((void **)&c_cells_f_U[i_dev], n_maxcells*N_U*sizeof(ufloat_t)) );
-			gpuErrchk( cudaMalloc((void **)&c_cells_f_W[i_dev], n_maxcells*sizeof(ufloat_t)) );
+			//gpuErrchk( cudaMalloc((void **)&c_cells_f_U[i_dev], n_maxcells*N_U*sizeof(ufloat_t)) ); [DEPRECATED]
+			//gpuErrchk( cudaMalloc((void **)&c_cells_f_W[i_dev], n_maxcells*sizeof(ufloat_t)) ); [DEPRECATED]
 			gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_t)) );
 			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*sizeof(int)) );
-			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*l_dq_max*sizeof(int)) );
-			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr_child[i_dev], n_maxcblocks*l_dq_max*sizeof(int)) );
+			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
+			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr_child[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
+			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb[i_dev], n_maxcblocks*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_cblock_ID_ref[i_dev], n_maxcblocks*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_cblock_level[i_dev], n_maxcblocks*sizeof(int)) );
 			
@@ -675,9 +733,9 @@ class Mesh
 			gpuErrchk( cudaMalloc((void **)&c_gap_set[i_dev], n_maxcblocks*sizeof(int)) );
 			
 			// LBM stuff.
-			gpuErrchk( cudaMalloc((void **)&c_w[i_dev], l_dq_max*sizeof(ufloat_t)) );
-			gpuErrchk( cudaMalloc((void **)&c_c[i_dev], l_dq_max*N_DIM*sizeof(ufloat_t)) );
-			gpuErrchk( cudaMalloc((void **)&c_pb[i_dev], l_dq_max*sizeof(int)) );
+			//gpuErrchk( cudaMalloc((void **)&c_w[i_dev], N_Q_max*sizeof(ufloat_t)) ); [DEPRECATED]
+			//gpuErrchk( cudaMalloc((void **)&c_c[i_dev], N_Q_max*N_DIM*sizeof(ufloat_t)) ); [DEPRECATED]
+			//gpuErrchk( cudaMalloc((void **)&c_pb[i_dev], N_Q_max*sizeof(int)) ); [DEPRECATED]
 			
 			// Interpolation and averaging.
 			gpuErrchk( cudaMalloc((void **)&c_mat_interp[i_dev], M_CBLOCK*M_CBLOCK*N_CHILDREN*sizeof(double)) );
@@ -689,13 +747,13 @@ class Mesh
 			gpuErrchk( cudaMalloc((void **)&c_tmp_3[i_dev], n_maxcblocks*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_tmp_4[i_dev], n_maxcblocks*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_tmp_5[i_dev], n_maxcblocks*sizeof(int)) );
-			gpuErrchk( cudaMalloc((void **)&c_tmp_6[i_dev], n_maxcblocks*l_dq_max*sizeof(int)) );
-			gpuErrchk( cudaMalloc((void **)&c_tmp_7[i_dev], n_maxcblocks*l_dq_max*sizeof(int)) );
+			gpuErrchk( cudaMalloc((void **)&c_tmp_6[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
+			gpuErrchk( cudaMalloc((void **)&c_tmp_7[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_tmp_8[i_dev], n_maxcblocks*sizeof(int)) );
 			gpuErrchk( cudaMalloc((void **)&c_tmp_counting_iter[i_dev], n_maxcblocks*sizeof(int)) );
 
 			// Thrust pointer casts.
-			//c_cells_f_W_dptr[i_dev] = thrust::device_pointer_cast(c_cells_f_W[i_dev]);
+			//c_cells_f_W_dptr[i_dev] = thrust::device_pointer_cast(c_cells_f_W[i_dev]); [DEPRECATED]
 			for (int L = 0; L < MAX_LEVELS; L++)
 				c_id_set_dptr[i_dev][L] =  thrust::device_pointer_cast(c_id_set[i_dev][L]);
 			c_gap_set_dptr[i_dev] = thrust::device_pointer_cast(c_gap_set[i_dev]);
@@ -717,9 +775,9 @@ class Mesh
 				// Reset active IDs to 0.
 			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_mask[i_dev], 0);
 				// Reset nbr IDs to N_SKIPID.
-			Cu_ResetToValue<<<(M_BLOCK+l_dq_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(l_dq_max*n_maxcblocks, c_cblock_ID_nbr[i_dev], N_SKIPID);
+			Cu_ResetToValue<<<(M_BLOCK+N_Q_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(N_Q_max*n_maxcblocks, c_cblock_ID_nbr[i_dev], N_SKIPID);
 				// Reset nbr-child IDs to N_SKIPID.
-			Cu_ResetToValue<<<(M_BLOCK+l_dq_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(l_dq_max*n_maxcblocks, c_cblock_ID_nbr_child[i_dev], N_SKIPID);
+			Cu_ResetToValue<<<(M_BLOCK+N_Q_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(N_Q_max*n_maxcblocks, c_cblock_ID_nbr_child[i_dev], N_SKIPID);
 				// Reset refinement IDs to 'unrefined'.
 			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_ref[i_dev], V_REF_ID_INACTIVE);
 				// Reset levels to 0.
@@ -729,12 +787,12 @@ class Mesh
 			
 			// Copy.
 				// LBM stuff.
-			gpuErrchk( cudaMemcpy(c_w[i_dev], w_F, l_dq_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );
-			gpuErrchk( cudaMemcpy(c_c[i_dev], c_F, l_dq_max*N_DIM*sizeof(ufloat_t), cudaMemcpyHostToDevice) );
-			gpuErrchk( cudaMemcpy(c_pb[i_dev], pb[N_DIMc], l_dq_max*sizeof(int), cudaMemcpyHostToDevice) );
+			//gpuErrchk( cudaMemcpy(c_w[i_dev], w_F, N_Q_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) ); [DEPRECATED]
+			//gpuErrchk( cudaMemcpy(c_c[i_dev], c_F, N_Q_max*N_DIM*sizeof(ufloat_t), cudaMemcpyHostToDevice) ); [DEPRECATED]
+			//gpuErrchk( cudaMemcpy(c_pb[i_dev], pb[N_DIMc], N_Q_max*sizeof(int), cudaMemcpyHostToDevice) ); [DEPRECATED]
 				// ID sets.
-			gpuErrchk( cudaMemcpy(c_id_set[i_dev][0], id_set[i_dev][0], n_ids[i_dev][0]*sizeof(int), cudaMemcpyHostToDevice) );
-			gpuErrchk( cudaMemcpy(c_gap_set[i_dev], gap_set[i_dev], n_gaps[i_dev]*sizeof(int), cudaMemcpyHostToDevice) );
+			//gpuErrchk( cudaMemcpy(c_id_set[i_dev][0], id_set[i_dev][0], n_ids[i_dev][0]*sizeof(int), cudaMemcpyHostToDevice) );
+			//gpuErrchk( cudaMemcpy(c_gap_set[i_dev], gap_set[i_dev], n_gaps[i_dev]*sizeof(int), cudaMemcpyHostToDevice) );
 
 
 
@@ -750,7 +808,7 @@ class Mesh
 
 		
 		
-		// Set up coarse cells on all GPUs.
+		// Set up coarse grid on all GPUs.
 		std::cout << "[-]\tInitializing course grid..." << std::endl;
 		M_Init();
 	}
@@ -766,18 +824,50 @@ class Mesh
 		// Free all the memory allocated on the GPU.
 		for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 		{
+			delete[] cells_ID_mask[i_dev];
+			delete[] cells_f_F[i_dev];
+#if (S_TYPE==0)
+			delete[] cells_f_Fs[i_dev];
+#endif
+			delete[] cblock_f_X[i_dev];
+			delete[] cblock_ID_mask[i_dev];
+			delete[] cblock_ID_nbr[i_dev];
+			delete[] cblock_ID_nbr_child[i_dev];
+			delete[] cblock_ID_onb[i_dev];
+			delete[] cblock_ID_ref[i_dev];
+			delete[] cblock_level[i_dev];
+			
+			delete[] tmp_1[i_dev];
+			delete[] tmp_2[i_dev];
+			
+			delete[] cells_f_U_probed_tn[i_dev];
+			delete[] cells_f_U_mean[i_dev];
+			
+			// Allocate memory for id_set and reset to 0.
+			for (int L = 0; L < MAX_LEVELS; L++)
+				delete[] id_set[i_dev][L];
+			delete[] gap_set[i_dev];
+
+			// Probe arrays.
+			delete[] id_set_probed[i_dev];
+		}
+		
+		// Free all the memory allocated on the GPU.
+		for (int i_dev = 0; i_dev < N_DEV; i_dev++)
+		{
 			// Cell data.
 			gpuErrchk( cudaFree(c_cells_ID_mask[i_dev]) );
 			gpuErrchk( cudaFree(c_cells_f_F[i_dev]) );
 #if (S_TYPE==0)
 			gpuErrchk( cudaFree(c_cells_f_Fs[i_dev]) );
 #endif
-			gpuErrchk( cudaFree(c_cells_f_U[i_dev]) );
-			gpuErrchk( cudaFree(c_cells_f_W[i_dev]) );
+			//gpuErrchk( cudaFree(c_cells_f_U[i_dev]) ); [DEPRECATED]
+			//gpuErrchk( cudaFree(c_cells_f_W[i_dev]) ); [DEPRECATED]
 			gpuErrchk( cudaFree(c_cblock_f_X[i_dev]) );
 			gpuErrchk( cudaFree(c_cblock_ID_mask[i_dev]) );
 			gpuErrchk( cudaFree(c_cblock_ID_nbr[i_dev]) );
 			gpuErrchk( cudaFree(c_cblock_ID_nbr_child[i_dev]) );
+			gpuErrchk( cudaFree(c_cblock_ID_onb[i_dev]) );
 			gpuErrchk( cudaFree(c_cblock_ID_ref[i_dev]) );
 			gpuErrchk( cudaFree(c_cblock_level[i_dev]) );
 			
@@ -787,9 +877,9 @@ class Mesh
 			gpuErrchk( cudaFree(c_gap_set[i_dev]) );
 			
 			// LBM stuff.
-			gpuErrchk( cudaFree(c_w[i_dev]) );
-			gpuErrchk( cudaFree(c_c[i_dev]) );
-			gpuErrchk( cudaFree(c_pb[i_dev]) );
+			//gpuErrchk( cudaFree(c_w[i_dev]) ); [DEPRECATED]
+			//gpuErrchk( cudaFree(c_c[i_dev]) ); [DEPRECATED]
+			//gpuErrchk( cudaFree(c_pb[i_dev]) ); [DEPRECATED]
 			
 			// Interpolation and averaging.
 			gpuErrchk( cudaFree(c_mat_interp[i_dev]) );
