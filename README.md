@@ -11,7 +11,7 @@ The code uses the VTK library for output; an vtkOverlappingAMR dataset is used d
 
 The manuscript detailing the GPU-native algorithm is under review. Validation was conducted with the lid-driven cavity in 2D and 3D and flow past a square cylinder in 2D. Reynolds number is specified by modification of the kinematic viscosity during calculation of the relaxation rate. This allows for specification of the following (in the cppspec.h file): u_lid (lid velocity), Re_c (Reynolds number), L_c (characteristic length, usually left as 1.0 m). If any of these are modified, the program must be recompiled to take effect. Lid velocity should be left small to ensure validity of the Lattice Boltzmann simulation (keep in mind $\text{Ma} = u_{\text{lid}} / c_s$).
 
-The "confmake" file defines compilation options and runs the Makefile automatically. The suggested procedure is detailed below:
+The "confmake.sh" file defines compilation options and runs the Makefile automatically. The suggested procedure is detailed below:
 1. Define initial and boundary conditions in "src/generators/input/".
 2. Choose the velocity set by modifying N_Q (9=D2Q9, 19=D3Q19, 27=D3Q27). Number of dimensions is automatically adjusted.
 3. Choose level of precision by modifying N_PRECISION (0=single-precision, 1=double-precision).
@@ -33,7 +33,7 @@ The "confmake" file defines compilation options and runs the Makefile automatica
     e. P_SHOW_ADVANCE shows the recursive calls on the console for debugging, P_PRINT_ADVANCE is unused.
 12. If the initial and/or boundary conditions were modified, N_REGEN should be set to 1 so that the code generators are called before compilation. Make sure Octave is available in the file path.
 
-Once all of these steps have been checked, simply run `./confmake` from the 'src' directory. This will produce an executable 'a.out' which is executed with `./a.out`. Once the simulation is terminated, the solution is printed and can be viewed with software such as Paraview (make sure that your choice of software can read .vthb files).
+Once all of these steps have been checked, simply run `./confmake.sh` from the 'src' directory. This will produce an executable 'a.out' which is executed with `./a.out`. Once the simulation is terminated, the solution is printed and can be viewed with software such as Paraview (make sure that your choice of software can read .vthb files).
 
 For those interested in modifying the domain to include obstacles, this needs to be done manually in the "mesh/init_grid_data.cu" file for now. Locate the condition that defines the square cylinder (line 47) and modify as needed. Make sure that N_CASE is set to 1 so that it's activated.
 
