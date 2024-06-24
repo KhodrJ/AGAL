@@ -83,8 +83,10 @@ int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, i
 								tmp_data[Id + 4*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 4*M_CBLOCK];
 								tmp_data[Id + 5*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 5*M_CBLOCK];
 								tmp_data[Id + 6*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 6*M_CBLOCK];
-								tmp_data[Id + 7*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = L;
-								tmp_data[Id + 8*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = i_kap;
+								tmp_data[Id + 7*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = sqrt(out_u[kap_i + 1*M_CBLOCK]*out_u[kap_i + 1*M_CBLOCK] + out_u[kap_i + 2*M_CBLOCK]*out_u[kap_i + 2*M_CBLOCK] + out_u[kap_i + 3*M_CBLOCK]*out_u[kap_i + 3*M_CBLOCK]);
+								tmp_data[Id + 8*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = sqrt(out_u[kap_i + 4*M_CBLOCK]*out_u[kap_i + 4*M_CBLOCK] + out_u[kap_i + 5*M_CBLOCK]*out_u[kap_i + 5*M_CBLOCK] + out_u[kap_i + 6*M_CBLOCK]*out_u[kap_i + 6*M_CBLOCK]);
+								tmp_data[Id + 9*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = L;
+								tmp_data[Id + 10*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = i_kap;
 							}
 						}
 					}
@@ -119,7 +121,7 @@ int Mesh::M_Print(int i_dev, int iter)
 	for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++) Is[Ld] = 0;
 	
 	// Cell data arrays.
-	int n_data = 3+3+1+1+1;
+	int n_data = 3+3+1+1+1+1+1;
 	double *tmp_data = new double[n_data*vol];
 	double *tmp_data_b = new double[n_data*vol];
 	for (long int p = 0; p < n_data*vol; p++) tmp_data[p] = 0.0;
@@ -138,6 +140,16 @@ int Mesh::M_Print(int i_dev, int iter)
 	cell_data_vorticity->SetName("Vorticity");
 	cell_data_vorticity->SetNumberOfComponents(3);
 	cell_data_vorticity->SetNumberOfTuples(vol);
+		// Velocity Magnitude.
+	vtkNew<vtkDoubleArray> cell_data_velmag;
+	cell_data_velmag->SetName("Velocity Magnitude");
+	cell_data_velmag->SetNumberOfComponents(1);
+	cell_data_velmag->SetNumberOfTuples(vol);
+		// Vorticity Magnitude.
+	vtkNew<vtkDoubleArray> cell_data_vortmag;
+	cell_data_vortmag->SetName("Vorticity Magnitude");
+	cell_data_vortmag->SetNumberOfComponents(1);
+	cell_data_vortmag->SetNumberOfTuples(vol);
 		// AMR Level.
 	vtkNew<vtkDoubleArray> cell_data_level;
 	cell_data_level->SetName("AMR Level");
@@ -178,7 +190,7 @@ int Mesh::M_Print(int i_dev, int iter)
 			for (int I = 1; I < Nxi_f[0]-1; I++)
 			{
 				int kap = (I) + Nxi_f[0]*(J);
-				for (int p = 0; p < 7; p++)
+				for (int p = 0; p < 9; p++)
 				{
 					tmp_data_b[kap + p*vol] = (
 						tmp_data[(I+1) + Nxi_f[0]*(J) + p*vol] +
@@ -197,7 +209,7 @@ int Mesh::M_Print(int i_dev, int iter)
 				for (int I = 1; I < Nxi_f[0]-1; I++)
 				{
 					int kap = (I) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K);
-					for (int p = 0; p < 7; p++)
+					for (int p = 0; p < 9; p++)
 					{
 						tmp_data_b[kap + p*vol] = (
 							tmp_data[(I+1) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K) + p*vol] +
@@ -235,18 +247,28 @@ int Mesh::M_Print(int i_dev, int iter)
 			tmp_data[kap+ 5*vol],
 			tmp_data[kap+ 6*vol]
 		);
-		cell_data_level->SetTuple1(kap,
+		cell_data_velmag->SetTuple1(kap, 
 			tmp_data[kap+ 7*vol]
 		);
-		cell_data_blockid->SetTuple1(kap,
+		cell_data_vortmag->SetTuple1(kap, 
 			tmp_data[kap+ 8*vol]
+		);
+		cell_data_level->SetTuple1(kap,
+			tmp_data[kap+ 9*vol]
+		);
+		cell_data_blockid->SetTuple1(kap,
+			tmp_data[kap+ 10*vol]
 		);
 	}
 	
 	// Image data.
+		// Parameters and initialization.
 	double origin[3] = {0.0,0.0,0.0};
 	double spacing[3] = {dx_f, dx_f, dx_f};
 	vtkNew<vtkUniformGrid> grid;
+	vtkNew<vtkCellDataToPointData> cell_to_points;
+	vtkNew<vtkContourFilter> contour;
+		// Set up image data grid.
 	grid->Initialize();
 	grid->SetOrigin(origin);
 	grid->SetSpacing(spacing);
@@ -254,15 +276,68 @@ int Mesh::M_Print(int i_dev, int iter)
 	grid->GetCellData()->AddArray(cell_data_density);
 	grid->GetCellData()->AddArray(cell_data_velocity);
 	grid->GetCellData()->AddArray(cell_data_vorticity);
+	grid->GetCellData()->AddArray(cell_data_velmag);
+	grid->GetCellData()->AddArray(cell_data_vortmag);
 	grid->GetCellData()->AddArray(cell_data_level);
 	grid->GetCellData()->AddArray(cell_data_blockid);
 	
+	// Image data processing.
+		// Convert cell data to point data.
+	cell_to_points->SetInputData(grid);
+	cell_to_points->Update();
+		// Contour for vorticity magnitude.
+	cell_to_points->GetImageDataOutput()->GetPointData()->SetActiveScalars("Vorticity Magnitude");
+	contour->SetInputConnection(0, cell_to_points->GetOutputPort(0));
+	contour->SetValue(0, 0.1);
+	
+	// Offscreen rendering.
+		// Setup offscreen rendering.
+	vtkNew<vtkNamedColors> colors;
+	vtkNew<vtkGraphicsFactory> graphics_factory;
+	graphics_factory->SetOffScreenOnlyMode(1);
+	graphics_factory->SetUseMesaClasses(1);
+		// Create mapper.
+	vtkNew<vtkPolyDataMapper> mapper;
+	mapper->SetInputConnection(contour->GetOutputPort(0));
+		// Create actor.
+	vtkNew<vtkActor> actor;
+	actor->SetMapper(mapper);
+	actor->GetProperty()->SetColor(colors->GetColor3d("White").GetData());
+		// Create renderer.
+	vtkNew<vtkRenderer> renderer;
+	vtkNew<vtkRenderWindow> renderWindow;
+	renderWindow->SetOffScreenRendering(1);
+	renderWindow->AddRenderer(renderer);
+		// Create camera.
+	double cam_pos[3] = {1.8, -2.5, 1.25};
+	//double cam_view_up[3] = {-0.066475, 0.21161, 0.975091};
+	double cam_view_up[3] = {0.0, 0.0, 1.0};
+	double cam_focal_point[3] = {0.5, 0.5, 0.5};
+	vtkNew<vtkCamera> camera;
+	renderer->SetActiveCamera(camera);
+	camera->SetPosition(cam_pos);
+	camera->SetViewUp(cam_view_up);
+	camera->SetFocalPoint(cam_focal_point);
+		// Add actor to scene and render.
+	renderer->AddActor(actor);
+	renderer->SetBackground(colors->GetColor3d("SlateGray").GetData());
+	renderWindow->Render();
+		// Print to PNG.
+	vtkNew<vtkWindowToImageFilter> windowToImageFilter;
+	windowToImageFilter->SetInput(renderWindow);
+	windowToImageFilter->Update();
+	vtkNew<vtkPNGWriter> photographer;
+	std::string photo_name = P_DIR_NAME + std::string("shot_") + std::to_string(iter+1) + ".png";
+	photographer->SetFileName(photo_name.c_str());
+	photographer->SetInputConnection(windowToImageFilter->GetOutputPort());
+	photographer->Write();
+	
 	// Write grid.
 	std::cout << "Finished building VTK dataset, writing..." << std::endl;
-	std::string fileName = P_DIR_NAME + std::string("out_") + std::to_string(iter+1) + ".vti";
+	std::string file_name = P_DIR_NAME + std::string("out_") + std::to_string(iter+1) + ".vti";
 	vtkNew<vtkXMLImageDataWriter> writer;
-	writer->SetInputData(grid);
-	writer->SetFileName(fileName.c_str());
+	writer->SetInputData(cell_to_points->GetImageDataOutput());
+	writer->SetFileName(file_name.c_str());
 	writer->Write();
 	std::cout << "Finished writing VTK dataset..." << std::endl;
 	

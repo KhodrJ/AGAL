@@ -112,10 +112,18 @@ LIBS = 	-lcuda \
 	-lvtksys-$(VTK_VER) \
 	-lvtkIOXML-$(VTK_VER) \
 	-lvtkCommonExecutionModel-$(VTK_VER) \
-	-lvtkFiltersHyperTree-$(VTK_VER) \
 	-lvtkFiltersCore-$(VTK_VER) \
+	-lvtkCommonMisc-$(VTK_VER) \
 	-lvtkIOCore-$(VTK_VER) \
-	-lvtkIOLegacy-$(VTK_VER)
+	-lvtkIOImage-$(VTK_VER) \
+	-lvtkIOLegacy-$(VTK_VER) \
+	-lvtkCommonColor-$(VTK_VER) \
+	-lvtkRenderingCore-$(VTK_VER) \
+	-lvtkRenderingContextOpenGL2-$(VTK_VER) \
+	-lvtkRenderingCore-$(VTK_VER) \
+	-lvtkRenderingFreeType-$(VTK_VER) \
+	-lvtkRenderingGL2PSOpenGL2-$(VTK_VER) \
+	-lvtkRenderingOpenGL2-$(VTK_VER)
 
 leftparen:=(
 rightparen:=)
