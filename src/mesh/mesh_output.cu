@@ -335,6 +335,9 @@ int Mesh::M_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out, 
 		
 		
 		
+		out[kap_i + 4*M_CBLOCK] = 0.0;
+		out[kap_i + 5*M_CBLOCK] = 0.0;
+		out[kap_i + 6*M_CBLOCK] = 0.0;
 #if (N_DIM==2)
 		// X
 		if (I_kap < Nbx-1)
@@ -440,7 +443,7 @@ int Mesh::M_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out, 
 	return 0;
 }
 
-int Mesh::M_Print(int i_dev, int iter)
+int Mesh::M_Print_VTHB(int i_dev, int iter)
 {
 	// New variables.
 	vtkNew<vtkOverlappingAMR> data;
@@ -610,7 +613,7 @@ int Mesh::M_Print(int i_dev, int iter)
 	
 	// Write the AMR object.
 	std::cout << "Finished building VTK dataset, writing..." << std::endl;
-	std::string fileName = P_DIR_NAME + std::string("out_") + std::to_string(iter) + ".vthb";
+	std::string fileName = P_DIR_NAME + std::string("out_") + std::to_string(iter+1) + ".vthb";
 	vtkNew<vtkXMLUniformGridAMRWriter> writer;
 	writer->SetInputData(data);
 	writer->SetFileName(fileName.c_str());
@@ -677,16 +680,12 @@ int Mesh::M_LoadToGPU()
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
 		int cblocks_id_max = id_max[i_dev][MAX_LEVELS];
-		int cells_id_max = id_max[i_dev][MAX_LEVELS]*M_CBLOCK;
+		long int cells_id_max = id_max[i_dev][MAX_LEVELS]*M_CBLOCK;
 
 
 		// Floating point arrays.
 		for (int p = 0; p < N_Q; p++)
 			gpuErrchk( cudaMemcpy(&c_cells_f_F[i_dev][p*n_maxcells], &cells_f_F[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );
-#if (S_TYPE==0)
-		for (int p = 0; p < N_Q; p++)
-			gpuErrchk( cudaMemcpy(&c_cells_f_Fs[i_dev][p*n_maxcells], &cells_f_Fs[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );
-#endif
 		for (int d = 0; d < N_DIM; d++)
 			gpuErrchk( cudaMemcpy(&c_cblock_f_X[i_dev][d*n_maxcblocks], &cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );	
 
@@ -719,16 +718,12 @@ int Mesh::M_RetrieveFromGPU()
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
 		int cblocks_id_max = id_max[i_dev][MAX_LEVELS];
-		int cells_id_max = id_max[i_dev][MAX_LEVELS]*M_CBLOCK;
+		long int cells_id_max = id_max[i_dev][MAX_LEVELS]*M_CBLOCK;
 
 
 		// Floating point arrays.
 		for (int p = 0; p < N_Q; p++)
 			gpuErrchk( cudaMemcpy(&cells_f_F[i_dev][p*n_maxcells], &c_cells_f_F[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyDeviceToHost) );
-#if (S_TYPE==0)
-		for (int p = 0; p < N_Q; p++)
-			gpuErrchk( cudaMemcpy(&cells_f_Fs[i_dev][p*n_maxcells], &c_cells_f_Fs[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyDeviceToHost) );
-#endif
 		for (int d = 0; d < N_DIM; d++)
 			gpuErrchk( cudaMemcpy(&cblock_f_X[i_dev][d*n_maxcblocks], &c_cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_t), cudaMemcpyDeviceToHost) );
 

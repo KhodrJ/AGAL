@@ -104,6 +104,8 @@ void Cu_Collide_d2q9
 				s_u[(I_kap+1)+(Nbx+2)*(5)] = 4*s_u[(I_kap+1)+(Nbx+2)*(4)] - 6*s_u[(I_kap+1)+(Nbx+2)*(3)] + 4*s_u[(I_kap+1)+(Nbx+2)*(2)] - s_u[(I_kap+1)+(Nbx+2)*(1)];
 				s_v[(I_kap+1)+(Nbx+2)*(5)] = 4*s_v[(I_kap+1)+(Nbx+2)*(4)] - 6*s_v[(I_kap+1)+(Nbx+2)*(3)] + 4*s_v[(I_kap+1)+(Nbx+2)*(2)] - s_v[(I_kap+1)+(Nbx+2)*(1)];
 			}
+			__syncthreads();
+
 			// Compute turbulent viscosity, storing S_{ij}^d in tmp_j, S_{ij} in tmp_k.
 			tmp_i = N_Pf(0.0);
 			tmp_j = N_Pf(0.0);
@@ -161,21 +163,6 @@ void Cu_Collide_d2q9
 					// p = 1
 				if ((I_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_1 = f_1 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap;
-						f_1 = -f_1 + N_Pf(2.0)*N_Pf(0.111111111111111)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_1 = f_1 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -185,21 +172,6 @@ void Cu_Collide_d2q9
 					// p = 5
 				if ((I_kap+1==Nbx) && (J_kap+1< Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap+v_kap;
-						f_5 = -f_5 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -209,21 +181,6 @@ void Cu_Collide_d2q9
 					// p = 8
 				if ((I_kap+1==Nbx) && (J_kap-1>= 0))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap-v_kap;
-						f_8 = -f_8 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -235,21 +192,6 @@ void Cu_Collide_d2q9
 					// p = 2
 				if ((J_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.000000000000000);
-						f_2 = f_2 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +v_kap;
-						f_2 = -f_2 + N_Pf(2.0)*N_Pf(0.111111111111111)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.000000000000000);
-						f_2 = f_2 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.000000000000000);
@@ -259,21 +201,6 @@ void Cu_Collide_d2q9
 					// p = 5
 				if ((I_kap+1< Nbx) && (J_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap+v_kap;
-						f_5 = -f_5 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -283,21 +210,6 @@ void Cu_Collide_d2q9
 					// p = 6
 				if ((I_kap-1>= 0) && (J_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap+v_kap;
-						f_6 = -f_6 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -309,21 +221,6 @@ void Cu_Collide_d2q9
 					// p = 3
 				if ((I_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_3 = f_3 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap;
-						f_3 = -f_3 + N_Pf(2.0)*N_Pf(0.111111111111111)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_3 = f_3 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -333,21 +230,6 @@ void Cu_Collide_d2q9
 					// p = 6
 				if ((I_kap-1==-1) && (J_kap+1< Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap+v_kap;
-						f_6 = -f_6 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -357,21 +239,6 @@ void Cu_Collide_d2q9
 					// p = 7
 				if ((I_kap-1==-1) && (J_kap-1>= 0))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap-v_kap;
-						f_7 = -f_7 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -383,21 +250,6 @@ void Cu_Collide_d2q9
 					// p = 4
 				if ((J_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.000000000000000);
-						f_4 = f_4 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -v_kap;
-						f_4 = -f_4 + N_Pf(2.0)*N_Pf(0.111111111111111)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.000000000000000);
-						f_4 = f_4 - N_Pf(2.0)*N_Pf(0.111111111111111)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.000000000000000);
@@ -407,21 +259,6 @@ void Cu_Collide_d2q9
 					// p = 7
 				if ((I_kap-1>= 0) && (J_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap-v_kap;
-						f_7 = -f_7 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -431,21 +268,6 @@ void Cu_Collide_d2q9
 					// p = 8
 				if ((I_kap+1< Nbx) && (J_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap-v_kap;
-						f_8 = -f_8 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -457,21 +279,6 @@ void Cu_Collide_d2q9
 					// p = 5
 				if ((I_kap+1==Nbx) && (J_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap+v_kap;
-						f_5 = -f_5 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_5 = f_5 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);
@@ -483,21 +290,6 @@ void Cu_Collide_d2q9
 					// p = 6
 				if ((I_kap-1==-1) && (J_kap+1==Nbx))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap+v_kap;
-						f_6 = -f_6 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_6 = f_6 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -509,21 +301,6 @@ void Cu_Collide_d2q9
 					// p = 7
 				if ((I_kap-1==-1) && (J_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = -u_kap-v_kap;
-						f_7 = -f_7 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(-0.050000000000000);
-						f_7 = f_7 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(-0.050000000000000);
@@ -535,21 +312,6 @@ void Cu_Collide_d2q9
 					// p = 8
 				if ((I_kap+1==Nbx) && (J_kap-1==-1))
 				{
-					if (nbr_kap_b == -1)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
-					if (nbr_kap_b == -2)
-					{
-						cdotu = +u_kap-v_kap;
-						f_8 = -f_8 + N_Pf(2.0)*N_Pf(0.027777777777778)*(N_Pf(1.0) + cdotu*cdotu*N_Pf(4.5) - udotu*N_Pf(1.5));
-					}
-					if (nbr_kap_b == -3)
-					{
-						cdotu = N_Pf(0.050000000000000);
-						f_8 = f_8 - N_Pf(2.0)*N_Pf(0.027777777777778)*N_Pf(3.0)*cdotu;
-					}
 					if (nbr_kap_b == -4)
 					{
 						cdotu = N_Pf(0.050000000000000);

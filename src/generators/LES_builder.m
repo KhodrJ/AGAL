@@ -84,6 +84,8 @@ elseif (LES_tab(1) == 2)
 	% Extrapolate velocities to fill in shared memory at block edges. These are needed for second-order differences.
 	COMMENT(fileID, n_ind, "Extrapolate macroscopic properties to block edges.");
 	extrapolate_halos(fileID, n_ind, n_d, {"s_u","s_v","s_w"}(1:n_d));
+	add_statement(fileID, n_ind, "__syncthreads()", true);
+	add_line(fileID);
 	
 	
 	% Compute the turbulence viscosity, add to physical viscosity and update relaxation rate.
@@ -164,6 +166,8 @@ elseif (LES_tab(1)==3)
 	% Extrapolate velocities to fill in shared memory at block edges. These are needed for second-order differences.
 	COMMENT(fileID, n_ind, "Extrapolate macroscopic properties to block edges.");
 	extrapolate_halos(fileID, n_ind, n_d, {"s_u","s_v","s_w"}(1:n_d));
+	add_statement(fileID, n_ind, "__syncthreads()", true);
+	add_line(fileID);
 
 	
 	% Compute the turbulence viscosity, add to physical viscosity and update relaxation rate.

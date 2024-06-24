@@ -61,9 +61,6 @@
 	#define S_TYPE 1						///< Controls streaming type for Lattice Boltzmann solver.
 									///< Value of 0 indicates naive streaming, 1 indicates in-place streaming.
 #endif
-#ifndef S_INTERP_TYPE
-	#define S_INTERP_TYPE 1						///< Interpolation type (0 - poly., 1 - weighted)
-#endif
 #ifndef S_INIT_TYPE
 	#define S_INIT_TYPE 0						///< Controls initialization strategy.
 									///< 0 indicates naive init., 1 indicates Mei's strategy.
@@ -94,6 +91,9 @@
 #ifndef N_CASE
 	#define N_CASE (0)
 #endif
+#ifndef N_RESTART
+	#define N_RESTART (0)						///< Indicates restart from last simulation.
+#endif
 	// Turbulence parameters.
 #ifndef S_LES
 	#define S_LES (0)						///< Indicator for applying Smagorinsky subgrid-scale modeling.
@@ -109,9 +109,6 @@
 #endif
 #ifndef N_REFINE_INC
 	#define N_REFINE_INC (1)					///< Arbitrary constant for refinement criterion log. comparison (integer >=1).
-#endif
-#ifndef N_CONN_TYPE
-	#define N_CONN_TYPE (1)						///< Switch for types of connectivity updates. Keep at 1.
 #endif
 #ifndef P_SHOW_REFINE
 	#define P_SHOW_REFINE (1)					///< Show refinement execution times in terminal?
@@ -241,26 +238,29 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/gather.h>
 
-// Block-based AMR writer.
+// VTK.
 #include "vtkAMRBox.h"
 #include "vtkAMRUtilities.h"
 #include "vtkCell.h"
 #include "vtkCellData.h"
-#include "vtkCompositeDataWriter.h"
+#include "vtkXMLCompositeDataWriter.h"
 #include "vtkDataArray.h"
 #include "vtkDoubleArray.h"
-#include "vtkMultiBlockDataSet.h"
+//#include "vtkMultiBlockDataSet.h"
 #include "vtkNew.h"
 #include "vtkOverlappingAMR.h"
 #include "vtkPointData.h"
 #include "vtkPoints.h"
 #include "vtkUniformGrid.h"
+//#include "vtkXMLImageDataWriter.h"
+//#include "vtkXMLMultiBlockDataWriter.h"
+//#include "vtkXMLUniformGridAMRReader.h"
+#include "vtkStructuredGrid.h"
+#include "vtkStructuredGridWriter.h"
+#include "vtkImageData.h"
 #include "vtkXMLImageDataWriter.h"
-#include "vtkXMLMultiBlockDataWriter.h"
-#include "vtkXMLUniformGridAMRReader.h"
-#include "vtkUnstructuredGrid.h"
-#include "vtkXMLMultiBlockDataWriter.h"
-#include "vtkXMLHierarchicalBoxDataWriter.h"
+//#include "vtkXMLMultiBlockDataWriter.h"
+//#include "vtkXMLHierarchicalBoxDataWriter.h"
 #include "vtkXMLUniformGridAMRWriter.h"
 
 

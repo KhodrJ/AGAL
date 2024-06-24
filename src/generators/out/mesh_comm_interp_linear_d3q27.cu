@@ -164,6 +164,8 @@ void Cu_Interpolate_Linear_d3q27
 				s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(5)] = 4*s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(4)] - 6*s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(3)] + 4*s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(2)] - s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(1)];
 				s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(5)] = 4*s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(4)] - 6*s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(3)] + 4*s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(2)] - s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(1)];
 			}
+			__syncthreads();
+
 			// Compute turbulent viscosity, storing S_{ij}^d in tmp_j, S_{ij} in tmp_k.
 			tmp_i = N_Pf(0.0);
 			tmp_j = N_Pf(0.0);

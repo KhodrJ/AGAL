@@ -84,7 +84,7 @@ int Solver_LBM::S_SetInitialConditions_d3q19(int i_dev, int L)
 		(
 			mesh->n_ids[i_dev][L], mesh->c_id_set[i_dev][L], mesh->n_maxcells,
 			mesh->c_cells_f_F[i_dev],
-			N_Pf(1.000000000000000), N_Pf(0.050000000000000), N_Pf(0.000000000000000), N_Pf(0.000000000000000)
+			N_Pf(1.000000000000000), N_Pf(0.000000000000000), N_Pf(0.000000000000000), N_Pf(0.000000000000000)
 		);
 	}
 

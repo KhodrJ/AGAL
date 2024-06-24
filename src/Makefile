@@ -36,6 +36,7 @@ S_INTERP_TYPE?=1
 S_INIT_TYPE?=0
 B_TYPE?=1
 N_CASE?=0
+N_RESTART?=0
 PERIODIC_X?=
 PERIODIC_Y?=
 PERIODIC_Z?=
@@ -83,6 +84,8 @@ SRC = 	./mesh/init_grid_data.cu\
 	./mesh/mesh_amr.cu\
 	./mesh/mesh_output.cu\
 	./mesh/mesh_forces.cu\
+	./mesh/mesh_restart.cu\
+	./mesh/mesh_print.cu\
 	./mesh/mesh_comm.cu\
 	./mesh/mesh_comm_average_d2q9.cu\
 	./mesh/mesh_comm_average_d3q19.cu\
@@ -133,6 +136,7 @@ OPTS = 	-DN_PRECISION=$(N_PRECISION)\
 	-DS_INIT_TYPE=$(S_INIT_TYPE)\
 	-DB_TYPE=$(B_TYPE)\
 	-DN_CASE=$(N_CASE)\
+	-DN_RESTART=$(N_RESTART)\
 	$(PERIODIC_X)\
 	$(PERIODIC_Y)\
 	$(PERIODIC_Z)\

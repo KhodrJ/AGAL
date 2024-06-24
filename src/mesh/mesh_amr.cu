@@ -1696,59 +1696,9 @@ void Cu_AddRemoveBlocks
 	}
 }
 
-// [DEPRECATED] Here, update the child_nbr IDs according to refinement only. Update due to coarsening is deferred post correction.
+// Here, update the child_nbr IDs according to refinement only.
 __global__
-void Cu_RefineCells_S2_V1_1
-(
-	int id_max_curr, int n_maxcblocks, int n_ids_marked_refine, int *ids_marked, int *new_child_ids,
-	int *cblock_ID_nbr, int *cblock_ID_nbr_child,
-	int *efficient_map
-)
-{
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-		
-	if (kap < id_max_curr && efficient_map[kap] >= 0)
-	{
-		for (int p = 0; p < N_Q_max; p++)
-		{
-			// Loop over marked IDs. Modify the nbr_child (i.e. neighbor's first child ID) using updated values.
-			// Also, keep note of cblocks near other cblocks marked for refinement/coarsening - their connectivity needs to be updated.
-			for (int k = 0; k < n_ids_marked_refine; k++)
-			{
-				if (cblock_ID_nbr[kap + p*n_maxcblocks] == ids_marked[k])
-					cblock_ID_nbr_child[kap + p*n_maxcblocks] = new_child_ids[k];
-			}
-		}
-	}
-}
-
-// [DEPRECATED] Update due to coarsening.
-__global__
-void Cu_RefineCells_S2_V1_2
-(
-	int id_max_curr, int n_maxcblocks, int n_ids_marked_coarsen, int *ids_marked,
-	int *cblock_ID_nbr, int *cblock_ID_nbr_child,
-	int *efficient_map
-)
-{
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-		
-	if (kap < id_max_curr && efficient_map[kap] >= 0)
-	{
-		for (int p = 1; p < N_Q_max; p++)
-		{
-			for (int k = 0; k < n_ids_marked_coarsen; k++)
-			{
-				if (cblock_ID_nbr[kap + p*n_maxcblocks] == ids_marked[k])
-					cblock_ID_nbr_child[kap + p*n_maxcblocks] = N_SKIPID;
-			}
-		}
-	}
-}
-
-// Efficient version of Cu_RefineCells_S2_V1_1.
-__global__
-void Cu_RefineCells_S2_V2_1
+void Cu_RefineCells_S2_1
 (
 	int id_max_curr, int n_maxcblocks, 
 	int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child,
@@ -1812,9 +1762,9 @@ void Cu_RefineCells_S2_V2_1
 #endif
 }
 
-// Efficient version of Cu_RefineCells_S2_V1_2.
+// Update due to coarsening.
 __global__
-void Cu_RefineCells_S2_V2_2
+void Cu_RefineCells_S2_2
 (
 	int id_max_curr, int n_maxcblocks, 
 	int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child,
@@ -2372,23 +2322,13 @@ int Mesh::M_RefineAndCoarsenCells(int var, ufloat_t *scale_vec, std::ofstream *f
 // 				std::cout << tmp_1[i_dev][k] << " ";
 // 			std::cout << std::endl;
 		
-#if (N_CONN_TYPE==0)
 			// Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
-			Cu_RefineCells_S2_V1_1<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-				id_max_curr, n_maxcblocks, n_ids_marked_refine, c_tmp_1[i_dev], &c_tmp_3[i_dev][N_CHILDREN*n_ids_marked_refine],
-				c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
-				c_tmp_8[i_dev]
-			);
-			gpuErrchk( cudaPeekAtLastError() );
-#else
-			// Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
-			Cu_RefineCells_S2_V2_1<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+			Cu_RefineCells_S2_1<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
 				id_max_curr, n_maxcblocks,
 				c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
 				c_tmp_8[i_dev], c_tmp_2[i_dev]
 			);
-			gpuErrchk( cudaPeekAtLastError() );
-#endif
+			//gpuErrchk( cudaPeekAtLastError() );
 			
 		}
 #if (P_SHOW_REFINE==1)
@@ -2437,23 +2377,13 @@ int Mesh::M_RefineAndCoarsenCells(int var, ufloat_t *scale_vec, std::ofstream *f
 					thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max_curr, c_cblock_ID_ref_dptr[i_dev], 	&c_tmp_1_dptr[i_dev][n_ids_marked_refine], is_marked_for_coarsening()
 				);
 				
-#if (N_CONN_TYPE==0)
 				// Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
-				Cu_RefineCells_S2_V1_2<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-					id_max_curr, n_maxcblocks, n_ids_marked_coarsen, &c_tmp_1[i_dev][n_ids_marked_refine],
-					c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
-					c_tmp_8[i_dev]
-				);
-				gpuErrchk( cudaPeekAtLastError() );
-#else
-				// Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
-				Cu_RefineCells_S2_V2_2<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+				Cu_RefineCells_S2_2<<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
 					id_max_curr, n_maxcblocks,
 					c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
 					c_tmp_8[i_dev]
 				);
 				gpuErrchk( cudaPeekAtLastError() );
-#endif
 			}
 		}
 #if (P_SHOW_REFINE==1)

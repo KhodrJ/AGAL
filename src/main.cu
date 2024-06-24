@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 #if (N_PROBE_AVE==1)
 	int		N_iters_ave	= 0;
 #endif
+	int		iter_s		= 0;
 	std::ofstream   iter_printer;
 	std::ofstream   ref_printer;
 	std::ofstream   adv_printer;
@@ -75,8 +76,6 @@ int main(int argc, char *argv[])
 	for (int L = 0; L < MAX_LEVELS; L++) adv_printer << L << "-Interp " << L << "-Collide " << L << "-Stream " << L << "-Average ";
 	adv_printer << "MLUPS" << std::endl;
 	
-	
-	
 #if (MAX_LEVELS>1 && (MAX_LEVELS!=N_LEVEL_START+1))
 	// Refine near walls.
 	for (int L = 0; L < N_LEVEL_START; L++)
@@ -105,7 +104,6 @@ int main(int argc, char *argv[])
 		// Refine.
 		solver.S_UpdateMesh(0, &ref_printer);
 		cudaDeviceSynchronize();
-		cudaDeviceSynchronize();
 		
 		// Initialize data on higher grid levels.
 		solver.S_Initialize(0,L+1);
@@ -130,6 +128,17 @@ int main(int argc, char *argv[])
 	solver.S_Initialize(0,N_LEVEL_START);
 #endif
 	
+	// If restart was selected, retrieve data.
+#if (N_RESTART==1)
+	if (mesh.M_Restart(0, V_MESH_RESTART_LOAD, &iter_s) == 1)
+	{
+		std::cout << "Error: Exited during restart." << std::endl;
+		return 0;
+	}
+	mesh.M_LoadToGPU();
+	iter_s += 1;
+#endif
+	
 	
 	
 	//
@@ -139,7 +148,7 @@ int main(int argc, char *argv[])
 	//
 	
 	// Primary loop. Total of N_PRINT*P_PRINT iterations (number of prints x number of iterations per print).
-	for (int i = 0; i < N_PRINT*P_PRINT + 1; i++)
+	for (int i = iter_s; i < iter_s + N_PRINT*P_PRINT; i++)
 	//for (int i = 0; i < 1; i++)
 	{				
 		// Print iteration.
@@ -172,7 +181,7 @@ int main(int argc, char *argv[])
 			{
 #endif
 				// Output to refinement time counter (includes grid hierarchy sizes of last iteration).
-				std::cout << "Refining... " << i << ", t = " << i*dx << std::endl;
+				std::cout << "Refining... " << i << ", t = " << i*mesh.dxf_vec[N_LEVEL_START] << std::endl;
 				std::cout << "(last) "; for (int L = 0; L < MAX_LEVELS; L++) std::cout << mesh.n_ids[0][L] << " "; std::cout << std::endl;
 				
 				// Global average so that data is safely interpolated to new cells.
@@ -180,7 +189,7 @@ int main(int argc, char *argv[])
 				tic_simple("");
 				// |
 				for (int L = MAX_LEVELS-1; L >= N_LEVEL_START; L--)
-					solver.S_Average(0,L,V_AVERAGE_GRID); // [TODO]
+					solver.S_Average(0,L,V_AVERAGE_GRID);
 				// |
 				cudaDeviceSynchronize();
 				ref_printer << i << " " << toc_simple("",T_US) << " ";
@@ -259,9 +268,9 @@ int main(int argc, char *argv[])
 		
 		
 		// Printing stage, performed every P_PRINT iterations.
-		if (i%P_PRINT == 0 && i > 0)
+		if ((i+1)%P_PRINT == 0 && i > 0)
 		{
-			std::cout << "Printing on iteration " << i << " (t = " << i*dx << ")..." << std::endl;
+			std::cout << "Printing after iteration " << i << " (t = " << i*mesh.dxf_vec[N_LEVEL_START] << ")..." << std::endl;
 			
 			// Ensure data is valid on all cells. Global average, then interpolate to ghost cells.
 			for (int L = MAX_LEVELS-1; L >= 0; L--)
@@ -269,11 +278,24 @@ int main(int argc, char *argv[])
 			for (int L = 0; L < MAX_LEVELS; L++)
 				solver.S_Interpolate(0,L,V_INTERP_INTERFACE);
 			
-			// Retrieve data from the GPU and print to .vthb file.
+			// Retrieve data from the GPU.
 			mesh.M_RetrieveFromGPU();
-			std::cout << "Writing..." << std::endl;
+			
+			// Write restart file if at the end of the simulation.
+			std::cout << "Preparing restart file..." << std::endl;
+			if ((i+1)%(iter_s+N_PRINT*P_PRINT) == 0 && i > iter_s)
+				mesh.M_Restart(0, V_MESH_RESTART_SAVE, &i);
+			std::cout << "Finished printing restart file..." << std::endl;
+			
+			// Print to .vti file.
+			std::cout << "Writing output..." << std::endl;
 			mesh.M_Print(0, i);
 			std::cout << "Finished printing..." << std::endl;
+			
+			// Print to .vthb file.
+			//std::cout << "Writing output..." << std::endl;
+			//mesh.M_Print_VTHB(0, i);
+			//std::cout << "Finished printing..." << std::endl;
 		}
 		
 		
@@ -284,7 +306,7 @@ int main(int argc, char *argv[])
 		{
 			std::cout << "Printing forces..." << std::endl;
 			for (int L = MAX_LEVELS-1; L >= N_LEVEL_START; L--)
-				solver.S_Average(0,L,V_AVERAGE_GRID); // [TODO]
+				solver.S_Average(0,L,V_AVERAGE_GRID);
 			
 			mesh.M_RetrieveFromGPU();
 			mesh.M_PrintForces(0, std::max(0,MAX_LEVELS_INTERIOR-1), &force_printer);

@@ -71,6 +71,11 @@ int Mesh::M_Init()
 			}
 		};
 		
+		// Allocate memory for coarse Id arrays.
+		coarse_I[i_dev] = new int[n_coarsecblocks];
+		coarse_J[i_dev] = new int[n_coarsecblocks];
+		coarse_K[i_dev] = new int[n_coarsecblocks];
+		
 		// Fix boundary conditions on the edges of this padded grid.
 #if (N_DIM==3)
 			// Z=0, Z=L
@@ -148,6 +153,11 @@ int Mesh::M_Init()
 							
 						}
 						init_grid_cblock_ID_onb[block_ID] = block_on_boundary;
+						
+						
+						coarse_I[i_dev][block_ID] = i-1;
+						coarse_J[i_dev][block_ID] = j-1;
+						coarse_K[i_dev][block_ID] = N_DIM==2?0:(k-1);
 					}
 				}
 			}
