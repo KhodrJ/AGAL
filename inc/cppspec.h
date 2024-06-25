@@ -147,6 +147,11 @@
 	#define N_PROBE_AVE_START (N_PROBE_AVE_STARTi)
 #endif
 	// Printing parameters.
+#ifndef P_RENDERi
+	#define P_RENDER (100*Nx)					///< Number of iterations between renders.
+#else
+	#define P_RENDER (P_RENDERi)
+#endif
 #ifndef P_PRINTi
 	#define P_PRINT (100*Nx)					///< Number of iterations between prints.
 #else
@@ -229,6 +234,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <random>
+#include <omp.h>
 
 // Thrust
 #include <thrust/host_vector.h>

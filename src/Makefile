@@ -65,6 +65,7 @@ N_PROBE_AVE_START?=100*Nx
 # Printing parameters.
 P_DIR_NAME?=../out/results/
 P_DIR_NAME_=\"$(P_DIR_NAME)\"
+P_RENDER?=100*Nx
 P_PRINT?=100*Nx
 N_PRINT?=1
 N_PRINT_LEVELS?=3
@@ -78,7 +79,7 @@ N_REGEN?=1
 
 INC = -I../inc/ -I$(VTK_INC)
 
-LIB = -L$(VTK_LIB) -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
+LIB = -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
 
 SRC = 	./mesh/init_grid_data.cu\
 	./mesh/mesh_amr.cu\
@@ -107,6 +108,7 @@ SRC = 	./mesh/init_grid_data.cu\
 	
 
 LIBS = 	-lcuda \
+	-lgomp\
 	-lvtkCommonCore-$(VTK_VER) \
 	-lvtkCommonDataModel-$(VTK_VER) \
 	-lvtksys-$(VTK_VER) \
@@ -164,6 +166,7 @@ OPTS = 	-DN_PRECISION=$(N_PRECISION)\
 	-DN_PROBE_AVE_FREQUENCYi=$(N_PROBE_AVE_FREQUENCY)\
 	-DN_PROBE_AVE_STARTi=$(N_PROBE_AVE_START)\
 	-DP_DIR_NAME=$(P_DIR_NAME_)\
+	-DP_RENDERi=$(P_RENDER)\
 	-DP_PRINTi=$(P_PRINT)\
 	-DN_PRINT=$(N_PRINT)\
 	-DN_PRINT_LEVELS=$(N_PRINT_LEVELS)\

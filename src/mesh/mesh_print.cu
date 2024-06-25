@@ -7,7 +7,7 @@
 
 #include "mesh.h"
 
-int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mult_f, int *Nxi_f, double *out_u, double *out_yplus, double *tmp_data)
+int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mult_f, int vol, int *Nxi_f, double *tmp_data)
 {
 	// (I,J,K) are the indices for the top parent. All child indices moving forward are built from these.
 	int child_0 = cblock_ID_nbr_child[i_dev][i_kap];
@@ -28,8 +28,7 @@ int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, i
 					Is[L+1 + 1*N_PRINT_LEVELS] = xj;
 					Is[L+1 + 2*N_PRINT_LEVELS] = xk;
 					int xc = xi + 2*xj + 4*xk;
-					M_Print_FillBlock(i_dev, Is, child_0+xc, L+1, dx_f, mult_f, Nxi_f, out_u, out_yplus, tmp_data
-					);
+					M_Print_FillBlock(i_dev, Is, child_0+xc, L+1, dx_f, mult_f, vol, Nxi_f, tmp_data);
 				}
 			}
 		}
@@ -37,7 +36,9 @@ int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, i
 	else // No children, print here.
 	{
 		// Get the macroscopic properties for this block.
-		M_ComputeProperties(i_dev, i_kap, dxf_vec[L], out_u, out_yplus);
+		double out_u_[M_CBLOCK*(6+1)]; 
+		double out_yplus_[M_CBLOCK];
+		M_ComputeProperties(i_dev, i_kap, dxf_vec[L], out_u_, out_yplus_);
 		
 		// Modify the cell values in the region defined by the leaf block.
 #if (N_DIM==3)
@@ -76,17 +77,17 @@ int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, i
 								int Kpp = Kp + k*mult_f[L] + kk;
 								long int Id = Ipp + Nxi_f[0]*Jpp + Nxi_f[0]*Nxi_f[1]*Kpp;
 								
-								tmp_data[Id + 0*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 0*M_CBLOCK];
-								tmp_data[Id + 1*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 1*M_CBLOCK];
-								tmp_data[Id + 2*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 2*M_CBLOCK];
-								tmp_data[Id + 3*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 3*M_CBLOCK];
-								tmp_data[Id + 4*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 4*M_CBLOCK];
-								tmp_data[Id + 5*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 5*M_CBLOCK];
-								tmp_data[Id + 6*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = out_u[kap_i + 6*M_CBLOCK];
-								tmp_data[Id + 7*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = sqrt(out_u[kap_i + 1*M_CBLOCK]*out_u[kap_i + 1*M_CBLOCK] + out_u[kap_i + 2*M_CBLOCK]*out_u[kap_i + 2*M_CBLOCK] + out_u[kap_i + 3*M_CBLOCK]*out_u[kap_i + 3*M_CBLOCK]);
-								tmp_data[Id + 8*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = sqrt(out_u[kap_i + 4*M_CBLOCK]*out_u[kap_i + 4*M_CBLOCK] + out_u[kap_i + 5*M_CBLOCK]*out_u[kap_i + 5*M_CBLOCK] + out_u[kap_i + 6*M_CBLOCK]*out_u[kap_i + 6*M_CBLOCK]);
-								tmp_data[Id + 9*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = L;
-								tmp_data[Id + 10*Nxi_f[0]*Nxi_f[1]*Nxi_f[2]] = i_kap;
+								tmp_data[Id + 0*vol] = out_u_[kap_i + 0*M_CBLOCK];
+								tmp_data[Id + 1*vol] = out_u_[kap_i + 1*M_CBLOCK];
+								tmp_data[Id + 2*vol] = out_u_[kap_i + 2*M_CBLOCK];
+								tmp_data[Id + 3*vol] = out_u_[kap_i + 3*M_CBLOCK];
+								tmp_data[Id + 4*vol] = out_u_[kap_i + 4*M_CBLOCK];
+								tmp_data[Id + 5*vol] = out_u_[kap_i + 5*M_CBLOCK];
+								tmp_data[Id + 6*vol] = out_u_[kap_i + 6*M_CBLOCK];
+								tmp_data[Id + 7*vol] = sqrt(out_u_[kap_i + 1*M_CBLOCK]*out_u_[kap_i + 1*M_CBLOCK] + out_u_[kap_i + 2*M_CBLOCK]*out_u_[kap_i + 2*M_CBLOCK] + out_u_[kap_i + 3*M_CBLOCK]*out_u_[kap_i + 3*M_CBLOCK]);
+								tmp_data[Id + 8*vol] = sqrt(out_u_[kap_i + 4*M_CBLOCK]*out_u_[kap_i + 4*M_CBLOCK] + out_u_[kap_i + 5*M_CBLOCK]*out_u_[kap_i + 5*M_CBLOCK] + out_u_[kap_i + 6*M_CBLOCK]*out_u_[kap_i + 6*M_CBLOCK]);
+								tmp_data[Id + 9*vol] = L;
+								tmp_data[Id + 10*vol] = i_kap;
 							}
 						}
 					}
@@ -101,6 +102,17 @@ int Mesh::M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, i
 int Mesh::M_Print(int i_dev, int iter)
 {
 	// Parameters.
+		// Domain extents (w.r.t root grid, I_min <= I < I_max).
+	int I_min = 0;
+	int I_max = Nxi[0]/Nbx;
+	int J_min = 0;
+	int J_max = Nxi[1]/Nbx;
+	int K_min = 0;
+	int K_max = 1;
+#if (N_DIM==3)
+	K_min = 3*(Nxi[2]/Nbx)/4;
+	K_max = Nxi[2]/Nbx;
+#endif
 		// Resolution multiplier.
 	int mult = 1;
 	double dx_f = dxf_vec[0];
@@ -110,21 +122,24 @@ int Mesh::M_Print(int i_dev, int iter)
 		dx_f *= 0.5;
 	}
 	int *mult_f = new int[N_PRINT_LEVELS];
-	for (int L = 0; L < N_PRINT_LEVELS; L++) mult_f[L] = pow(2.0, (double)(N_PRINT_LEVELS-1-L));
+	for (int L = 0; L < N_PRINT_LEVELS; L++)
+		mult_f[L] = pow(2.0, (double)(N_PRINT_LEVELS-1-L));
 		// Resolution array.
 	int Nxi_f[3];
-	for (int d = 0; d < 3; d++) Nxi_f[d] = Nxi[d];
-	for (int d = 0; d < N_DIM; d++) Nxi_f[d] *= mult;
+	Nxi_f[0] = (I_max-I_min)*Nbx;
+	Nxi_f[1] = (J_max-J_min)*Nbx;
+	Nxi_f[2] = (K_max-K_min)*Nbx;
+	for (int d = 0; d < 3; d++)
+		Nxi_f[d] = Nxi[d];
+	for (int d = 0; d < N_DIM; d++)
+		Nxi_f[d] *= mult;
 	int vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
-		// Tracker for child indices.
-	int *Is = new int[N_PRINT_LEVELS*3];
-	for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++) Is[Ld] = 0;
-	
-	// Cell data arrays.
+		// Cell data arrays.
 	int n_data = 3+3+1+1+1+1+1;
 	double *tmp_data = new double[n_data*vol];
 	double *tmp_data_b = new double[n_data*vol];
-	for (long int p = 0; p < n_data*vol; p++) tmp_data[p] = 0.0;
+	for (long int p = 0; p < n_data*vol; p++)
+		tmp_data[p] = -1.0;
 		// Density.
 	vtkNew<vtkDoubleArray> cell_data_density;
 	cell_data_density->SetName("Density");
@@ -160,22 +175,31 @@ int Mesh::M_Print(int i_dev, int iter)
 	cell_data_blockid->SetName("Block Id");
 	cell_data_blockid->SetNumberOfComponents(1);
 	cell_data_blockid->SetNumberOfTuples(vol);
-		// Temporary arrays.
-	double out_u[M_CBLOCK*(6+1)]; for (int i = 0; i < M_CBLOCK*(6+1); i++) out_u[i] = 0.0; 
-	double out_yplus[M_CBLOCK]; for (int i = 0; i < M_CBLOCK; i++) out_yplus[i] = 0.0;
 	
 	// Traverse the grid and fill data arrays.
+	std::cout << "[-] Traversing grid, computing properties..." << std::endl;
+	#pragma omp parallel for
 	for (int kap = 0; kap < n_ids[i_dev][0]; kap++)
 	{
-		Is[0*N_PRINT_LEVELS] = coarse_I[i_dev][kap];
-		Is[1*N_PRINT_LEVELS] = coarse_J[i_dev][kap];
-		Is[2*N_PRINT_LEVELS] = coarse_K[i_dev][kap];
+		int Is[N_PRINT_LEVELS*3];
+		for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++) Is[Ld] = 0;
 		
-		M_Print_FillBlock(i_dev, Is, kap, 0, dx_f, mult_f, Nxi_f, out_u, out_yplus, tmp_data);
+		Is[0*N_PRINT_LEVELS] = coarse_I[i_dev][kap] - I_min;
+		Is[1*N_PRINT_LEVELS] = coarse_J[i_dev][kap] - J_min;
+		Is[2*N_PRINT_LEVELS] = coarse_K[i_dev][kap] - K_min;
+		
+		//std::cout << kap << " | " << Is[0*N_PRINT_LEVELS] << ", " << Is[1*N_PRINT_LEVELS] << ", " << Is[2*N_PRINT_LEVELS] << "(" << I_min << "," << I_max << " | " << J_min << "," << J_max << " | " << K_min << "," << K_max << ")" << std::endl;
+		
+		if (Is[0*N_PRINT_LEVELS] >= 0 && Is[0*N_PRINT_LEVELS] < I_max-I_min && Is[1*N_PRINT_LEVELS] >= 0 && Is[1*N_PRINT_LEVELS] < J_max-J_min && Is[2*N_PRINT_LEVELS] >= 0 && Is[2*N_PRINT_LEVELS] < K_max-K_min)
+			M_Print_FillBlock(i_dev, Is, kap, 0, dx_f, mult_f, vol, Nxi_f, tmp_data);
 	}
+	std::cout << "    Finished traversal..." << std::endl;
 	
 	// Smoothing.
-	int n_smooths = 8;
+	int n_smooths = mult*Nbx;
+	if (n_smooths > 0)
+		std::cout << "[-] Smoothing grid..." << std::endl;
+	#pragma omp parallel for
 	for (int kap = 0; kap < vol; kap++)
 	{
 		for (int p = 0; p < 7; p++)
@@ -183,8 +207,9 @@ int Mesh::M_Print(int i_dev, int iter)
 	}
 	for (int i = 0; i < n_smooths; i++)
 	{
-		std::cout << "Smoothing iteration " << i << "..." << std::endl;
+		std::cout << "    Smoothing iteration " << i << "..." << std::endl;
 #if (N_DIM==2)
+		#pragma omp parallel for
 		for (int J = 1; J < Nxi_f[1]-1; J++)
 		{
 			for (int I = 1; I < Nxi_f[0]-1; I++)
@@ -202,6 +227,7 @@ int Mesh::M_Print(int i_dev, int iter)
 			}
 		}
 #else
+		#pragma omp parallel for
 		for (int K = 1; K < Nxi_f[2]-1; K++)
 		{
 			for (int J = 1; J < Nxi_f[1]-1; J++)
@@ -224,14 +250,19 @@ int Mesh::M_Print(int i_dev, int iter)
 			}
 		}
 #endif
+		#pragma omp parallel for
 		for (int kap = 0; kap < vol; kap++)
 		{
 			for (int p = 0; p < 7; p++)
 				tmp_data[kap + p*vol] = tmp_data_b[kap + p*vol];
 		}
 	}
+	if (n_smooths > 0)
+		std::cout << "    Finished smoothing grid..." << std::endl;
 	
 	// Insert data in VTK arrays.
+	std::cout << "[-] Inserting data in VTK pointers..." << std::endl;
+	#pragma omp parallel for
 	for (long int kap = 0; kap < vol; kap++)
 	{
 		cell_data_density->SetTuple1(kap,
@@ -260,10 +291,13 @@ int Mesh::M_Print(int i_dev, int iter)
 			tmp_data[kap+ 10*vol]
 		);
 	}
+	std::cout << "    Finished inserting data in VTK pointers..." << std::endl;
 	
-	// Image data.
+	// Image data from uniform grid.
+	std::cout << "[-] Creating uniform grid..." << std::endl;
 		// Parameters and initialization.
-	double origin[3] = {0.0,0.0,0.0};
+	//double origin[3] = {0.0,0.0,0.0};
+	double origin[3] = {I_min*dx_f*mult, J_min*dx_f*mult, K_min*dx_f*mult};
 	double spacing[3] = {dx_f, dx_f, dx_f};
 	vtkNew<vtkUniformGrid> grid;
 	vtkNew<vtkCellDataToPointData> cell_to_points;
@@ -280,57 +314,85 @@ int Mesh::M_Print(int i_dev, int iter)
 	grid->GetCellData()->AddArray(cell_data_vortmag);
 	grid->GetCellData()->AddArray(cell_data_level);
 	grid->GetCellData()->AddArray(cell_data_blockid);
+#if (N_CASE==1)
+		// Blank invalid cells (these are identified by negative AMR level).
+	grid->AllocateCellGhostArray();
+	vtkUnsignedCharArray *ghosts = grid->GetCellGhostArray();
+	#pragma omp parallel for
+	for (long int kap = 0; kap < vol; kap++)
+	{
+		if (tmp_data[kap + 9*vol] < 0)
+			ghosts->SetValue(kap, ghosts->GetValue(kap) | vtkDataSetAttributes::HIDDENCELL);
+	}
+#endif
+	std::cout << "    Finished creating uniform grid..." << std::endl;
 	
 	// Image data processing.
+	std::cout << "[-] Creating contours..." << std::endl;
 		// Convert cell data to point data.
 	cell_to_points->SetInputData(grid);
 	cell_to_points->Update();
 		// Contour for vorticity magnitude.
 	cell_to_points->GetImageDataOutput()->GetPointData()->SetActiveScalars("Vorticity Magnitude");
 	contour->SetInputConnection(0, cell_to_points->GetOutputPort(0));
-	contour->SetValue(0, 0.1);
+	contour->SetNumberOfContours(3);
+	contour->SetValue(0, 0.15);
+	contour->SetValue(1, 0.2);
+	contour->SetValue(2, 0.3);
+	std::cout << "    Finished creating contours..." << std::endl;
 	
 	// Offscreen rendering.
-		// Setup offscreen rendering.
-	vtkNew<vtkNamedColors> colors;
-	vtkNew<vtkGraphicsFactory> graphics_factory;
-	graphics_factory->SetOffScreenOnlyMode(1);
-	graphics_factory->SetUseMesaClasses(1);
-		// Create mapper.
-	vtkNew<vtkPolyDataMapper> mapper;
-	mapper->SetInputConnection(contour->GetOutputPort(0));
-		// Create actor.
-	vtkNew<vtkActor> actor;
-	actor->SetMapper(mapper);
-	actor->GetProperty()->SetColor(colors->GetColor3d("White").GetData());
-		// Create renderer.
-	vtkNew<vtkRenderer> renderer;
-	vtkNew<vtkRenderWindow> renderWindow;
-	renderWindow->SetOffScreenRendering(1);
-	renderWindow->AddRenderer(renderer);
-		// Create camera.
-	double cam_pos[3] = {1.8, -2.5, 1.25};
-	//double cam_view_up[3] = {-0.066475, 0.21161, 0.975091};
-	double cam_view_up[3] = {0.0, 0.0, 1.0};
-	double cam_focal_point[3] = {0.5, 0.5, 0.5};
-	vtkNew<vtkCamera> camera;
-	renderer->SetActiveCamera(camera);
-	camera->SetPosition(cam_pos);
-	camera->SetViewUp(cam_view_up);
-	camera->SetFocalPoint(cam_focal_point);
-		// Add actor to scene and render.
-	renderer->AddActor(actor);
-	renderer->SetBackground(colors->GetColor3d("SlateGray").GetData());
-	renderWindow->Render();
-		// Print to PNG.
-	vtkNew<vtkWindowToImageFilter> windowToImageFilter;
-	windowToImageFilter->SetInput(renderWindow);
-	windowToImageFilter->Update();
-	vtkNew<vtkPNGWriter> photographer;
-	std::string photo_name = P_DIR_NAME + std::string("shot_") + std::to_string(iter+1) + ".png";
-	photographer->SetFileName(photo_name.c_str());
-	photographer->SetInputConnection(windowToImageFilter->GetOutputPort());
-	photographer->Write();
+	if ((iter+1)%P_RENDER == 0)
+	{
+		std::cout << "[-] Setting up renderer..." << std::endl;
+			// Setup offscreen rendering.
+		vtkNew<vtkNamedColors> colors;
+		vtkNew<vtkGraphicsFactory> graphics_factory;
+		graphics_factory->SetOffScreenOnlyMode(1);
+		graphics_factory->SetUseMesaClasses(1);
+			// Create mapper.
+		vtkNew<vtkPolyDataMapper> mapper;
+		mapper->SetInputConnection(contour->GetOutputPort(0));
+			// Create actor.
+		vtkNew<vtkActor> actor;
+		actor->SetMapper(mapper);
+		actor->GetProperty()->SetColor(colors->GetColor3d("White").GetData());
+			// Create renderer.
+		vtkNew<vtkRenderer> renderer;
+		vtkNew<vtkRenderWindow> renderWindow;
+		renderWindow->SetOffScreenRendering(1);
+		renderWindow->AddRenderer(renderer);
+			// Create camera.
+		double cam_pos[3] = {1.8, -2.5, 1.25};
+		//double cam_view_up[3] = {-0.066475, 0.21161, 0.975091};
+		double cam_view_up[3] = {0.0, 0.0, 1.0};
+		double cam_focal_point[3] = {0.5, 0.5, 0.5};
+		vtkNew<vtkCamera> camera;
+		renderer->SetActiveCamera(camera);
+		camera->SetPosition(cam_pos);
+		camera->SetViewUp(cam_view_up);
+		camera->SetFocalPoint(cam_focal_point);
+			// Add actor to scene and render.
+		renderer->AddActor(actor);
+		renderer->SetBackground(colors->GetColor3d("SlateGray").GetData());
+		std::cout << "    Finished setup, rendering..." << std::endl;
+		renderWindow->SetSize(1024, 1024);
+		renderWindow->Render();
+		std::cout << "    Rendered, taking photo..." << std::endl;
+			// Print to PNG.
+		vtkNew<vtkWindowToImageFilter> windowToImageFilter;
+		windowToImageFilter->SetInput(renderWindow);
+		windowToImageFilter->Update();
+		vtkNew<vtkPNGWriter> photographer;
+		size_t n_zeros = 7;
+		std::string iter_string = std::to_string((iter+1)/P_RENDER);
+		std::string padded_iter = std::string(n_zeros-std::min(n_zeros, iter_string.length()), '0') + iter_string;
+		std::string photo_name = P_DIR_NAME + std::string("img/shot_") + padded_iter + ".png";
+		photographer->SetFileName(photo_name.c_str());
+		photographer->SetInputConnection(windowToImageFilter->GetOutputPort());
+		photographer->Write();
+		std::cout << "    Finished taking photo (no. " << (iter+1)/P_RENDER << ")..." << std::endl;
+	}
 	
 	// Write grid.
 	std::cout << "Finished building VTK dataset, writing..." << std::endl;
@@ -343,7 +405,6 @@ int Mesh::M_Print(int i_dev, int iter)
 	
 	// Free allocations.
 	delete[] mult_f;
-	delete[] Is;
 	delete[] tmp_data;
 	delete[] tmp_data_b;
 	

@@ -497,12 +497,11 @@ class Mesh
 	    @param L is the grid level of the current block being processed.
 	    @param dx_f is the spatial step for the output grid.
 	    @param mult_f is a pointer to the spatial resolution multipliers.
+	    @param vol is the volume of the printed domain (computed from @Nxi_f beforehand).
 	    @param Nxi_f is a pointer to the finest spatial resolutions.
-	    @param out_u is a pointer to the main macroscopic properties for the current block (i.e., density, velocity, vorticity).
-	    @param out_yplus is a pointer to the y+ values of the current block (calculated only near the boundary).
 	    @param tmp_data is a pointer to the organized mesh data to be inserted in the vtkUniformGrid data arrays.
 	*/
-	int		M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mult_f, int *Nxi_f, double *out_u, double *out_yplus, double *tmp_data);
+	int		M_Print_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mult_f, int vol, int *Nxi_f, double *tmp_data);
 	
 	//! Print the mesh.
 	/*! Prints the mesh using VTK's hierarchical box format (.vthb).
