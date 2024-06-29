@@ -110,6 +110,7 @@ int Mesh::M_Print(int i_dev, int iter)
 	int K_min = 0;
 	int K_max = 1;
 #if (N_DIM==3)
+	//K_min = 0;
 	K_min = 3*(Nxi[2]/Nbx)/4;
 	K_max = Nxi[2]/Nbx;
 #endif
@@ -129,8 +130,8 @@ int Mesh::M_Print(int i_dev, int iter)
 	Nxi_f[0] = (I_max-I_min)*Nbx;
 	Nxi_f[1] = (J_max-J_min)*Nbx;
 	Nxi_f[2] = (K_max-K_min)*Nbx;
-	for (int d = 0; d < 3; d++)
-		Nxi_f[d] = Nxi[d];
+	//for (int d = 0; d < 3; d++)
+	//	Nxi_f[d] = Nxi[d];
 	for (int d = 0; d < N_DIM; d++)
 		Nxi_f[d] *= mult;
 	int vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
@@ -297,7 +298,7 @@ int Mesh::M_Print(int i_dev, int iter)
 	std::cout << "[-] Creating uniform grid..." << std::endl;
 		// Parameters and initialization.
 	//double origin[3] = {0.0,0.0,0.0};
-	double origin[3] = {I_min*dx_f*mult, J_min*dx_f*mult, K_min*dx_f*mult};
+	double origin[3] = {I_min*Nbx*dxf_vec[0], J_min*Nbx*dxf_vec[0], K_min*Nbx*dxf_vec[0]};
 	double spacing[3] = {dx_f, dx_f, dx_f};
 	vtkNew<vtkUniformGrid> grid;
 	vtkNew<vtkCellDataToPointData> cell_to_points;

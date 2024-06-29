@@ -174,7 +174,7 @@ OPTS = 	-DN_PRECISION=$(N_PRECISION)\
 	-DP_PRINT_ADVANCE=$(P_PRINT_ADVANCE)
 	
 all: generate
-	if ! test -d $(P_DIR_NAME) ; then mkdir $(P_DIR_NAME); echo "Creating new results directory ($(P_DIR_NAME)..."; fi
+	if ! test -d $(P_DIR_NAME) ; then mkdir $(P_DIR_NAME); mkdir $(P_DIR_NAME)/img; echo "Creating new results directory ($(P_DIR_NAME)..."; fi
 	nvcc $(OPTS) $(INC) $(SRC) $(LIB) main.cu $(LIBS) -o a.out
 
 generate:

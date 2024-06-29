@@ -9,6 +9,19 @@
 
 
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Main ]=====================================================================  */
+/*                                                                                    */
+/*  This sample program demonstrates use of the Solver and Mesh classes. As of now,   */
+/*  only the BGK-LBM solver is available. First, the solver object is created and a   */
+/*  computational mesh is allocated for it. A solver loop is then started in which    */
+/*  the solver is advanced and the mesh is refined/rendered/printed according the     */
+/*  specified frequencies. After the loop, the solver is destroyed and memory is      */
+/*  freed.                                                                            */
+/*                                                                                    */
+/**************************************************************************************/
+
 int main(int argc, char *argv[])
 {
 	//
