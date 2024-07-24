@@ -20,9 +20,9 @@ l_dq_names = {'d2q9', 'd3q19', 'd3q27'};
 
 
 % Open files.
-fileID_d2q9 = fopen("./out/solver_lbm_stream_inpl_d2q9.cu",'w');
-fileID_d3q19 = fopen("./out/solver_lbm_stream_inpl_d3q19.cu",'w');
-fileID_d3q27 = fopen("./out/solver_lbm_stream_inpl_d3q27.cu",'w');
+fileID_d2q9 = fopen("../solver_lbm_stream_inpl_d2q9.cu",'w');
+fileID_d3q19 = fopen("../solver_lbm_stream_inpl_d3q19.cu",'w');
+fileID_d3q27 = fopen("../solver_lbm_stream_inpl_d3q27.cu",'w');
 fileID = {fileID_d2q9, fileID_d3q19, fileID_d3q27};
 
 
@@ -366,12 +366,10 @@ for K = 1:3
 end
 
 % Close files.
+r = zeros(K,1);
 for K = 1:length(l_dqs)
 	fclose(fileID{K});
 end
-
-% Copy to solver directory.
-r = system("cp ./out/solver_lbm_stream_* ../");
 if (r==0)
 	printf("Streaming code: Done.\n")
 else
