@@ -6,7 +6,7 @@ warning ("off", "Octave:data-file-in-path");
 addpath("./general/");
 addpath("./math/");
 addpath("./lbm/");
-addpath("./input/");
+addpath("../../input/");
 
 
 
@@ -19,9 +19,9 @@ l_dq_names = {'d2q9', 'd3q19', 'd3q27'};
 
 
 % Open files.
-fileID_d2q9 = fopen("./out/solver_lbm_init_d2q9.cu",'w');
-fileID_d3q19 = fopen("./out/solver_lbm_init_d3q19.cu",'w');
-fileID_d3q27 = fopen("./out/solver_lbm_init_d3q27.cu",'w');
+fileID_d2q9 = fopen("./out/solver_lbm_set_ic_d2q9.cu",'w');
+fileID_d3q19 = fopen("./out/solver_lbm_set_ic_d3q19.cu",'w');
+fileID_d3q27 = fopen("./out/solver_lbm_set_ic_d3q27.cu",'w');
 fileID = {fileID_d2q9, fileID_d3q19, fileID_d3q27};
 
 
@@ -32,6 +32,7 @@ for K = 1:3
 	n_ind = 0;
 	
 	% Build file header.
+	add_statement(fileID{K}, 0, "#include \"mesh.h\"", false);
 	add_statement(fileID{K}, 0, "#include \"solver.h\"", false);
 	add_line(fileID{K});
 	add_statement(fileID{K}, 0, sprintf("#if (N_Q==%i)", l_dqs(K)), false);
@@ -126,7 +127,7 @@ for K = 1:3
 	add_line(fileID{K});
 	%
 	args_routine = {"int i_dev", "int L"};
-	args_1 = {"mesh->n_ids[i_dev][L]", "mesh->c_id_set[i_dev][L]", "mesh->n_maxcells"};
+	args_1 = {"mesh->n_ids[i_dev][L]", "&mesh->c_id_set[i_dev][L*n_maxcblocks]", "mesh->n_maxcells"};
 	args_2 = {"mesh->c_cells_f_F[i_dev]"};
 	args_3 = {sprintf("N_Pf(%17.15f)", T(1)), sprintf("N_Pf(%17.15f)", T(2)), sprintf("N_Pf(%17.15f)", T(3)), sprintf("N_Pf(%17.15f)", T(4))};
 	args_kernel = {args_1, args_2, args_3};
@@ -153,7 +154,7 @@ for K = 1:length(l_dqs)
 end
 
 % Copy to solver directory.
-r = system("cp ./out/solver_lbm_init_* ../solver/");
+r = system("cp ./out/solver_lbm_set_ic_* ../");
 if (r==0)
 	printf("Initial condition code: Done.\n")
 else

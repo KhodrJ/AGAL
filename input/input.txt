@@ -1,0 +1,37 @@
+# MESH and SOLVER
+MAX_LEVELS                      3
+MAX_LEVELS_INTERIOR             3
+N_LEVEL_START                   0
+L_c                             1.0
+L_fy                            1.0
+L_fz                            1.0
+v0                              5.00e-5
+Nx                              64
+N_RESTART                       0
+S_LES                           0
+PERIODIC_X                      0
+PERIODIC_Y                      0
+PERIODIC_Z                      0
+
+# REFINEMENT
+P_REFINE                        32
+N_REFINE_START                  -3
+N_REFINE_INC                    1
+
+# PROBING
+N_PROBE                         0
+N_PROBE_DENSITY                 4
+N_PROBE_FREQUENCY               32
+V_PROBE_TOL                     1e-4
+N_PROBE_FORCE                   0
+N_PROBE_F_FREQUENCY             16
+N_PROBE_AVE                     0
+N_PROBE_AVE_FREQUENCY           1
+N_PROBE_AVE_START               100*Nx
+
+# RENDERING and PRINTING        
+P_DIR_NAME                      ../out/TEST_UPLOAD_DIRECT/
+N_PRINT_LEVELS                  1
+P_OUTPUT                        1*Nx
+N_OUTPUT                        10
+N_OUTPUT_START                  0

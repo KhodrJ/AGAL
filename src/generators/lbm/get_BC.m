@@ -16,9 +16,9 @@ function [H] = get_BC(n_d)
 H = [];
 
 if (n_d == 2)
-	T = textread("./input/BC_2D.txt");
+	T = textread("BC_2D.txt");
 else
-	T = textread("./input/BC_3D.txt");
+	T = textread("BC_3D.txt");
 end
 
 cont = true;

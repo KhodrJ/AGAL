@@ -1,0 +1,38 @@
+1 1
+0.1
+END
+
+# Format
+# - Id (no. constants N)
+# - C1 C2 ... CN
+#
+# Models
+# |
+# - Id N
+# - Name
+# - C1 (suggested value) C2 (suggested value) ... CN (suggested value)
+# |
+# - 1 1
+# - Constant Smagorinsky
+# - Csmag (suggested 0.1)
+# - 2 1
+# - Wall-Adapting Local-Eddy (WALE)
+# - Cw (suggested 0.325)
+# - 3 1
+# - Vreman Model
+# - Cv (suggested 0.07)
+# |
+
+# Copy-Paste Samples
+# |
+# - Constant Smagorinsky
+# 1 1
+# 0.1
+# |
+# - WALE Model
+# 2 1
+# 0.325
+# |
+# - Vreman Model
+# 3 1
+# 0.07

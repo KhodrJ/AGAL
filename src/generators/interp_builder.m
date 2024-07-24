@@ -6,7 +6,7 @@ warning ("off", "Octave:data-file-in-path");
 addpath("./general/");
 addpath("./math/");
 addpath("./lbm/");
-addpath("./input/");
+addpath("../../input/");
 
 
 
@@ -19,9 +19,9 @@ l_dq_names = {'d2q9', 'd3q19', 'd3q27'};
 
 
 % Open files.
-fileID_d2q9 = fopen("./out/mesh_comm_interp_linear_d2q9.cu",'w');
-fileID_d3q19 = fopen("./out/mesh_comm_interp_linear_d3q19.cu",'w');
-fileID_d3q27 = fopen("./out/mesh_comm_interp_linear_d3q27.cu",'w');
+fileID_d2q9 = fopen("./out/solver_lbm_interp_linear_d2q9.cu",'w');
+fileID_d3q19 = fopen("./out/solver_lbm_interp_linear_d3q19.cu",'w');
+fileID_d3q27 = fopen("./out/solver_lbm_interp_linear_d3q27.cu",'w');
 fileID = {fileID_d2q9, fileID_d3q19, fileID_d3q27};
 
 
@@ -33,13 +33,14 @@ for K = 1:3
 	
 	% Build file header.
 	add_statement(fileID{K}, 0, "#include \"mesh.h\"", false);
+	add_statement(fileID{K}, 0, "#include \"solver.h\"", false);
 	add_line(fileID{K});
 	add_statement(fileID{K}, 0, sprintf("#if (N_Q==%i)", l_dqs(K)), false);
 	fprintf(fileID{K}, "\n");
 
 
 	% Build kernel header.
-	args_1 = {"int n_ids_idev_L", "int *id_set_idev_L", "long int n_maxcells", "ufloat_t dx_L", "ufloat_t tau_L", "ufloat_t tau_ratio"};
+	args_1 = {"int n_ids_idev_L", "int *id_set_idev_L", "long int n_maxcells", "ufloat_t dx_L", "ufloat_t tau_L", "ufloat_t tau_ratio", "ufloat_t v0"};
 	args_2 = {"int *cblock_ID_onb", "int *cblock_ID_mask", "int *cblock_ID_nbr_child", "int n_maxcblocks"};
 	args_3 = {"int *cells_ID_mask", "ufloat_t *cells_f_F"};
 	args = {args_1, args_2, args_3};
@@ -240,32 +241,32 @@ for K = 1:3
 	add_line(fileID{K});
 	add_line(fileID{K});
 	%
-	args_routine = {"int i_dev", "int L", "int var", "ufloat_t Cscale", "ufloat_t Cscale2"};
-	args_1_1 = {"n_ids[i_dev][L]", "c_id_set[i_dev][L]", "n_maxcells", "dxf_vec[L]", "Cscale", "Cscale2"};
-	args_1_2 = {"c_cblock_ID_onb[i_dev]", "c_cblock_ID_mask[i_dev]", "c_cblock_ID_nbr_child[i_dev]", "n_maxcblocks"};
-	args_1_3 = {"c_cells_ID_mask[i_dev]", "c_cells_f_F[i_dev]"};
+	args_routine = {"int i_dev", "int L", "int var", "ufloat_t tau_L", "ufloat_t tau_ratio_L"};
+	args_1_1 = {"mesh->n_ids[i_dev][L]", "&mesh->c_id_set[i_dev][L*n_maxcblocks]", "n_maxcells", "mesh->dxf_vec[L]", "tau_L", "tau_ratio_L", "v0"};
+	args_1_2 = {"mesh->c_cblock_ID_onb[i_dev]", "mesh->c_cblock_ID_mask[i_dev]", "mesh->c_cblock_ID_nbr_child[i_dev]", "n_maxcblocks"};
+	args_1_3 = {"mesh->c_cells_ID_mask[i_dev]", "mesh->c_cells_f_F[i_dev]"};
 	args_kernel_1 = {args_1_1, args_1_2, args_1_3};
 	variation_1 = ...
 	{...
-		'condition', "n_ids[i_dev][L] > 0 && var == V_INTERP_INTERFACE",...
-		'params', "(M_CBLOCK+n_ids[i_dev][L]-1)/M_CBLOCK,M_CBLOCK,0,streams[i_dev]",...
+		'condition', "mesh->n_ids[i_dev][L] > 0 && var == V_INTERP_INTERFACE",...
+		'params', "(M_CBLOCK+mesh->n_ids[i_dev][L]-1)/M_CBLOCK,M_CBLOCK,0,mesh->streams[i_dev]",...
 		'args', args_kernel_1,...
 		'template', "<0>"...
 	};
-	args_2_1 = {"n_ids[i_dev][L]", "c_id_set[i_dev][L]", "n_maxcells", "dxf_vec[L]", "Cscale", "Cscale2"};
-	args_2_2 = {"c_cblock_ID_onb[i_dev]", "c_cblock_ID_mask[i_dev]", "c_cblock_ID_nbr_child[i_dev]", "n_maxcblocks"};
-	args_2_3 = {"c_cblock_ID_ref[i_dev]", "c_cells_f_F[i_dev]"};
+	args_2_1 = {"mesh->n_ids[i_dev][L]", "&mesh->c_id_set[i_dev][L*n_maxcblocks]", "n_maxcells", "mesh->dxf_vec[L]", "tau_L", "tau_ratio_L", "v0"};
+	args_2_2 = {"mesh->c_cblock_ID_onb[i_dev]", "mesh->c_cblock_ID_mask[i_dev]", "mesh->c_cblock_ID_nbr_child[i_dev]", "n_maxcblocks"};
+	args_2_3 = {"mesh->c_cblock_ID_ref[i_dev]", "mesh->c_cells_f_F[i_dev]"};
 	args_kernel_2 = {args_2_1, args_2_2, args_2_3};
 	variation_2 = ...
 	{...
-		'condition', "n_ids[i_dev][L] > 0 && var == V_INTERP_ADDED",...
-		'params', "(M_CBLOCK+n_ids[i_dev][L]-1)/M_CBLOCK,M_CBLOCK,0,streams[i_dev]",...
+		'condition', "mesh->n_ids[i_dev][L] > 0 && var == V_INTERP_ADDED",...
+		'params', "(M_CBLOCK+mesh->n_ids[i_dev][L]-1)/M_CBLOCK,M_CBLOCK,0,mesh->streams[i_dev]",...
 		'args', args_kernel_2,...
 		'template', "<1>"...
 	};
 	variations = {variation_1, variation_2};
 	%
-	build_kernel_routine(fileID{K}, 0, "Mesh::M", sprintf("Interpolate_Linear_%s", l_dq_names{K}), args_routine, variations);
+	build_kernel_routine(fileID{K}, 0, "Solver_LBM::S", sprintf("Interpolate_Linear_%s", l_dq_names{K}), args_routine, variations);
 	add_line(fileID{K});
 
 	
@@ -279,7 +280,7 @@ for K = 1:length(l_dqs)
 end
 
 % Copy to solver directory.
-r = system("cp ./out/mesh_comm_interp_linear_* ../mesh/");
+r = system("cp ./out/solver_lbm_interp_linear_* ../");
 if (r==0)
 	printf("Interpolation code: Done.\n")
 else

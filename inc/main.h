@@ -1,10 +1,3 @@
-/**************************************************************************************/
-/*                                                                                    */
-/*  Author: Khodr Jaber                                                               */
-/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*                                                                                    */
-/**************************************************************************************/
-
-#include "lbm.h"
+#include "cppspec.h"
 #include "mesh.h"
 #include "solver.h"

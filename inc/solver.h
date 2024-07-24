@@ -1,45 +1,35 @@
-/**************************************************************************************/
-/*                                                                                    */
-/*  Author: Khodr Jaber                                                               */
-/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*                                                                                    */
-/**************************************************************************************/
-
 #ifndef SOLVER_H
 #define SOLVER_H
 
-#include "mesh.h"
+#include "cppspec.h"
+
+class Mesh;
 
 class Solver
-{	
+{
+	private:
+	
+	virtual int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl) = 0;
+	
 	public:
 	
-	Mesh			*mesh;
+	Mesh *mesh;
+	int        n_maxcells;
+	int        n_maxcblocks;
+	int        MAX_LEVELS;
+	int        MAX_LEVELS_INTERIOR;
+	int        N_LEVEL_START;
 	
-	//
-	  // ================================
-	  // === Public Member Functions: ===
-	  // ================================
-	//
-		
-	//!
-	virtual int		S_Init() = 0;
-	virtual int		S_Initialize(int i_dev, int L) = 0;
-	virtual int 		S_Advance(int i_dev, int L, std::ofstream *file, double *tmp=0) = 0;
-	virtual int		S_ComputeRefCriteria(int i_dev, int L, int var) = 0;
-	virtual void		S_Interpolate(int i_dev, int L, int var) = 0;
-	virtual void		S_Average(int i_dev, int L, int var) = 0;
-	virtual void		S_UpdateMesh(int var, std::ofstream *file) = 0;
+	virtual int S_SetIC(int i_dev, int L) = 0;
+	virtual int S_Interpolate(int i_dev, int L, int var) = 0;
+	virtual int S_Average(int i_dev, int L, int var) = 0;
+	virtual int S_Advance(int i_dev, int L, std::ofstream *file, double *tmp) = 0;
+	virtual int S_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u) = 0;
+	virtual int S_ComputeOutputProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u) = 0;
+	virtual int S_ComputeForces(int i_dev, int L, std::ofstream *out) = 0;
+	virtual int S_ComputeRefCriteria(int i_dev, int L, int var) = 0;
 	
-	void			S_FreezeMesh(int var)						{ mesh->M_FreezeRefinedCells(var); }
-
-	//
-	  // =====================
-	  // === Constructors: ===
-	  // =====================
-	//
-	
-	Solver(Mesh *mesh_)
+	Solver(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl)
 	{
 		mesh = mesh_;
 	}
@@ -52,57 +42,62 @@ class Solver
 
 class Solver_LBM : public Solver
 {
-	//
-	  // =================================
-	  // === Private Member Functions: ===
-	  // =================================
-	//
-
-	ufloat_t	dx_vec[MAX_LEVELS];
-	ufloat_t	tau_vec[MAX_LEVELS];
-	ufloat_t	tau_ratio_vec_C2F[MAX_LEVELS];
-	ufloat_t	tau_ratio_vec_F2C[MAX_LEVELS];
+	private:
+	
+	int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl);
 	
 	public:
 	
-	//
-	  // ================================
-	  // === Public Member Functions: ===
-	  // ================================
-	//
-
-	// TMP
-	int		S_SetValuesDebug(int i_dev, int L, ufloat_t v);
-	int		S_SetInitialConditions_d2q9(int i_dev, int L);
-	int		S_SetInitialConditions_d3q19(int i_dev, int L);
-	int		S_SetInitialConditions_d3q27(int i_dev, int L);
-	int		S_SetInitialConditions(int i_dev, int L, bool init);
-	int		S_Collide_d2q9(int i_dev, int L);
-	int		S_Collide_d3q19(int i_dev, int L);
-	int		S_Collide_d3q27(int i_dev, int L);
-	int		S_Collide(int i_dev, int L);
-	int		S_Stream_Inpl_d2q9(int i_dev, int L);
-	int		S_Stream_Inpl_d3q19(int i_dev, int L);
-	int		S_Stream_Inpl_d3q27(int i_dev, int L);
-	int		S_Stream(int i_dev, int L);
-	void		S_Interpolate(int i_dev, int L, int var) 	{ mesh->M_Interpolate(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]); }
-	void		S_Average(int i_dev, int L, int var)		{ mesh->M_Average(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]); }	
+	// Grid advancement parameters.
+	//int        S_LES;
+	ufloat_t   v0;
+	ufloat_t   *dxf_vec;
+	ufloat_t   *tau_vec;
+	ufloat_t   *tau_ratio_vec_C2F;
+	ufloat_t   *tau_ratio_vec_F2C;
 	
-	int		S_Init();
-	int		S_Initialize(int i_dev, int L);
-	int		S_Advance(int i_dev, int L, std::ofstream *file, double *tmp=0);
-	int		S_ComputeRefCriteria(int i_dev, int L, int var);
-	void		S_UpdateMesh(int var, std::ofstream *file)	{ mesh->M_RefineAndCoarsenCells(var, tau_ratio_vec_C2F, file); }
+	// LBM-specific routines.
+	int S_Collide(int i_dev, int L);
+	int S_Stream(int i_dev, int L);
+	int S_SetInitialConditions_d2q9(int i_dev, int L);
+	int S_SetInitialConditions_d3q19(int i_dev, int L);
+	int S_SetInitialConditions_d3q27(int i_dev, int L);
+	int S_Collide_d2q9(int i_dev, int L);
+	int S_Collide_d3q19(int i_dev, int L);
+	int S_Collide_d3q27(int i_dev, int L);
+	int S_Stream_Inpl_d2q9(int i_dev, int L);
+	int S_Stream_Inpl_d3q19(int i_dev, int L);
+	int S_Stream_Inpl_d3q27(int i_dev, int L);
+	int S_Interpolate_Linear_d2q9(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int S_Interpolate_Linear_d3q19(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int S_Interpolate_Linear_d3q27(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int S_Average_d2q9(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int S_Average_d3q19(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
+	int S_Average_d3q27(int i_dev, int L, int var, ufloat_t Cscale, ufloat_t Cscale2);
 	
-	//
-	  // =====================
-	  // === Constructors: ===
-	  // =====================
-	//
 	
-	Solver_LBM(Mesh *mesh) : Solver(mesh)
+	// Required.
+	int S_SetIC(int i_dev, int L);
+	int S_Interpolate(int i_dev, int L, int var);
+	int S_Average(int i_dev, int L, int var);
+	int S_Advance(int i_dev, int L, std::ofstream *file, double *tmp);
+	int S_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out);
+	int S_ComputeOutputProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out);
+	int S_ComputeForces(int i_dev, int L, std::ofstream *out);
+	int S_ComputeRefCriteria(int i_dev, int L, int var);
+	
+	Solver_LBM(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl) : Solver(mesh_, params_int, params_dbl)
 	{
-		S_Init();
+		S_Init(params_int, params_dbl);
+		std::cout << "[-] Finished making solver (LBM) object." << std::endl << std::endl;
+	}
+	
+	~Solver_LBM()
+	{
+		delete[] dxf_vec;
+		delete[] tau_vec;
+		delete[] tau_ratio_vec_C2F;
+		delete[] tau_ratio_vec_F2C;
 	}
 };
 

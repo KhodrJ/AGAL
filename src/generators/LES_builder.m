@@ -46,7 +46,7 @@ if (LES_tab(1) == 1)
 		add_statement(fileID, n_ind, sprintf("tmp_i = f_%i - N_Pf(%17.15f)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu)", P-1, w(P)), true);
 		for Q = 1:l_dqs
 			add_statement(fileID, n_ind, sprintf("cdotu = %s", get_cdotu(c(:,Q), n_d)), true);
-			add_statement(fileID, n_ind, sprintf("tmp_i = f_%i - N_Pf(%17.15f)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu)", Q-1, w(Q)), true);
+			add_statement(fileID, n_ind, sprintf("tmp_j = f_%i - N_Pf(%17.15f)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu)", Q-1, w(Q)), true);
 		
 			% Get coefficient.
 			C_ab = 0;
@@ -55,7 +55,7 @@ if (LES_tab(1) == 1)
 					C_ab = C_ab + c(PQ_alpha,P)*c(PQ_beta,P)*c(PQ_alpha,Q)*c(PQ_beta,Q);
 				end
 			end
-			add_statement(fileID, n_ind, sprintf("tmp_k += N_Pf(%17.15f)*tmp_i*tmp_j = %s", C_ab), true);
+			add_statement(fileID, n_ind, sprintf("tmp_k += N_Pf(%17.15f)*tmp_i*tmp_j", C_ab), true);
 		end
 	end
 	add_line(fileID);

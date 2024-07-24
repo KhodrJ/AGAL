@@ -6,7 +6,7 @@ warning ("off", "Octave:data-file-in-path");
 addpath("./general/");
 addpath("./math/");
 addpath("./lbm/");
-addpath("./input/");
+addpath("../../input/");
 
 
 
@@ -32,6 +32,7 @@ for K = 1:3
 	n_ind = 0;
 	
 	% Build file header.
+	add_statement(fileID{K}, 0, "#include \"mesh.h\"", false);
 	add_statement(fileID{K}, 0, "#include \"solver.h\"", false);
 	add_line(fileID{K});
 	add_statement(fileID{K}, 0, sprintf("#if (N_Q==%i)", l_dqs(K)), false);
@@ -39,7 +40,7 @@ for K = 1:3
 	
 
 	% Build kernel header.
-	args_1 = {"int n_ids_idev_L", "int *id_set_idev_L", "long int n_maxcells", "ufloat_t dx_L", "ufloat_t tau_L", "ufloat_t tau_ratio"};
+	args_1 = {"int n_ids_idev_L", "int *id_set_idev_L", "long int n_maxcells", "ufloat_t dx_L", "ufloat_t tau_L", "ufloat_t tau_ratio", "ufloat_t v0"};
 	args_2 = {"int *cblock_ID_onb", "int *cblock_ID_nbr", "int *cblock_ID_nbr_child", "int *cblock_ID_mask", "int n_maxcblocks"};
 	args_3 = {"int *cells_ID_mask", "ufloat_t *cells_f_F"};
 	args = {args_1, args_2, args_3};
@@ -266,7 +267,7 @@ for K = 1:3
 	add_line(fileID{K});
 	%
 	args_routine = {"int i_dev", "int L"};
-	args_1 = {"mesh->n_ids[i_dev][L]", "mesh->c_id_set[i_dev][L]", "mesh->n_maxcells", "dx_vec[L]", "tau_vec[L]", "tau_ratio_vec_C2F[L]"};
+	args_1 = {"mesh->n_ids[i_dev][L]", "&mesh->c_id_set[i_dev][L*n_maxcblocks]", "mesh->n_maxcells", "mesh->dxf_vec[L]", "tau_vec[L]", "tau_ratio_vec_C2F[L]", "v0"};
 	args_2 = {"mesh->c_cblock_ID_onb[i_dev]", "mesh->c_cblock_ID_nbr[i_dev]", "mesh->c_cblock_ID_nbr_child[i_dev]", "mesh->c_cblock_ID_mask[i_dev]", "mesh->n_maxcblocks"};
 	args_3 = {"mesh->c_cells_ID_mask[i_dev]", "mesh->c_cells_f_F[i_dev]"};
 	args_kernel = {args_1, args_2, args_3};
@@ -293,7 +294,7 @@ for K = 1:length(l_dqs)
 end
 
 % Copy to solver directory.
-r = system("cp ./out/solver_lbm_collide_* ../solver/");
+r = system("cp ./out/solver_lbm_collide_* ..//");
 if (r==0)
 	printf("Collision code: Done.\n")
 else
