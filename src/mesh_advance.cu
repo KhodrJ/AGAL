@@ -114,12 +114,12 @@ int Mesh::M_AdvanceLoop()
 	
 	// Primary loop. Total of N_PRINT*P_PRINT iterations (number of prints x number of iterations per print, scaled depending on value of N_LEVEL_START).
 	//PrintAGAL();
-	for (int i = iter_s; i < iter_s + P_OUTPUT*N_OUTPUT*iter_mult; i++)
+	for (int i = iter_s; i < iter_s + P_OUTPUT*N_OUTPUT; i++)
 	//for (int i = 0; i < 1; i++) // Uncomment for debugging.
 	{
 		// Print iteration.
 		//if (i%16 == 0)
-			std::cout << "Iteration " << i << ", t = " << i*dxf_vec[N_LEVEL_START] << std::endl;
+			std::cout << "Iteration " << i << ", t = " << i*dxf_vec[0] << std::endl;
 #if (P_PRINT_ADVANCE==1)
 		iter_printer << "Iteration " << i << ", t = " << i*dx << " | ";
 		for (int L = 0; L < MAX_LEVELS; L++)
@@ -130,18 +130,24 @@ int Mesh::M_AdvanceLoop()
 		
 		
 		// Reset advancement time counters, then output the grid hierarchy sizes for computation later.
+		for (int j = 0; j < iter_mult; j++)
+		{
+			if (N_LEVEL_START > 0)
+				std::cout << "    Sub-Iteration: " << j << ", t = " << i*dxf_vec[0] + j*dxf_vec[N_LEVEL_START] << std::endl;
+			
 #if (P_PRINT_ADVANCE==1)
-		double tmp_arr[4*MAX_LEVELS]; for (int L = 0; L < 4*MAX_LEVELS; L++) tmp_arr[L] = 0.0;
-		adv_printer << i << " ";
-		for (int L = 0; L < MAX_LEVELS; L++)
-			adv_printer << n_ids[0][L] << " ";
-		
-		// Advance w.r.t the coarse grid.
-		solver->S_Advance(0,N_LEVEL_START, &adv_printer, tmp_arr);
-		cudaDeviceSynchronize();
+			double tmp_arr[4*MAX_LEVELS]; for (int L = 0; L < 4*MAX_LEVELS; L++) tmp_arr[L] = 0.0;
+			adv_printer << i << " ";
+			for (int L = 0; L < MAX_LEVELS; L++)
+				adv_printer << n_ids[0][L] << " ";
+			
+			// Advance w.r.t the coarse grid.
+			solver->S_Advance(0,N_LEVEL_START, &adv_printer, tmp_arr);
+			cudaDeviceSynchronize();
 #else
-		solver->S_Advance(0,N_LEVEL_START, 0, 0);
+			solver->S_Advance(0,N_LEVEL_START, 0, 0);
 #endif
+		}
 		
 		
 		
@@ -262,10 +268,12 @@ int Mesh::M_AdvanceLoop()
 			M_RetrieveFromGPU();
 			
 			// Write restart file if at the end of the simulation.
-			std::cout << "Preparing restart file..." << std::endl;
 			if ((i+1)%(iter_s+P_OUTPUT*N_OUTPUT) == 0 && i > iter_s)
+			{
+				std::cout << "Preparing restart file..." << std::endl;
 				M_Restart(0, V_MESH_RESTART_SAVE, &i);
-			std::cout << "Finished printing restart file..." << std::endl;
+				std::cout << "Finished printing restart file..." << std::endl;
+			}
 			
 			// Print to .vti file.
 			std::cout << "Writing output..." << std::endl;

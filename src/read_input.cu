@@ -2,7 +2,7 @@
 
 int ParseNxFactor(std::string str_val, int Nx)
 {
-	// Returns the result of A*Nx where A is the specified integer. Nx must come second (so not Nx*A).
+	// Returns the result of A*Nx where A is the specified integer. Nx must come second (so not Nx*A), and 1*Nx should be written explicitly (not just Nx).
 	int pos = str_val.find("*");
 	int A = std::stoi(str_val.substr(0, pos));
 	
@@ -41,7 +41,13 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 		{"N_PRINT_LEVELS",          2},
 		{"P_OUTPUT",                1*64},
 		{"N_OUTPUT",                10},
-		{"N_OUTPUT_START",          0}
+		{"N_OUTPUT_START",          0},
+		{"VOL_I_MIN",               0},
+		{"VOL_I_MAX",               64},
+		{"VOL_J_MIN",               0},
+		{"VOL_J_MAX",               64},
+		{"VOL_K_MIN",               0},
+		{"VOL_K_MAX",               64}
 	};
 	*input_map_dbl = std::map<std::string, double> // Define map of double parameters with default values.
 	{

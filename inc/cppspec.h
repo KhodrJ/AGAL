@@ -10,6 +10,7 @@
 #include <chrono>
 #include <algorithm>
 #include <stdlib.h>
+#include <omp.h>
 
 // Thrust.
 #include <thrust/host_vector.h>
@@ -68,7 +69,7 @@
 #define APPEND(x, y) x ## y
 #if (N_PRECISION==0)
 	typedef float ufloat_t;
-	#define N_Pf(x) (APPEND(x,f))
+	#define N_Pf(x) (APPEND(x,F))
 #else
 	typedef double ufloat_t;
 	#define N_Pf(x) (x)
@@ -203,7 +204,7 @@ inline double toc_simple(std::string s, int scale=T_S, int print=1) { return tic
 */
 template<class T>
 __global__
-inline void Cu_ResetToValue(int N, T *arr, T val)
+void Cu_ResetToValue(int N, T *arr, T val)
 {
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	
@@ -220,7 +221,7 @@ inline void Cu_ResetToValue(int N, T *arr, T val)
 */
 template <class T>
 __global__
-inline void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
+void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
 {
 	__shared__ int s_arr[M_BLOCK];
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -245,7 +246,7 @@ inline void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
 */
 template <class T>
 __global__
-inline void Cu_FillLinear(int N, T *arr)
+void Cu_FillLinear(int N, T *arr)
 {
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	

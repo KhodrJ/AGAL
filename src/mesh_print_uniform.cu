@@ -36,8 +36,8 @@ int Mesh::M_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mu
 	else // No children, print here.
 	{
 		// Get the macroscopic properties for this block.
-		double out_u_[M_CBLOCK*(7+1)];
-		M_ComputeOutputProperties(i_dev, i_kap, dxf_vec[L], out_u_);
+		double out_u_[M_CBLOCK*(3+1)];
+		M_ComputeProperties(i_dev, i_kap, dxf_vec[L], out_u_);
 		
 		// Modify the cell values in the region defined by the leaf block.
 #if (N_DIM==3)
@@ -80,13 +80,13 @@ int Mesh::M_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mu
 								tmp_data[Id + 1*vol] = out_u_[kap_i + 1*M_CBLOCK];
 								tmp_data[Id + 2*vol] = out_u_[kap_i + 2*M_CBLOCK];
 								tmp_data[Id + 3*vol] = out_u_[kap_i + 3*M_CBLOCK];
-								tmp_data[Id + 4*vol] = out_u_[kap_i + 4*M_CBLOCK];
-								tmp_data[Id + 5*vol] = out_u_[kap_i + 5*M_CBLOCK];
-								tmp_data[Id + 6*vol] = out_u_[kap_i + 6*M_CBLOCK];
-								tmp_data[Id + 7*vol] = sqrt(out_u_[kap_i + 1*M_CBLOCK]*out_u_[kap_i + 1*M_CBLOCK] + out_u_[kap_i + 2*M_CBLOCK]*out_u_[kap_i + 2*M_CBLOCK] + out_u_[kap_i + 3*M_CBLOCK]*out_u_[kap_i + 3*M_CBLOCK]);
-								tmp_data[Id + 8*vol] = sqrt(out_u_[kap_i + 4*M_CBLOCK]*out_u_[kap_i + 4*M_CBLOCK] + out_u_[kap_i + 5*M_CBLOCK]*out_u_[kap_i + 5*M_CBLOCK] + out_u_[kap_i + 6*M_CBLOCK]*out_u_[kap_i + 6*M_CBLOCK]);
-								tmp_data[Id + 9*vol] = L;
-								tmp_data[Id + 10*vol] = i_kap;
+// 								tmp_data[Id + 4*vol] = out_u_[kap_i + 4*M_CBLOCK];
+// 								tmp_data[Id + 5*vol] = out_u_[kap_i + 5*M_CBLOCK];
+// 								tmp_data[Id + 6*vol] = out_u_[kap_i + 6*M_CBLOCK];
+								//tmp_data[Id + 7*vol] = sqrt(out_u_[kap_i + 1*M_CBLOCK]*out_u_[kap_i + 1*M_CBLOCK] + out_u_[kap_i + 2*M_CBLOCK]*out_u_[kap_i + 2*M_CBLOCK] + out_u_[kap_i + 3*M_CBLOCK]*out_u_[kap_i + 3*M_CBLOCK]);
+								//tmp_data[Id + 8*vol] = sqrt(out_u_[kap_i + 4*M_CBLOCK]*out_u_[kap_i + 4*M_CBLOCK] + out_u_[kap_i + 5*M_CBLOCK]*out_u_[kap_i + 5*M_CBLOCK] + out_u_[kap_i + 6*M_CBLOCK]*out_u_[kap_i + 6*M_CBLOCK]);
+								tmp_data[Id + 4*vol] = L;
+								tmp_data[Id + 5*vol] = i_kap;
 							}
 						}
 					}
@@ -98,33 +98,20 @@ int Mesh::M_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mu
 	return 0;
 }
 
-int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter, int *params)
+int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter)
 {
 	// Parameters.
 		// Domain extents (w.r.t root grid, I_min <= I < I_max).
-	int I_min = 0;
-	int I_max = Nxi[0]/Nbx;
-	int J_min = 0;
-	int J_max = Nxi[1]/Nbx;
+	int I_min = VOL_I_MIN;
+	int I_max = VOL_I_MAX;
+	int J_min = VOL_J_MIN;
+	int J_max = VOL_J_MAX;
 	int K_min = 0;
 	int K_max = 1;
 #if (N_DIM==3)
-	K_min = 0;
-	K_max = Nxi[2]/Nbx;
+	K_min = VOL_K_MIN;
+	K_max = VOL_K_MAX;
 #endif
-	if (params != NULL)
-	{
-		I_min = params[0];
-		I_max = params[1];
-		J_min = params[2];
-		J_max = params[3];
-		K_min = 0;
-		K_max = 1;
-#if (N_DIM==3)
-		K_min = params[4];
-		K_max = params[5];
-#endif
-	}
 	
 	
 	// Resolution multiplier.
@@ -151,7 +138,7 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter, int *params)
 		Nxi_f[d] *= mult;
 	int vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
 		// Cell data arrays.
-	int n_data = 3+3+1+1+1+1+1;
+	int n_data = 1+3+1+1;
 	double *tmp_data = new double[n_data*vol];
 	double *tmp_data_b = new double[n_data*vol];
 	for (long int p = 0; p < n_data*vol; p++)
@@ -164,7 +151,8 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter, int *params)
 	for (int kap = 0; kap < n_ids[i_dev][0]; kap++)
 	{
 		int Is[N_PRINT_LEVELS*3];
-		for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++) Is[Ld] = 0;
+		for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++)
+			Is[Ld] = 0;
 		
 		Is[0*N_PRINT_LEVELS] = coarse_I[i_dev][kap] - I_min;
 		Is[1*N_PRINT_LEVELS] = coarse_J[i_dev][kap] - J_min;
@@ -177,19 +165,10 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter, int *params)
 	
 	
 	// Direct print to binary file.
-	int n_params = 6;
-	(*output_file_direct).write(reinterpret_cast<const char*>(&n_params), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&I_min), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&I_max), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&J_min), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&J_max), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&K_min), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&K_max), sizeof(int));
-	
 	for (int d = 0; d < 3+1; d++)
 		(*output_file_direct).write((char*)&tmp_data[d*vol], vol*sizeof(double));
-	(*output_file_direct).write((char*)&tmp_data[9*vol], vol*sizeof(double));
-	(*output_file_direct).write((char*)&tmp_data[10*vol], vol*sizeof(double));
+	(*output_file_direct).write((char*)&tmp_data[4*vol], vol*sizeof(double));
+	(*output_file_direct).write((char*)&tmp_data[5*vol], vol*sizeof(double));
 	
 	
 	// Free allocations.

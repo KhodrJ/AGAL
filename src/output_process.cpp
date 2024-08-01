@@ -9,8 +9,18 @@
 
 #define Nbx 4
 
+struct complex_descending
+{
+	bool operator()(std::complex<float> cf1, std::complex<float> cf2)
+	{
+		if (std::real(cf1) == std::real(cf2))
+			return std::real(cf1) > std::real(cf2);
+		return std::real(cf1) > std::real(cf2);
+	}
+};
+
 // Computes velocity gradient of 'data' array ('out' should be of length 9).
-int VelGrad(int i, int j, int k, int *Nxi_f, double dx, int vol, double *data, double *out)
+int VelGrad(int i, int j, int k, int *Nxi_f, double dx, int vol, double *data, double *out, Eigen::Matrix3f *m_velgrad)
 {
 	// Definitions.
 	double u = data[(i+Nxi_f[0]*j+Nxi_f[0]*Nxi_f[1]*k) + 1*vol];
@@ -124,18 +134,36 @@ int VelGrad(int i, int j, int k, int *Nxi_f, double dx, int vol, double *data, d
 	out[1 + 3*2] = (v_zP - v_zM)/(2.0*dx);
 	out[2 + 3*2] = (w_zP - w_zM)/(2.0*dx);
 	
+	// Insert values into Eigen matrix.
+	(*m_velgrad)(0,0) = out[0 + 3*0];
+	(*m_velgrad)(1,0) = out[1 + 3*0];
+	(*m_velgrad)(2,0) = out[2 + 3*0];
+	(*m_velgrad)(0,1) = out[0 + 3*1];
+	(*m_velgrad)(1,1) = out[1 + 3*1];
+	(*m_velgrad)(2,1) = out[2 + 3*1];
+	(*m_velgrad)(0,2) = out[0 + 3*2];
+	(*m_velgrad)(1,2) = out[1 + 3*2];
+	(*m_velgrad)(2,2) = out[2 + 3*2];
+	
 	return 0;
 }
 
 int main(int argc, char *argv[])
 {
 	// Parameters.
-	int           buffer_length    = 1024*1024*1024;   // Default 1 GB buffer length.
 	int           N_OUTPUT         = 0;
 	int           P_OUTPUT         = 1;
+	int           N_OUTPUT_START   = 0;
 	int           N_PRECISION      = 1;
 	int           N_DIM            = 3;
+	int           N_LEVEL_START    = 0;
 	int           N_PRINT_LEVELS   = 1;
+	int           VOL_I_MIN        = 0;
+	int           VOL_I_MAX        = 1;
+	int           VOL_J_MIN        = 0;
+	int           VOL_J_MAX        = 1;
+	int           VOL_K_MIN        = 0;
+	int           VOL_K_MAX        = 1;
 	int           Nx               = -1;
 	int           Ny               = -1;
 	int           Nz               = -1;
@@ -145,16 +173,18 @@ int main(int argc, char *argv[])
 	double        dx0              = -1.0;
 	int           n_params         = 0;
 	int           vol              = 1;
-	int           I_min            = -1;
-	int           I_max            = -1;
-	int           J_min            = -1;
-	int           J_max            = -1;
-	int           K_min            = -1;
-	int           K_max            = -1;
+	long int      N_PROCS          = omp_get_max_threads();
+	long int      buffer_length    = N_PROCS*1024*1024*1024;   // Default 1 GB buffer length for each process/thread.
 	std::string   dirname          = "";
 	std::string   filename         = "";
 	if (argc < 2)
 	{
+// 		#pragma omp parallel
+//                 {
+//                         printf("Hello from process: %d / %d\n", omp_get_thread_num(), omp_get_max_threads());
+//                 }
+		
+		std::cout << buffer_length << std::endl;
 		std::cout << "Please supply the input directory with the direct-output file..." << std::endl;
 		return 1;
 	}
@@ -178,25 +208,35 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	char *buffer = new char[buffer_length];
-	int init_read_length = 7*sizeof(int)+3*sizeof(double);
+	int init_read_length = (100)*sizeof(int)+(100)*sizeof(double);
 	output_file.read(&buffer[0], init_read_length);
 	long int pos = 0;
 	memcpy(&N_OUTPUT, &buffer[pos], sizeof(int));         pos += sizeof(int);
 	memcpy(&P_OUTPUT, &buffer[pos], sizeof(int));         pos += sizeof(int);
+	memcpy(&N_OUTPUT_START, &buffer[pos], sizeof(int));   pos += sizeof(int);
 	memcpy(&Nx, &buffer[pos], sizeof(int));               pos += sizeof(int);
 	memcpy(&Ny, &buffer[pos], sizeof(int));               pos += sizeof(int);
 	memcpy(&Nz, &buffer[pos], sizeof(int));               pos += sizeof(int);
+	memcpy(&N_LEVEL_START, &buffer[pos], sizeof(int));    pos += sizeof(int);
+	memcpy(&N_PRINT_LEVELS, &buffer[pos], sizeof(int));   pos += sizeof(int);
+	memcpy(&N_PRECISION, &buffer[pos], sizeof(int));      pos += sizeof(int);
+	memcpy(&VOL_I_MIN, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	memcpy(&VOL_I_MAX, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	memcpy(&VOL_J_MIN, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	memcpy(&VOL_J_MAX, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	memcpy(&VOL_K_MIN, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	memcpy(&VOL_K_MAX, &buffer[pos], sizeof(int));        pos += sizeof(int);
+	pos = 100*sizeof(int);
 	memcpy(&Lx, &buffer[pos], sizeof(double));            pos += sizeof(double);
 	memcpy(&Ly, &buffer[pos], sizeof(double));            pos += sizeof(double);
 	memcpy(&Lz, &buffer[pos], sizeof(double));            pos += sizeof(double);
-	memcpy(&N_PRINT_LEVELS, &buffer[pos], sizeof(int));   pos += sizeof(int);
-	memcpy(&N_PRECISION, &buffer[pos], sizeof(int));      pos += sizeof(int);
 	if (Nz == 1)
 		N_DIM = 2;
 	dx0 = Lx/(double)Nx;
 	std::cout << "[-] Loaded direct-output file with the following input:" << std::endl;
 	std::cout << "    N_OUTPUT = " << N_OUTPUT << std::endl;
 	std::cout << "    P_OUTPUT = " << P_OUTPUT << std::endl;
+	std::cout << "    N_OUTPUT_START = " << N_OUTPUT_START << std::endl;
 	std::cout << "    Nx = " << Nx << std::endl;
 	std::cout << "    Ny = " << Ny << std::endl;
 	std::cout << "    Nz = " << Nz << std::endl;
@@ -205,54 +245,46 @@ int main(int argc, char *argv[])
 	std::cout << "    Lz = " << Lz << std::endl;
 	std::cout << "    N_PRINT_LEVELS = " << N_PRINT_LEVELS << std::endl;
 	std::cout << "    N_PRECISION = " << N_PRECISION << std::endl;
+	std::cout << "    N_PROCS = " << N_PROCS << std::endl;
+	
+	
+	// Prepare resolution scaling parameters.
+	int mult = 1;
+	double dx_f = dx0;
+	for (int L = 1; L < N_PRINT_LEVELS; L++) 
+	{
+		mult *= 2;
+		dx_f *= 0.5;
+	}
+	int *mult_f = new int[N_PRINT_LEVELS];
+	for (int L = 0; L < N_PRINT_LEVELS; L++)
+		mult_f[L] = pow(2.0, (double)(N_PRINT_LEVELS-1-L));
+	
+	
+	// Resolution array.
+	int Nxi_f[3];
+	Nxi_f[0] = (VOL_I_MAX-VOL_I_MIN)*Nbx;
+	Nxi_f[1] = (VOL_J_MAX-VOL_J_MIN)*Nbx;
+	Nxi_f[2] = (VOL_K_MAX-VOL_K_MIN)*Nbx; if (N_DIM==2) Nxi_f[2] = 1;
+	for (int d = 0; d < N_DIM; d++)
+		Nxi_f[d] *= mult;
+	vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
+	std::cout << "    Volume of frames: " << vol << std::endl;
 	
 	
 	// Start processing direct-output file.
-	for (int K = 0; K < N_OUTPUT; K++)
+	for (int K = 0; K < N_OUTPUT/N_PROCS+1; K++)
 	{
-		std::cout << std::endl << "PROCESSING FRAME No. " << K << std::endl;
-		
-		// Get bounding box resolution.
-		output_file.read(&buffer[0], sizeof(int));
-		memcpy(&n_params, &buffer[0], sizeof(int));
-		if (n_params > 0)
+		// Read density and velocity data for all threads.
+		output_file.read(&buffer[0], N_PROCS*(3+1+2)*vol*sizeof(double));
+		#pragma omp parallel
 		{
-			output_file.read(&buffer[0], n_params*sizeof(int));   // Should be 6 for now.
-			pos = 0;
-			memcpy(&I_min, &buffer[pos], sizeof(int));   pos += sizeof(int);
-			memcpy(&I_max, &buffer[pos], sizeof(int));   pos += sizeof(int);
-			memcpy(&J_min, &buffer[pos], sizeof(int));   pos += sizeof(int);
-			memcpy(&J_max, &buffer[pos], sizeof(int));   pos += sizeof(int);
-			memcpy(&K_min, &buffer[pos], sizeof(int));   pos += sizeof(int);
-			memcpy(&K_max, &buffer[pos], sizeof(int));   pos += sizeof(int);
-		}
-		std::cout << "[-] Parameters: " << std::endl;
-		std::cout << "    n_params = " << n_params << std::endl;
-		std::cout << "    (I-,I+)x(J-,J+)x(K-,K+) = (" << I_min << "," << I_max << ")x(" << J_min << "," << J_max << ")x(" << K_min << "," << K_max << ")" << std::endl;
 		
-		
-		// Prepare resolution scaling parameters.
-		int mult = 1;
-		double dx_f = dx0;
-		for (int L = 1; L < N_PRINT_LEVELS; L++) 
+		int t = omp_get_thread_num();
+		int Kt = omp_get_thread_num() + K*N_PROCS;
+		if (Kt < N_OUTPUT)
 		{
-			mult *= 2;
-			dx_f *= 0.5;
-		}
-		int *mult_f = new int[N_PRINT_LEVELS];
-		for (int L = 0; L < N_PRINT_LEVELS; L++)
-			mult_f[L] = pow(2.0, (double)(N_PRINT_LEVELS-1-L));
-		
-		
-		// Resolution array.
-		int Nxi_f[3];
-		Nxi_f[0] = (I_max-I_min)*Nbx;
-		Nxi_f[1] = (J_max-J_min)*Nbx;
-		Nxi_f[2] = (K_max-K_min)*Nbx; if (N_DIM==2) Nxi_f[2] = 1;
-		for (int d = 0; d < N_DIM; d++)
-			Nxi_f[d] *= mult;
-		vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
-		std::cout << "    Volume of frame: " << vol << std::endl;
+		std::cout << std::endl << "PROCESSING FRAME No. " << Kt << std::endl;
 		
 		
 		// Read frame data into arrays.
@@ -266,21 +298,22 @@ int main(int argc, char *argv[])
 		// - AMR Level [1:9] (read)
 		// - Block Id [1:10] (read)
 		// - Q-Criterion [1:11] (calc.)
+		// - Lambda-2 [1:12] (calc.)
 		//
-		int n_data = (1+3)+(3)+(1+1)+(1+1)+(1);
+		int n_data = (1+3)+(3)+(1+1)+(1+1)+(1+1);
 		double *tmp_data = new double[n_data*vol];
 		double *tmp_data_b = new double[n_data*vol];
 		for (long int p = 0; p < n_data*vol; p++)
 			tmp_data[p] = -1.0;
 		for (int d = 0; d < 3+1; d++)
 		{
-			output_file.read(&buffer[0], vol*sizeof(double));
-			memcpy(&tmp_data[d*vol], &buffer[0], vol*sizeof(double));
+			//output_file.read(&buffer[0], vol*sizeof(double));
+			memcpy(&tmp_data[d*vol], &buffer[d*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
 		}
-		output_file.read(&buffer[0], vol*sizeof(double));
-		memcpy(&tmp_data[9*vol], &buffer[0], vol*sizeof(double));
-		output_file.read(&buffer[0], vol*sizeof(double));
-		memcpy(&tmp_data[10*vol], &buffer[0], vol*sizeof(double));
+		//output_file.read(&buffer[], vol*sizeof(double));
+		memcpy(&tmp_data[9*vol], &buffer[4*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
+		//output_file.read(&buffer[0], vol*sizeof(double));
+		memcpy(&tmp_data[10*vol], &buffer[5*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
 		
 		
 		// Smoothing for better rendering.
@@ -288,31 +321,31 @@ int main(int argc, char *argv[])
 		//int n_smooths = mult*Nbx;
 		if (n_smooths > 0)
 			std::cout << "[-] Smoothing grid..." << std::endl;
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for (int kap = 0; kap < vol; kap++)
 		{
 			for (int p = 0; p < N_DIM+1; p++)
 				tmp_data_b[kap + p*vol] = tmp_data[kap + p*vol];
 		}
-		for (int i = 0; i < n_smooths; i++)
+		for (int l = 0; l < n_smooths; l++)
 		{
-			std::cout << "    Smoothing iteration " << i << "..." << std::endl;
+			std::cout << "    Smoothing iteration " << l << "..." << std::endl;
 			
 			if (N_DIM == 2)
 			{
-				#pragma omp parallel for
-				for (int J = 1; J < Nxi_f[1]-1; J++)
+				//#pragma omp parallel for
+				for (int j = 1; j < Nxi_f[1]-1; j++)
 				{
-					for (int I = 1; I < Nxi_f[0]-1; I++)
+					for (int i = 1; i < Nxi_f[0]-1; i++)
 					{
-						int kap = (I) + Nxi_f[0]*(J);
+						int kap = (i) + Nxi_f[0]*(j);
 						for (int p = 0; p < N_DIM+1; p++)
 						{
 							tmp_data_b[kap + p*vol] = (
-								tmp_data[(I+1) + Nxi_f[0]*(J) + p*vol] +
-								tmp_data[(I-1) + Nxi_f[0]*(J) + p*vol] +
-								tmp_data[(I) + Nxi_f[0]*(J+1) + p*vol] +
-								tmp_data[(I) + Nxi_f[0]*(J-1) + p*vol]
+								tmp_data[(i+1) + Nxi_f[0]*(j) + p*vol] +
+								tmp_data[(i-1) + Nxi_f[0]*(j) + p*vol] +
+								tmp_data[(i) + Nxi_f[0]*(j+1) + p*vol] +
+								tmp_data[(i) + Nxi_f[0]*(j-1) + p*vol]
 							)/4.0;
 						}
 					}
@@ -320,23 +353,23 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				#pragma omp parallel for
-				for (int K = 1; K < Nxi_f[2]-1; K++)
+				//#pragma omp parallel for
+				for (int k = 1; k < Nxi_f[2]-1; k++)
 				{
-					for (int J = 1; J < Nxi_f[1]-1; J++)
+					for (int j = 1; j < Nxi_f[1]-1; j++)
 					{
-						for (int I = 1; I < Nxi_f[0]-1; I++)
+						for (int i = 1; i < Nxi_f[0]-1; i++)
 						{
-							int kap = (I) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K);
+							int kap = (i) + Nxi_f[0]*(j) + Nxi_f[0]*Nxi_f[1]*(k);
 							for (int p = 0; p < N_DIM+1; p++)
 							{
 								tmp_data_b[kap + p*vol] = (
-									tmp_data[(I+1) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K) + p*vol] +
-									tmp_data[(I-1) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K) + p*vol] +
-									tmp_data[(I) + Nxi_f[0]*(J+1) + Nxi_f[0]*Nxi_f[1]*(K) + p*vol] +
-									tmp_data[(I) + Nxi_f[0]*(J-1) + Nxi_f[0]*Nxi_f[1]*(K) + p*vol] +
-									tmp_data[(I) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K+1) + p*vol] +
-									tmp_data[(I) + Nxi_f[0]*(J) + Nxi_f[0]*Nxi_f[1]*(K-1) + p*vol]
+									tmp_data[(i+1) + Nxi_f[0]*(j) + Nxi_f[0]*Nxi_f[1]*(k) + p*vol] +
+									tmp_data[(i-1) + Nxi_f[0]*(j) + Nxi_f[0]*Nxi_f[1]*(k) + p*vol] +
+									tmp_data[(i) + Nxi_f[0]*(j+1) + Nxi_f[0]*Nxi_f[1]*(k) + p*vol] +
+									tmp_data[(i) + Nxi_f[0]*(j-1) + Nxi_f[0]*Nxi_f[1]*(k) + p*vol] +
+									tmp_data[(i) + Nxi_f[0]*(j) + Nxi_f[0]*Nxi_f[1]*(k+1) + p*vol] +
+									tmp_data[(i) + Nxi_f[0]*(j) + Nxi_f[0]*Nxi_f[1]*(k-1) + p*vol]
 								)/6.0;
 							}
 						}
@@ -344,7 +377,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			
-			#pragma omp parallel for
+			//#pragma omp parallel for
 			for (int kap = 0; kap < vol; kap++)
 			{
 				for (int p = 0; p < N_DIM+1; p++)
@@ -356,6 +389,7 @@ int main(int argc, char *argv[])
 		
 		
 		// Compute remaining properties (e.g., vorticity, vector magnitudes...).
+		std::cout << "[-] Computing properties..." << std::endl;
 		for (int k = 0; k < Nxi_f[2]; k++)
 		{
 			for (int j = 0; j < Nxi_f[1]; j++)
@@ -366,7 +400,8 @@ int main(int argc, char *argv[])
 					
 					// Vorticity.
 					double vel_grad[9];
-					VelGrad(i,j,k,   Nxi_f,dx0,vol,tmp_data,vel_grad);
+					Eigen::Matrix3f m_velgrad(3,3);
+					VelGrad(i,j,k,   Nxi_f,dx0,vol,tmp_data,vel_grad,&m_velgrad);
 // 					tmp_data[kap+4*vol] = 0.0;
 // 					tmp_data[kap+5*vol] = 0.0;
 // 					if (N_DIM == 3)
@@ -385,10 +420,16 @@ int main(int argc, char *argv[])
 						vel_grad[0+3*0]*vel_grad[1+3*1] + vel_grad[1+3*1]*vel_grad[2+3*2] + vel_grad[2+3*2]*vel_grad[0+3*0] +
 						-vel_grad[0+3*1]*vel_grad[1+3*0] - vel_grad[1+3*2]*vel_grad[2+3*1] - vel_grad[2+3*0]*vel_grad[0+3*2]
 					;
-					// tmp_data[kap+12*vol] = ;
+					Eigen::Matrix3f m_S = 0.5f*(m_velgrad + m_velgrad.transpose());
+					Eigen::Matrix3f m_O = 0.5f*(m_velgrad - m_velgrad.transpose());
+					Eigen::Matrix3f m_A = m_S*m_S + m_O*m_O;
+					Eigen::Vector3cf eigvals = m_A.eigenvalues();
+					std::sort(eigvals.begin(), eigvals.end(), complex_descending());
+					tmp_data[kap+12*vol] = (double)(std::real(eigvals(1)));
 				}
 			}
 		}
+		std::cout << "    Finished computing properties..." << std::endl;
 		std::cout << std::endl;
 		
 		
@@ -423,6 +464,11 @@ int main(int argc, char *argv[])
 		cell_data_Q->SetName("Q-Criterion");
 		cell_data_Q->SetNumberOfComponents(1);
 		cell_data_Q->SetNumberOfTuples(vol);
+			// Lambda2-Criterion.
+		vtkNew<vtkDoubleArray> cell_data_L2;
+		cell_data_L2->SetName("Lambda2-Criterion");
+		cell_data_L2->SetNumberOfComponents(1);
+		cell_data_L2->SetNumberOfTuples(vol);
 			// AMR Level.
 		vtkNew<vtkDoubleArray> cell_data_level;
 		cell_data_level->SetName("AMR Level");
@@ -466,6 +512,9 @@ int main(int argc, char *argv[])
 			cell_data_Q->SetTuple1(kap,
 				tmp_data[kap+ 11*vol]
 			);
+			cell_data_L2->SetTuple1(kap,
+				tmp_data[kap+ 11*vol]
+			);
 		}
 		std::cout << "    Finished inserting data in VTK pointers..." << std::endl;
 		
@@ -473,7 +522,7 @@ int main(int argc, char *argv[])
 		// Printing.
 		std::cout << "[-] Creating uniform grid..." << std::endl;
 			// Parameters and initialization.
-		double origin[3] = {I_min*Nbx*dx0, J_min*Nbx*dx0, K_min*Nbx*dx0};
+		double origin[3] = {VOL_I_MIN*Nbx*dx0, VOL_J_MIN*Nbx*dx0, VOL_K_MIN*Nbx*dx0};
 		double spacing[3] = {dx_f, dx_f, dx_f};
 		vtkNew<vtkUniformGrid> grid;
 		vtkNew<vtkCellDataToPointData> cell_to_points;
@@ -489,12 +538,13 @@ int main(int argc, char *argv[])
 		grid->GetCellData()->AddArray(cell_data_velmag);
 		grid->GetCellData()->AddArray(cell_data_vortmag);
 		grid->GetCellData()->AddArray(cell_data_Q);
+		grid->GetCellData()->AddArray(cell_data_L2);
 		grid->GetCellData()->AddArray(cell_data_level);
 		grid->GetCellData()->AddArray(cell_data_blockid);
 			// Blank invalid cells (these are identified by negative AMR level).
 		grid->AllocateCellGhostArray();
 		vtkUnsignedCharArray *ghosts = grid->GetCellGhostArray();
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for (long int kap = 0; kap < vol; kap++)
 		{
 			if (tmp_data[kap + 9*vol] < 0)
@@ -503,7 +553,7 @@ int main(int argc, char *argv[])
 		std::cout << "    Finished creating uniform grid..." << std::endl;
 		//|
 		std::cout << "Finished building VTK dataset, writing..." << std::endl;
-		std::string file_name = dirname + std::string("out_") + std::to_string(K) + ".vti";
+		std::string file_name = dirname + std::string("out_") + std::to_string(Kt) + ".vti";
 		vtkNew<vtkXMLImageDataWriter> writer;
 		//writer->SetInputData(cell_to_points->GetImageDataOutput());
 		writer->SetInputData(grid);
@@ -628,23 +678,26 @@ int main(int argc, char *argv[])
 		windowToImageFilter->Update();
 		vtkNew<vtkPNGWriter> photographer;
 		size_t n_zeros = 7;
-		std::string iter_string = std::to_string(K);
+		std::string iter_string = std::to_string(Kt);
 		std::string padded_iter = std::string(n_zeros-std::min(n_zeros, iter_string.length()), '0') + iter_string;
 		std::string photo_name = dirname + std::string("img/shot_") + padded_iter + ".png";
 		photographer->SetFileName(photo_name.c_str());
 		photographer->SetInputConnection(windowToImageFilter->GetOutputPort());
 		photographer->Write();
-		std::cout << "    Finished taking photo (no. " << K << ")..." << std::endl;
+		std::cout << "    Finished taking photo (no. " << Kt << ")..." << std::endl;
 		
 		
 		// Free allocations.
-		delete[] mult_f;
 		delete[] tmp_data;
 		delete[] tmp_data_b;
+		
+		}
+		}
 	}
 	
 	
 	// Free allocations.
+	delete[] mult_f;
 	delete[] buffer;
 	
 	return 0;

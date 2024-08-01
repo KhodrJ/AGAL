@@ -182,13 +182,20 @@ class Mesh
 	int             N_PROBE_AVE             = 0;            ///< Indicates if computing time-averaged velocity.
 	int             N_PROBE_AVE_FREQUENCY   = 1;            ///< Indicates how frequently the time-averaged velocity is updated.
 	int             N_PROBE_AVE_START       = 0;            ///< Indicates the iteration when time-average calculation begins.
-	// - Rendering and printing.
+	// - Output.
 	int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
 	int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
 	int             N_OUTPUT                = 1;            ///< Indicates the total number of output calls.
 	int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.
 	std::string     output_dir;                             ///< Output directory.
 	std::ofstream   *output_file_direct;                    ///< Direct output file (stores time-series data in binary format).
+	// - Rendering.
+	int             VOL_I_MIN               = 0;            ///< Lower bounding x-index for output subdomain.
+	int             VOL_I_MAX               = Nx;           ///< Upper bounding x-index for output subdomain.
+	int             VOL_J_MIN               = 0;            ///< Lower bounding y-index for output subdomain.
+	int             VOL_J_MAX               = Nx;           ///< Upper bounding y-index for output subdomain.
+	int             VOL_K_MIN               = 0;            ///< Lower bounding z-index for output subdomain.
+	int             VOL_K_MAX               = Nx;           ///< Upper bounding z-index for output subdomain.
 	
 	// o====================================================================================
 	// | CPU paramters.
@@ -286,7 +293,7 @@ class Mesh
 	
 	size_t          free_t;                                 ///< Number of free bytes in GPU memory.
 	size_t          total_t;                                ///< Number of total bytes in GPU memory.
-	int             N_bytes_pc;                             ///< Number of bytes required per cell.
+	long int        N_bytes_pc;                             ///< Number of bytes required per cell.
 	double          M_FRAC                  = 0.75;         ///< Fraction of free memory to use.
 	cudaStream_t    streams[N_DEV];                         ///< CUDA streams employed by mesh.
 
@@ -399,7 +406,7 @@ class Mesh
 	    @param iter is the current iteration being printed.
 	    @param params defines the limits of a cubic portion of the domain (i.e. x1 = params[0], x2 = params[1], y1 = params[2]...).
 	*/
-	int		M_RenderAndPrint_Uniform(int i_dev, int iter, int *params=0);
+	int		M_RenderAndPrint_Uniform(int i_dev, int iter);
 	
 	//! Recursively traverses the hierarchy for printing..
 	/*! Starting from a block on the root grid, the hierarchy is traversed. Cells of leaf blocks are printed while branches are traversed further.

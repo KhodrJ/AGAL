@@ -1,3 +1,6 @@
+#ifndef OUTPUT_H
+#define OUTPUT_H
+
 // General C++ headers.
 #include <iostream>
 #include <fstream>
@@ -7,8 +10,11 @@
 #include <chrono>
 #include <algorithm>
 #include <stdlib.h>
+#include <omp.h>
 
 // Eigen.
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
 
 // VTK.
 #include "vtkAMRBox.h"
@@ -45,3 +51,5 @@
 #include "vtkRenderWindow.h"
 #include "vtkRenderer.h"
 #include "vtkWindowToImageFilter.h"
+
+#endif

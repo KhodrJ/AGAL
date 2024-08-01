@@ -23,7 +23,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	Lz                      = params_dbl["L_fz"]*Lx;
 	Nx                      = params_int["Nx"];
 	Ny                      = (int)(Nx*(Ly/Lx));
-	Nz                      = (int)(Nx*(Lz/Lx));   if (N_DIM == 2) Nz = 1;
+	Nz                      = (int)(Nx*(Lz/Lx));
 	Nxi                     = new int[3]{Nx, Ny, Nz};
 	dx                      = Lx/Nx;
 	dx_cblock               = Nbx*dx;
@@ -50,7 +50,21 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	P_OUTPUT                = params_int["P_OUTPUT"];
 	N_OUTPUT                = params_int["N_OUTPUT"];
 	N_OUTPUT_START          = params_int["N_OUTPUT_START"];
+	VOL_I_MIN               = params_int["VOL_I_MIN"]/Nbx;
+	VOL_I_MAX               = params_int["VOL_I_MAX"]/Nbx;
+	VOL_J_MIN               = params_int["VOL_J_MIN"]/Nbx;
+	VOL_J_MAX               = params_int["VOL_J_MAX"]/Nbx;
+	VOL_K_MIN               = params_int["VOL_K_MIN"]/Nbx;
+	VOL_K_MAX               = params_int["VOL_K_MAX"]/Nbx;
 	output_dir              = output_dir_;
+	
+	
+	// Additional checks on input parameters.
+	if (N_DIM == 2) Nz = 1;
+	if (N_LEVEL_START > MAX_LEVELS-1)
+		N_LEVEL_START = MAX_LEVELS-1;
+	if (N_PRINT_LEVELS > MAX_LEVELS)
+		N_PRINT_LEVELS = MAX_LEVELS;
 	
 	
 	// Make the output directory if it doesn't already exist.
@@ -69,26 +83,35 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	// - N{x/y/z} (int)     Resolution in {x/y/z}
 	std::string of_name = output_dir + std::string("out_direct.dat");
 	output_file_direct = new std::ofstream(of_name, std::ios::binary);
-	int output_n_frames = N_OUTPUT;
-	int output_n_steps = P_OUTPUT;
-	int output_nx = Nx;
-	int output_ny = Ny;
-	int output_nz = Nz;
-	double output_Lx = (double)Lx;
-	double output_Ly = (double)Ly;
-	double output_Lz = (double)Lz;
-	int output_n_levels = N_PRINT_LEVELS;
-	int output_n_precision = N_PRECISION;
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_n_frames), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_n_steps), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_nx), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_ny), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_nz), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_Lx), sizeof(double));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_Ly), sizeof(double));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_Lz), sizeof(double));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_n_levels), sizeof(int));
-	(*output_file_direct).write(reinterpret_cast<const char*>(&output_n_precision), sizeof(int));
+	int *output_int_params = new int[100];
+	double *output_dbl_params = new double[100];
+	for (int p = 0; p < 100; p++)
+	{
+		output_int_params[p] = 0;
+		output_dbl_params[p] = 0.0;
+	}
+	output_int_params[0] = N_OUTPUT;
+	output_int_params[1] = P_OUTPUT;
+	output_int_params[2] = N_OUTPUT_START;
+	output_int_params[3] = Nx;
+	output_int_params[4] = Ny;
+	output_int_params[5] = Nz;
+	output_int_params[6] = N_LEVEL_START;
+	output_int_params[7] = N_PRINT_LEVELS;
+	output_int_params[8] = N_PRECISION;
+	output_int_params[9] = VOL_I_MIN;
+	output_int_params[10] = VOL_I_MAX;
+	output_int_params[11] = VOL_J_MIN;
+	output_int_params[12] = VOL_J_MAX;
+	output_int_params[13] = VOL_K_MIN;
+	output_int_params[14] = VOL_K_MAX;
+	output_dbl_params[0] = (double)Lx;
+	output_dbl_params[1] = (double)Ly;
+	output_dbl_params[2] = (double)Lz;
+	(*output_file_direct).write((char *)&output_int_params[0], 100*sizeof(int));
+	(*output_file_direct).write((char *)&output_dbl_params[0], 100*sizeof(double));
+	delete[] output_int_params;
+	delete[] output_dbl_params;
 	
 	
 	// Get free and total memory from GPU(s). Get max. no. cells and round to nearest 1024.

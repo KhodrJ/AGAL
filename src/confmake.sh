@@ -15,7 +15,7 @@
 # Solver parameters.
 N_PRECISION=0
 N_Q=19
-S_LES=0
+S_LES=1
 N_CASE=0
 
 # Refinement parameters.

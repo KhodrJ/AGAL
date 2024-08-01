@@ -1,6 +1,7 @@
 decor/
 files/
 lib/tetgen/
+lib/eigen/
 lib/vtk/
 lib/eigen-3.4.0/
 openthese.txt
@@ -10,8 +11,6 @@ out/html/
 out/interim/
 out/latex/
 out/results/
-out/run.sh
-out/video.mp4
 out/output.out
 profiler.txt
 src/a.out
@@ -43,3 +42,9 @@ src/solver_lbm_interp_linear_d2q9.cu
 src/solver_lbm_interp_linear_d3q19.cu
 src/solver_lbm_interp_linear_d3q27.cu
 test.txt
+out/Q.mp4
+out/RECEIVE/
+out/run.sh
+out/video.mp4
+out/yiss.mp4
+out/|w|.mp4

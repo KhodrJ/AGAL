@@ -41,25 +41,25 @@ void Cu_ComputeRefCriteria_V1
 				// xM
 			//dist_min = x_k_plus - N_Pf(0.0);
 				// xP
-			dist_tmp = N_Pf(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
+			//dist_tmp = N_Pf(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
 #if (N_DIM==2)
 				// yM
 			//dist_tmp = y_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
 				// yP
-			dist_tmp = N_Pf(1.0) - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
+			//dist_tmp = N_Pf(1.0) - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
 #else
 				// zM
 			//dist_tmp = z_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
 				// zP
-			dist_tmp = N_Pf(1.0) - z_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
+			//dist_tmp = N_Pf(1.0) - z_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
 #endif
 			
 			// Evaluate criterion based on dist_min.
 			//    + '(cblock_ID_onb[i_kap] == 1)' only refines near boundary.
 			//    + 'dist_min <= N_Pf(d_spec)/( (ufloat_t)(1<<L) )' refined by specified distance d_spec.
-			//if (cblock_ID_onb[i_kap] == 1)
+			if (cblock_ID_onb[i_kap] == 1)
 			//if ( dist_min <= N_Pf(0.2)/( (ufloat_t)(1<<L) ) )
-			if (dist_min < dxb_L)
+			//if (dist_min < dxb_L)
 				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
 #endif
 			

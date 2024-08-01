@@ -1,5 +1,6 @@
 # VTK library paths.
 VTK_VER = 9.2
+EIG_VER = 3.4.0
 #|
 #Use this for personal installation.
 #VTK_INC ?= /usr/local/include/vtk-$(VTK_VER)
@@ -16,7 +17,7 @@ VTK_VER = 9.2
 # I used this for my personal laptop build.
 #VTK_INC ?= ../lib/vtk/include/vtk-$(VTK_VER)
 #VTK_LIB ?= ../lib/vtk/lib/
-VTK_INC ?= ../../AGAL-latest/lib/vtk/include/vtk-$(VTK_VER)
+VTK_INC ?= ../../AGAL-latest/lib/vtk/include/vtk-$(VTK_VER)/
 VTK_LIB ?= ../../AGAL-latest/lib/vtk/lib/
 LIBS = -lcuda \
        -lgomp\
@@ -38,6 +39,9 @@ LIBS = -lcuda \
        -lvtkRenderingGL2PSOpenGL2-$(VTK_VER) \
        -lvtkRenderingOpenGL2-$(VTK_VER)\
        -lvtkImagingCore-$(VTK_VER)
+       
+# Eigen library path.
+EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
 
 
 # Fixed solver parameters (defaults specified).
@@ -57,10 +61,10 @@ NVCC = nvcc
 #|
 CPPFLAGS = 
 CXXFLAGS = -g
-NVCCFLAGS = 
+NVCCFLAGS = --expt-relaxed-constexpr
 LDFLAGS = 
 #|
-INC = -I../inc/ -I$(VTK_INC)
+INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC)
 LIB = -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
 #|
 SRC = read_input.cu\
@@ -121,7 +125,7 @@ clean:
 	rm ./*.o
 	
 output.out:
-	$(NVCC) $(INC) $(LIB) output_process.cu $(LIBS) -o ../out/$@ $(NVCCFLAGS)
+	$(NVCC) $(INC) $(LIB) output_process.cpp $(LIBS) -o ../out/$@ $(NVCCFLAGS)
 	
 generate:
 	echo "Generating LBM code..."; cd ./generators;\
