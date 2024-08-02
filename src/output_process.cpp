@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 	int           vol              = 1;
 	long int      N_PROCS          = omp_get_max_threads();
 	long int      buffer_length    = N_PROCS*1024*1024*1024;   // Default 1 GB buffer length for each process/thread.
+	long int      buffer_req       = -1; // This will be the required buffer length determined by vol.
 	std::string   dirname          = "";
 	std::string   filename         = "";
 	if (argc < 2)
@@ -269,6 +270,8 @@ int main(int argc, char *argv[])
 	for (int d = 0; d < N_DIM; d++)
 		Nxi_f[d] *= mult;
 	vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
+	buffer_req = (3+1+2)*vol*sizeof(double) + sizeof(double);
+	
 	std::cout << "    Volume of frames: " << vol << std::endl;
 	
 	
@@ -276,7 +279,7 @@ int main(int argc, char *argv[])
 	for (int K = 0; K < N_OUTPUT/N_PROCS+1; K++)
 	{
 		// Read density and velocity data for all threads.
-		output_file.read(&buffer[0], N_PROCS*(3+1+2)*vol*sizeof(double));
+		output_file.read(&buffer[0], N_PROCS*buffer_req);
 		#pragma omp parallel
 		{
 		
@@ -301,19 +304,19 @@ int main(int argc, char *argv[])
 		// - Lambda-2 [1:12] (calc.)
 		//
 		int n_data = (1+3)+(3)+(1+1)+(1+1)+(1+1);
+		double t_curr = -1;
 		double *tmp_data = new double[n_data*vol];
 		double *tmp_data_b = new double[n_data*vol];
 		for (long int p = 0; p < n_data*vol; p++)
 			tmp_data[p] = -1.0;
+		
+		// Memory copies.
+		memcpy(&t_curr, &buffer[0 + t*buffer_req], sizeof(double));
+		std::cout << "(t = " << t_curr << " s)" << std::endl;
 		for (int d = 0; d < 3+1; d++)
-		{
-			//output_file.read(&buffer[0], vol*sizeof(double));
-			memcpy(&tmp_data[d*vol], &buffer[d*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
-		}
-		//output_file.read(&buffer[], vol*sizeof(double));
-		memcpy(&tmp_data[9*vol], &buffer[4*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
-		//output_file.read(&buffer[0], vol*sizeof(double));
-		memcpy(&tmp_data[10*vol], &buffer[5*vol*sizeof(double) + t*(3+1+2)*vol*sizeof(double)], vol*sizeof(double));
+			memcpy(&tmp_data[d*vol], &buffer[sizeof(double) + d*vol*sizeof(double) + t*buffer_req], vol*sizeof(double));
+		memcpy(&tmp_data[9*vol], &buffer[sizeof(double) + 4*vol*sizeof(double) + t*buffer_req], vol*sizeof(double));
+		memcpy(&tmp_data[10*vol], &buffer[sizeof(double) + 5*vol*sizeof(double) + t*buffer_req], vol*sizeof(double));
 		
 		
 		// Smoothing for better rendering.

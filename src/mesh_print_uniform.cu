@@ -165,6 +165,8 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter)
 	
 	
 	// Direct print to binary file.
+	double t_iter = (double)iter/(double)Nx;
+	(*output_file_direct).write(reinterpret_cast<const char*>(&t_iter), sizeof(double));
 	for (int d = 0; d < 3+1; d++)
 		(*output_file_direct).write((char*)&tmp_data[d*vol], vol*sizeof(double));
 	(*output_file_direct).write((char*)&tmp_data[4*vol], vol*sizeof(double));

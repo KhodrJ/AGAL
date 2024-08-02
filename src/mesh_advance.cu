@@ -152,12 +152,12 @@ int Mesh::M_AdvanceLoop()
 		
 		
 		// Refinement stage, performed every P_REFINE iterations.
-		if (MAX_LEVELS > 1 && (MAX_LEVELS!=N_LEVEL_START+1) && i%P_REFINE == 0 && i > 0)
+		if (MAX_LEVELS > 1 && (MAX_LEVELS!=N_LEVEL_START+1) && (i+1)%P_REFINE == 0 && i > 0)
 		{
-			if (N_PROBE_AVE == 0 || (N_PROBE_AVE==1 && i <= N_PROBE_AVE_START))
+			if (N_PROBE_AVE == 0 || (N_PROBE_AVE==1 && (i+1) <= N_PROBE_AVE_START))
 			{
 				// Output to refinement time counter (includes grid hierarchy sizes of last iteration).
-				std::cout << "Refining... " << i << ", t = " << i*dxf_vec[N_LEVEL_START] << std::endl;
+				std::cout << "Refining... " << i+1 << ", t = " << (i+1)*dxf_vec[N_LEVEL_START] << std::endl;
 				std::cout << "(last) "; for (int L = 0; L < MAX_LEVELS; L++) std::cout << n_ids[0][L] << " "; std::cout << std::endl;
 				
 				// Global average so that data is safely interpolated to new cells.
@@ -172,7 +172,7 @@ int Mesh::M_AdvanceLoop()
 				// |
 #if (P_SHOW_REFINE==1)
 				cudaDeviceSynchronize();
-				ref_printer << i << " " << toc_simple("",T_US) << " ";
+				ref_printer << i+1 << " " << toc_simple("",T_US) << " ";
 				
 				// Interpolate to ghost cells so refinement criterion is not spoiled.
 				std::cout << "Interpolating to ghost cells..." << std::endl;
@@ -202,7 +202,7 @@ int Mesh::M_AdvanceLoop()
 #endif
 				
 				// Refine.
-				M_RefineAndCoarsenCells(i, &ref_printer);
+				M_RefineAndCoarsenCells(i+1, &ref_printer);
 #if (P_SHOW_REFINE==1)
 				cudaDeviceSynchronize();
 #endif
@@ -254,7 +254,7 @@ int Mesh::M_AdvanceLoop()
 		
 
 		// Printing stage, performed every P_PRINT iterations.
-		if ((i+1)%P_OUTPUT == 0 && i > N_OUTPUT_START)
+		if ((i+1)%P_OUTPUT == 0 && i > iter_s+N_OUTPUT_START)
 		{
 			std::cout << "Printing after iteration " << i << " (t = " << i*dxf_vec[N_LEVEL_START] << ")..." << std::endl;
 			
@@ -277,7 +277,7 @@ int Mesh::M_AdvanceLoop()
 			
 			// Print to .vti file.
 			std::cout << "Writing output..." << std::endl;
-			M_RenderAndPrint_Uniform(0, i);
+			M_RenderAndPrint_Uniform(0, i+1);
 			std::cout << "Finished printing..." << std::endl;
 			
 			// Print to .vthb file.
