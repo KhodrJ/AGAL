@@ -7,6 +7,7 @@ L_fy                            1.0
 L_fz                            1.0
 v0                              5.00e-5
 Nx                              64
+N_ITER_TOTAL                    10*Nx
 N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
@@ -32,8 +33,7 @@ N_PROBE_AVE_START               100*Nx
 P_DIR_NAME                      ../out/TEST_UPLOAD_DIRECT/
 N_PRINT_LEVELS                  1
 P_OUTPUT                        1*Nx
-N_OUTPUT                        10
-N_OUTPUT_START                  0
+N_OUTPUT_START                  6*Nx
 
 # RENDERING
 VOL_I_MIN                       0

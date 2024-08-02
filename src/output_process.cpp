@@ -420,12 +420,13 @@ int main(int argc, char *argv[])
 						vel_grad[0+3*0]*vel_grad[1+3*1] + vel_grad[1+3*1]*vel_grad[2+3*2] + vel_grad[2+3*2]*vel_grad[0+3*0] +
 						-vel_grad[0+3*1]*vel_grad[1+3*0] - vel_grad[1+3*2]*vel_grad[2+3*1] - vel_grad[2+3*0]*vel_grad[0+3*2]
 					;
-					Eigen::Matrix3f m_S = 0.5f*(m_velgrad + m_velgrad.transpose());
-					Eigen::Matrix3f m_O = 0.5f*(m_velgrad - m_velgrad.transpose());
-					Eigen::Matrix3f m_A = m_S*m_S + m_O*m_O;
-					Eigen::Vector3cf eigvals = m_A.eigenvalues();
-					std::sort(eigvals.begin(), eigvals.end(), complex_descending());
-					tmp_data[kap+12*vol] = (double)(std::real(eigvals(1)));
+					//Eigen::Matrix3f m_S = 0.5f*(m_velgrad + m_velgrad.transpose());
+					//Eigen::Matrix3f m_O = 0.5f*(m_velgrad - m_velgrad.transpose());
+					//Eigen::Matrix3f m_A = m_S*m_S + m_O*m_O;
+					//Eigen::Vector3cf eigvals = m_A.eigenvalues();
+					//std::sort(eigvals.begin(), eigvals.end(), complex_descending());
+					//tmp_data[kap+12*vol] = (double)(std::real(eigvals(1)));
+					tmp_data[kap+12*vol] = 0.0;
 				}
 			}
 		}

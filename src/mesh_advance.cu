@@ -114,12 +114,12 @@ int Mesh::M_AdvanceLoop()
 	
 	// Primary loop. Total of N_PRINT*P_PRINT iterations (number of prints x number of iterations per print, scaled depending on value of N_LEVEL_START).
 	//PrintAGAL();
-	for (int i = iter_s; i < iter_s + P_OUTPUT*N_OUTPUT; i++)
+	for (int i = iter_s; i < iter_s + N_ITER_TOTAL; i++)
 	//for (int i = 0; i < 1; i++) // Uncomment for debugging.
 	{
 		// Print iteration.
 		//if (i%16 == 0)
-			std::cout << "Iteration " << i << ", t = " << i*dxf_vec[0] << std::endl;
+		std::cout << "Iteration " << i << ", t = " << i*dxf_vec[0] << std::endl;
 #if (P_PRINT_ADVANCE==1)
 		iter_printer << "Iteration " << i << ", t = " << i*dx << " | ";
 		for (int L = 0; L < MAX_LEVELS; L++)
@@ -224,7 +224,7 @@ int Mesh::M_AdvanceLoop()
 				if (ctol < V_PROBE_TOL)
 				{
 					std::cout << "Converged..." << std::endl;
-					i = P_OUTPUT*N_OUTPUT;
+					i = N_ITER_TOTAL;
 				}
 				else
 					std::cout << "Not converged...(tol = " << ctol << ")" << std::endl;
@@ -268,7 +268,7 @@ int Mesh::M_AdvanceLoop()
 			M_RetrieveFromGPU();
 			
 			// Write restart file if at the end of the simulation.
-			if ((i+1)%(iter_s+P_OUTPUT*N_OUTPUT) == 0 && i > iter_s)
+			if ((i+1)%(iter_s+N_ITER_TOTAL) == 0 && i > iter_s)
 			{
 				std::cout << "Preparing restart file..." << std::endl;
 				M_Restart(0, V_MESH_RESTART_SAVE, &i);

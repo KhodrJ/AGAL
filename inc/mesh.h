@@ -161,6 +161,7 @@ class Mesh
 	// - Grid and hierarchy.
 	int             MAX_LEVELS              = 1;            ///< Maximum number of grids for the domain interior and boundary.
 	int             MAX_LEVELS_INTERIOR     = 1;            ///< Maximum number of grids for the domain interior alone.
+	int             N_ITER_TOTAL            = Nx;           ///< Total number of iterations to employ for advancement.
 	int             N_LEVEL_START           = 0;            ///< Grid level to employ as the root grid for advancement.
 	int             N_RESTART               = 0;            ///< Indicates whether or not to use an existing restart file.
 	int             PERIODIC_X              = 0;            ///< Indicates periodicity between boundaries aligned with x-axis.
@@ -185,7 +186,6 @@ class Mesh
 	// - Output.
 	int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
 	int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
-	int             N_OUTPUT                = 1;            ///< Indicates the total number of output calls.
 	int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.
 	std::string     output_dir;                             ///< Output directory.
 	std::ofstream   *output_file_direct;                    ///< Direct output file (stores time-series data in binary format).

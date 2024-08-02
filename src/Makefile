@@ -1,24 +1,28 @@
-# VTK library paths.
+# Library paths.
 VTK_VER = 9.2
 EIG_VER = 3.4.0
 #|
 #Use this for personal installation.
 #VTK_INC ?= /usr/local/include/vtk-$(VTK_VER)
 #VTK_LIB ?= /usr/local/lib/
+#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this on the Mist cluster.
 #VTK_INC ?= ../lib/vtk/include/vtk-$(VTK_VER)
 #VTK_LIB ?= ../lib/vtk/lib64/
+#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this on the Narval cluster.
 #VTK_INC ?= /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/vtk/9.1.0/include/vtk-9.1/
 #VTK_LIB ?= /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/vtk/9.1.0/lib/
+#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this for my personal laptop build.
 #VTK_INC ?= ../lib/vtk/include/vtk-$(VTK_VER)
 #VTK_LIB ?= ../lib/vtk/lib/
 VTK_INC ?= ../../AGAL-latest/lib/vtk/include/vtk-$(VTK_VER)/
 VTK_LIB ?= ../../AGAL-latest/lib/vtk/lib/
+EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
 LIBS = -lcuda \
        -lgomp\
        -lvtkCommonCore-$(VTK_VER) \
@@ -39,9 +43,6 @@ LIBS = -lcuda \
        -lvtkRenderingGL2PSOpenGL2-$(VTK_VER) \
        -lvtkRenderingOpenGL2-$(VTK_VER)\
        -lvtkImagingCore-$(VTK_VER)
-       
-# Eigen library path.
-EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
 
 
 # Fixed solver parameters (defaults specified).
@@ -61,7 +62,7 @@ NVCC = nvcc
 #|
 CPPFLAGS = 
 CXXFLAGS = -g
-NVCCFLAGS = --expt-relaxed-constexpr
+NVCCFLAGS =
 LDFLAGS = 
 #|
 INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC)

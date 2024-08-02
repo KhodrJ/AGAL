@@ -20,6 +20,7 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 	{
 		{"MAX_LEVELS",              5},
 		{"MAX_LEVELS_INTERIOR",     4},
+		{"N_ITER_TOTAL",            10*64},
 		{"N_LEVEL_START",           0},
 		{"Nx",                      64},
 		{"N_RESTART",               1},

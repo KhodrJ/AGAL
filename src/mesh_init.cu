@@ -29,6 +29,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	dx_cblock               = Nbx*dx;
 	MAX_LEVELS              = params_int["MAX_LEVELS"];
 	MAX_LEVELS_INTERIOR     = params_int["MAX_LEVELS_INTERIOR"];
+	N_ITER_TOTAL            = params_int["N_ITER_TOTAL"];
 	N_LEVEL_START           = params_int["N_LEVEL_START"];
 	N_RESTART               = params_int["N_RESTART"];
 	PERIODIC_X              = params_int["PERIODIC_X"];
@@ -48,7 +49,6 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	N_PROBE_AVE_START       = params_int["N_PROBE_AVE_START"];
 	N_PRINT_LEVELS          = params_int["N_PRINT_LEVELS"];
 	P_OUTPUT                = params_int["P_OUTPUT"];
-	N_OUTPUT                = params_int["N_OUTPUT"];
 	N_OUTPUT_START          = params_int["N_OUTPUT_START"];
 	VOL_I_MIN               = params_int["VOL_I_MIN"]/Nbx;
 	VOL_I_MAX               = params_int["VOL_I_MAX"]/Nbx;
@@ -90,7 +90,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		output_int_params[p] = 0;
 		output_dbl_params[p] = 0.0;
 	}
-	output_int_params[0] = N_OUTPUT;
+	output_int_params[0] = (N_ITER_TOTAL - N_OUTPUT_START)/(P_OUTPUT);
 	output_int_params[1] = P_OUTPUT;
 	output_int_params[2] = N_OUTPUT_START;
 	output_int_params[3] = Nx;
