@@ -77,16 +77,16 @@ int Mesh::M_RetrieveFromGPU()
 	return 0;
 }
 
-int Mesh::M_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u)
+int Mesh::M_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u)
 {
-	solver->S_ComputeProperties(i_dev, i_kap, dx_L, out_u);
+	solver->S_ComputeProperties(i_dev, i_Q, i_kap, dx_L, out_u);
 
 	return 0;
 }
 
-int Mesh::M_ComputeOutputProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u)
+int Mesh::M_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u)
 {
-	solver->S_ComputeOutputProperties(i_dev, i_kap, dx_L, out_u);
+	solver->S_ComputeOutputProperties(i_dev, i_Q, i_kap, dx_L, out_u);
 	
 	return 0;
 }
@@ -107,37 +107,39 @@ int Mesh::M_UpdateMeanVelocities(int i_dev, int N_iters_ave)
 #if (N_DIM==3)
 	ufloat_t w_kap = N_Pf(0.0);
 #endif
-	double out_u[M_CBLOCK*(3+1)];
+	double out_u[M_TBLOCK*(3+1)];
 	
 	for (int kap = 0; kap < n_ids[i_dev][0]; kap++)
 	{
 		int i_kap = id_set[i_dev][kap];
-		
-		// Density and velocity computations.
-		M_ComputeProperties(i_dev, i_kap, dxf_vec[0], out_u);
-		
-		// Update mean values.
-		for (int kap_i = 0; kap_i < M_CBLOCK; kap_i++)
+		for (int i_Q = 0; i_Q < N_QUADS; i_Q++)
 		{
-			rho_kap = (ufloat_t)out_u[kap_i + 0*M_CBLOCK];
-			u_kap = (ufloat_t)out_u[kap_i + 1*M_CBLOCK];
-			v_kap = (ufloat_t)out_u[kap_i + 2*M_CBLOCK];
-#if (N_DIM==3)
-			w_kap = (ufloat_t)out_u[kap_i + 3*M_CBLOCK];
-#endif
+			// Density and velocity computations.
+			M_ComputeProperties(i_dev, i_Q, i_kap, dxf_vec[0], out_u);
 			
-			cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 0*n_ids[i_dev][0]*M_CBLOCK] = 
-				((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 0*n_ids[i_dev][0]*M_CBLOCK] + rho_kap) / ((ufloat_t)N_iters_ave+1.0);
-			cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 1*n_ids[i_dev][0]*M_CBLOCK] = 
-				((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 1*n_ids[i_dev][0]*M_CBLOCK] + u_kap) / ((ufloat_t)N_iters_ave+1.0);
-			cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 2*n_ids[i_dev][0]*M_CBLOCK] = 
-				((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 2*n_ids[i_dev][0]*M_CBLOCK] + v_kap) / ((ufloat_t)N_iters_ave+1.0);
-#if (N_DIM==2)
-			cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 3*n_ids[i_dev][0]*M_CBLOCK] = N_Pf(0.0);
-#else
-			cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 3*n_ids[i_dev][0]*M_CBLOCK] = 
-				((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + 3*n_ids[i_dev][0]*M_CBLOCK] + w_kap) / ((ufloat_t)N_iters_ave+1.0);
+			// Update mean values.
+			for (int kap_i = 0; kap_i < M_TBLOCK; kap_i++)
+			{
+				rho_kap = (ufloat_t)out_u[kap_i + 0*M_TBLOCK];
+				u_kap = (ufloat_t)out_u[kap_i + 1*M_TBLOCK];
+				v_kap = (ufloat_t)out_u[kap_i + 2*M_TBLOCK];
+#if (N_DIM==3)
+				w_kap = (ufloat_t)out_u[kap_i + 3*M_TBLOCK];
 #endif
+				
+				cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids[i_dev][0]*M_CBLOCK] = 
+					((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids[i_dev][0]*M_CBLOCK] + rho_kap) / ((ufloat_t)N_iters_ave+1.0);
+				cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids[i_dev][0]*M_CBLOCK] = 
+					((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids[i_dev][0]*M_CBLOCK] + u_kap) / ((ufloat_t)N_iters_ave+1.0);
+				cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 2*n_ids[i_dev][0]*M_CBLOCK] = 
+					((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 2*n_ids[i_dev][0]*M_CBLOCK] + v_kap) / ((ufloat_t)N_iters_ave+1.0);
+#if (N_DIM==2)
+				cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 3*n_ids[i_dev][0]*M_CBLOCK] = N_Pf(0.0);
+#else
+				cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 3*n_ids[i_dev][0]*M_CBLOCK] = 
+					((ufloat_t)N_iters_ave*cells_f_U_mean[i_dev][i_kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 3*n_ids[i_dev][0]*M_CBLOCK] + w_kap) / ((ufloat_t)N_iters_ave+1.0);
+#endif
+			}
 		}
 	}
 	
@@ -153,43 +155,45 @@ ufloat_t Mesh::M_CheckConvergence(int i_dev)
 #endif
 	ufloat_t sum = N_Pf(0.0);
 	ufloat_t norm = N_Pf(0.0);
-	double out_u[M_CBLOCK*(7+1)];
+	double out_u[M_TBLOCK*(7+1)];
 	
 	for (int kap = 0; kap < n_ids_probed[i_dev]; kap++)
 	{
 		int i_kap = id_set_probed[i_dev][kap];
-	
-		// Density and velocity computations.
-		M_ComputeProperties(i_dev, i_kap, dxf_vec[0], out_u);
-		
-		// Check convergence of velocity magnitudes at probed locations.
-		for (int kap_i = 0; kap_i < M_CBLOCK; kap_i++)
+		for (int i_Q = 0; i_Q < N_QUADS; i_Q++)
 		{
-			u_kap = (ufloat_t)out_u[kap_i + 1*M_CBLOCK];
-			v_kap = (ufloat_t)out_u[kap_i + 2*M_CBLOCK];
+			// Density and velocity computations.
+			M_ComputeProperties(i_dev, i_Q, i_kap, dxf_vec[0], out_u);
+			
+			// Check convergence of velocity magnitudes at probed locations.
+			for (int kap_i = 0; kap_i < M_TBLOCK; kap_i++)
+			{
+				u_kap = (ufloat_t)out_u[kap_i + 1*M_TBLOCK];
+				v_kap = (ufloat_t)out_u[kap_i + 2*M_TBLOCK];
 #if (N_DIM==3)
-			w_kap = (ufloat_t)out_u[kap_i + 3*M_CBLOCK];
+				w_kap = (ufloat_t)out_u[kap_i + 3*M_TBLOCK];
 #endif
-			
+				
 #if (N_DIM==2)
-			ufloat_t u_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 0*n_ids_probed[i_dev]*M_CBLOCK];
-			ufloat_t v_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 1*n_ids_probed[i_dev]*M_CBLOCK];
-			cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 0*n_ids_probed[i_dev]*M_CBLOCK] = u_kap;
-			cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 1*n_ids_probed[i_dev]*M_CBLOCK] = v_kap;
-			sum += (u_kap-u_kap_prev)*(u_kap-u_kap_prev) + (v_kap-v_kap_prev)*(v_kap-v_kap_prev);
-			norm += u_kap*u_kap + v_kap*v_kap;
-			
-			
+				ufloat_t u_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids_probed[i_dev]*M_CBLOCK];
+				ufloat_t v_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids_probed[i_dev]*M_CBLOCK];
+				cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids_probed[i_dev]*M_CBLOCK] = u_kap;
+				cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids_probed[i_dev]*M_CBLOCK] = v_kap;
+				sum += (u_kap-u_kap_prev)*(u_kap-u_kap_prev) + (v_kap-v_kap_prev)*(v_kap-v_kap_prev);
+				norm += u_kap*u_kap + v_kap*v_kap;
+				
+				
 #else
-			ufloat_t u_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 0*n_ids_probed[i_dev]*M_CBLOCK];
-			ufloat_t v_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 1*n_ids_probed[i_dev]*M_CBLOCK];
-			ufloat_t w_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 2*n_ids_probed[i_dev]*M_CBLOCK];
-			cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 0*n_ids_probed[i_dev]*M_CBLOCK] = u_kap;
-			cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 1*n_ids_probed[i_dev]*M_CBLOCK] = v_kap;
-			cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + 2*n_ids_probed[i_dev]*M_CBLOCK] = w_kap;
-			sum += (u_kap-u_kap_prev)*(u_kap-u_kap_prev) + (v_kap-v_kap_prev)*(v_kap-v_kap_prev) + (w_kap-w_kap_prev)*(w_kap-w_kap_prev);
-			norm += u_kap*u_kap + v_kap*v_kap + w_kap*w_kap;
+				ufloat_t u_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids_probed[i_dev]*M_CBLOCK];
+				ufloat_t v_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids_probed[i_dev]*M_CBLOCK];
+				ufloat_t w_kap_prev = cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 2*n_ids_probed[i_dev]*M_CBLOCK];
+				cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 0*n_ids_probed[i_dev]*M_CBLOCK] = u_kap;
+				cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 1*n_ids_probed[i_dev]*M_CBLOCK] = v_kap;
+				cells_f_U_probed_tn[i_dev][kap*M_CBLOCK + kap_i + i_Q*M_TBLOCK + 2*n_ids_probed[i_dev]*M_CBLOCK] = w_kap;
+				sum += (u_kap-u_kap_prev)*(u_kap-u_kap_prev) + (v_kap-v_kap_prev)*(v_kap-v_kap_prev) + (w_kap-w_kap_prev)*(w_kap-w_kap_prev);
+				norm += u_kap*u_kap + v_kap*v_kap + w_kap*w_kap;
 #endif
+			}
 		}
 	}
 

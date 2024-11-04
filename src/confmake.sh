@@ -14,15 +14,17 @@
 
 # Solver parameters.
 N_PRECISION=0
-N_Q=19
-S_LES=1
+N_Q=9
+Nqx=8
+M_LBLOCK=16
+S_LES=0
 N_CASE=0
 
 # Refinement parameters.
-P_SHOW_REFINE=0
+P_SHOW_REFINE=1
 	
 # Printing parameters.
-P_PRINT_ADVANCE=0
+P_SHOW_ADVANCE=1
 
 
 # 
@@ -34,12 +36,16 @@ if [[ ! ($N_Q == 9 || $N_Q == 19 || $N_Q == 27) ]]; then
 	exit
 fi
 if [[ $N_Q == 9 ]]; then N_DIM=2; else N_DIM=3; fi
+if [[ $Nqx < 1 ]]; then Nqx=1; fi
+if [[ $(($Nqx%2)) == 1 && $Nqx > 1 ]]; then Nqx=$(($Nqx+1)); fi  
 
 make\
 	N_PRECISION=$N_PRECISION\
 	N_DIM=$N_DIM\
 	N_Q=$N_Q\
+	Nqx=$Nqx\
+	M_LBLOCK=$M_LBLOCK\
 	S_LES=$S_LES\
 	N_CASE=$N_CASE\
 	P_SHOW_REFINE=$P_SHOW_REFINE\
-	P_PRINT_ADVANCE=$P_PRINT_ADVANCE
+	P_SHOW_ADVANCE=$P_SHOW_ADVANCE

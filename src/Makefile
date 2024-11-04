@@ -49,10 +49,12 @@ LIBS = -lcuda \
 N_PRECISION?=0
 N_DIM?=2
 N_Q?=9
+Nqx?=1
+M_LBLOCK?=16
 S_LES?=0
 N_CASE?=0
 P_SHOW_REFINE?=0
-P_PRINT_ADVANCE?=0
+P_SHOW_ADVANCE?=0
 N_REGEN?=0
 
 
@@ -68,6 +70,10 @@ LDFLAGS =
 INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC)
 LIB = -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
 #|
+MQ = 
+ifeq ($(shell expr $(Nqx) \> 1), 1)
+   MQ = _mq
+endif
 SRC = read_input.cu\
       mesh_init.cu\
       mesh_dest.cu\
@@ -77,6 +83,7 @@ SRC = read_input.cu\
       mesh_restart.cu\
       mesh_output.cu\
       mesh_print_uniform.cu\
+      mesh_print_vthb.cu\
       solver_lbm_init.cu\
       solver_lbm_advance.cu\
       solver_lbm_criterion.cu\
@@ -90,12 +97,16 @@ SRC = read_input.cu\
       solver_lbm_stream_inpl_d2q9.cu\
       solver_lbm_stream_inpl_d3q19.cu\
       solver_lbm_stream_inpl_d3q27.cu\
-      solver_lbm_interp_linear_d2q9.cu\
-      solver_lbm_interp_linear_d3q19.cu\
-      solver_lbm_interp_linear_d3q27.cu\
-      solver_lbm_average_d2q9.cu\
-      solver_lbm_average_d3q19.cu\
-      solver_lbm_average_d3q27.cu
+      solver_lbm_interp_linear$(MQ)_d2q9.cu\
+      solver_lbm_interp_linear$(MQ)_d3q19.cu\
+      solver_lbm_interp_linear$(MQ)_d3q27.cu\
+      solver_lbm_interp_cubic$(MQ)_d2q9.cu\
+      solver_lbm_interp_cubic$(MQ)_d3q19.cu\
+      solver_lbm_interp_cubic$(MQ)_d3q27.cu\
+      solver_lbm_average$(MQ)_d2q9.cu\
+      solver_lbm_average$(MQ)_d3q19.cu\
+      solver_lbm_average$(MQ)_d3q27.cu\
+      solver_lbm_average_cubic_d2q9.cu
       
 #|
 OBJ = $(SRC:.cu=.o)
@@ -104,10 +115,12 @@ OPTS = -DINPUT_CONFMAKE\
        -DN_PRECISION=$(N_PRECISION)\
        -DN_DIM=$(N_DIM)\
        -DN_Q=$(N_Q)\
+       -DNqx=$(Nqx)\
+       -DM_LBLOCK=$(M_LBLOCK)\
        -DS_LES=$(S_LES)\
        -DN_CASE=$(N_CASE)\
        -DP_SHOW_REFINE=$(P_SHOW_REFINE)\
-       -DP_PRINT_ADVANCE=$(P_PRINT_ADVANCE)
+       -DP_SHOW_ADVANCE=$(P_SHOW_ADVANCE)
 
 
 #
@@ -126,13 +139,33 @@ clean:
 	rm ./*.o
 	
 output.out:
-	$(NVCC) $(INC) $(LIB) output_process.cpp $(LIBS) -o ../out/$@ $(NVCCFLAGS)
+#	$(NVCC) $(INC) $(LIB) output_process.cpp $(LIBS) -o ../out/$@ $(NVCCFLAGS)
+	$(CXX) $(INC) -L$(VTK_LIB) -Wl,-rpath,$(VTK_LIB) -fopenmp output_process.cpp $(LIBS) -o ../out/$@
 	
-generate:
-	echo "Generating LBM code..."; cd ./generators;\
+generate_old:
+	echo "Generating LBM solver code..."; cd ./generators;\
 	octave collide_builder.m;\
 	octave stream_builder.m;\
 	octave IC_builder.m;\
 	octave interp_builder.m;\
 	octave average_builder.m;\
+	cd ..;\
+
+generate_new_BC:
+	echo "Generating LBM solver code..."; cd ./newgen;\
+	./a.out solver_lbm_collision_oct.agc;\
+	./a.out solver_lbm_set_ic_oct.agc;\
+	cd ..;\
+
+generate_new:
+	echo "Generating LBM solver code..."; cd ./newgen;\
+	./a.out solver_lbm_collision_oct.agc;\
+	./a.out solver_lbm_streaming_oct.agc;\
+	./a.out solver_lbm_set_ic_oct.agc;\
+	./a.out solver_lbm_interp_linear.agc;\
+	./a.out solver_lbm_interp_linear_oct.agc;\
+	./a.out solver_lbm_interp_cubic.agc;\
+	./a.out solver_lbm_interp_cubic_oct.agc;\
+	./a.out solver_lbm_average.agc;\
+	./a.out solver_lbm_average_oct.agc;\
 	cd ..;\

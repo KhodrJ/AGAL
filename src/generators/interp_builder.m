@@ -59,24 +59,24 @@ for K = 1:3
 	%
 	add_variable(fileID{K}, n_ind, "__shared__ int", "s_ID_cblock[M_CBLOCK]");
 	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_F[M_CBLOCK]");
-	add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_Feq[M_CBLOCK]");
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_tau[M_CBLOCK]");
-	add_statement(fileID{K}, 0, "#endif", false);
+	%add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_Feq[M_CBLOCK]");
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_tau[M_CBLOCK]");
+	%add_statement(fileID{K}, 0, "#endif", false);
 	%
 	% - Open boundaries
 	%      + s_{u/v/w}:       Shared memory array for {x/y/z}- velocity component.
 	%
-	add_statement(fileID{K}, 0, "#if (B_TYPE==1||S_LES==1)", false);
-	if (K == 1)
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_u[(Nbx+2)*(Nbx+2)]");
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_v[(Nbx+2)*(Nbx+2)]");
-	else
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_u[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_v[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
-		add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_w[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
-	end
-	add_statement(fileID{K}, 0, "#endif", false);
+	%add_statement(fileID{K}, 0, "#if (B_TYPE==1||S_LES==1)", false);
+	%if (K == 1)
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_u[(Nbx+2)*(Nbx+2)]");
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_v[(Nbx+2)*(Nbx+2)]");
+	%else
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_u[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_v[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
+	%	add_variable(fileID{K}, n_ind, "__shared__ ufloat_t", "s_w[(Nbx+2)*(Nbx+2)*(Nbx+2)]");
+	%end
+	%add_statement(fileID{K}, 0, "#endif", false);
 	%
 	% - Id variables
 	%      + kap:                Define global index based on block Id, block dim. and thread Id.
@@ -120,10 +120,10 @@ for K = 1:3
 	end
 	%
 	add_variable(fileID{K}, n_ind, "ufloat_t", "tmp_i = N_Pf(0.0)");
-	add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
-		add_variable(fileID{K}, n_ind, "ufloat_t", "tmp_j = N_Pf(0.0)");
-		add_variable(fileID{K}, n_ind, "ufloat_t", "tmp_k = N_Pf(0.0)");
-	add_statement(fileID{K}, 0, "#endif", false);
+	%add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
+	%	add_variable(fileID{K}, n_ind, "ufloat_t", "tmp_j = N_Pf(0.0)");
+	%	add_variable(fileID{K}, n_ind, "ufloat_t", "tmp_k = N_Pf(0.0)");
+	%add_statement(fileID{K}, 0, "#endif", false);
 	%
 	add_variable(fileID{K}, n_ind, "ufloat_t", "cdotu = N_Pf(0.0)");
 	add_variable(fileID{K}, n_ind, "ufloat_t", "udotu = N_Pf(0.0)");
@@ -180,19 +180,19 @@ for K = 1:3
 	load_f_alt(fileID{K}, n_ind, dims(K), l_dqs(K), pb_all{K});
 	load_macro_props(fileID{K}, n_ind, dims(K), l_dqs(K), c_all{K});
 	%
-	add_statement(fileID{K}, 0, "#if (B_TYPE==1||S_LES==1)", false);
-	load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_u", "u_kap");
-	load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_v", "v_kap");
-	if (dims(K) == 3)
-		load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_w", "w_kap");
-	end
-	add_statement(fileID{K}, n_ind, "__syncthreads()", true);
-	add_statement(fileID{K}, 0, "#endif", false);
+	%add_statement(fileID{K}, 0, "#if (B_TYPE==1||S_LES==1)", false);
+	%load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_u", "u_kap");
+	%load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_v", "v_kap");
+	%if (dims(K) == 3)
+	%	load_to_shared_halo(fileID{K}, n_ind, dims(K), "s_w", "w_kap");
+	%end
+	%add_statement(fileID{K}, n_ind, "__syncthreads()", true);
+	%add_statement(fileID{K}, 0, "#endif", false);
 	add_line(fileID{K});
 		
 		
 	% LES implementation (unused).
-	LES_builder(fileID{K}, n_ind, dims(K), l_dqs(K), c_all{K}, w_all{K}, 2);
+	%LES_builder(fileID{K}, n_ind, dims(K), l_dqs(K), c_all{K}, w_all{K}, 2);
 		
 		
 	% Interpolate to children if applicable.
@@ -202,28 +202,28 @@ for K = 1:3
 		add_statement(fileID{K}, n_ind, sprintf("cdotu = %s", get_cdotu(c_all{K}(:,P),dims(K))), true);
 		add_statement(fileID{K}, n_ind, sprintf("tmp_i = N_Pf(%17.15f)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu)", w_all{K}(P)), true);
 		%
-		add_statement(fileID{K}, 0, "#if (S_LES==0)", false);
+		%add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
 			add_statement(fileID{K}, n_ind, sprintf("s_F[threadIdx.x] = tmp_i + (f_%i - tmp_i)*(tau_ratio)", P-1), true);
-		add_statement(fileID{K}, 0, "#else", false);
-			add_statement(fileID{K}, n_ind, sprintf("s_F[threadIdx.x] = f_%i", P-1), true);
-			add_statement(fileID{K}, n_ind, sprintf("s_Feq[threadIdx.x] = tmp_i", P-1), true);
-		add_statement(fileID{K}, 0, "#endif", false);
+		%add_statement(fileID{K}, 0, "#else", false);
+		%	add_statement(fileID{K}, n_ind, sprintf("s_F[threadIdx.x] = f_%i", P-1), true);
+		%	add_statement(fileID{K}, n_ind, sprintf("s_Feq[threadIdx.x] = tmp_i", P-1), true);
+		%add_statement(fileID{K}, 0, "#endif", false);
 		add_statement(fileID{K}, n_ind, sprintf("__syncthreads()", P-1), true);
 		n_ind = add_bracket(fileID{K}, n_ind, 1, true);
-			add_statement(fileID{K}, 0, "#if (S_LES==0)", false);
+			%add_statement(fileID{K}, 0, "#if (S_LES==1)", false);
 				vars_s1 = {sprintf("cells_f_F[(i_kap_bc+%%i)*M_CBLOCK + threadIdx.x + %i*n_maxcells]", pb_all{K}(P))};
 				vars_s2 = {"s_F"};
 				conds = "(interp_type == 0 && cells_ID_mask[(i_kap_bc+%i)*M_CBLOCK + threadIdx.x]==2) || (interp_type == 1)";
 				interp_linear_tree(fileID{K}, n_ind, dims(K), vars_s1, vars_s2, conds);
-			add_statement(fileID{K}, 0, "#else // Storing interpolated fi_eq, fi, tau_ratio in tmp_i, tmp_j and tmp_k, respectively.", false);
-				vars_s1 = {"tmp_i", "tmp_j", "tmp_k"};
-				vars_s2 = {"s_Feq", "s_F", "s_tau"};
-				conds = "(interp_type == 0 && cells_ID_mask[(i_kap_bc+%i)*M_CBLOCK + threadIdx.x]==2) || (interp_type == 1)";
-				statements = {
-					sprintf("cells_f_F[(i_kap_bc+%%i)*M_CBLOCK + threadIdx.x + %i*n_maxcells] = tmp_i + (tmp_j - tmp_i)*( N_Pf(1.0) - N_Pf(0.25)*dx_L/tmp_k )", pb_all{K}(P))
-				};
-				interp_linear_tree(fileID{K}, n_ind, dims(K), vars_s1, vars_s2, conds, statements);
-			add_statement(fileID{K}, 0, "#endif", false);
+			%add_statement(fileID{K}, 0, "#else // Storing interpolated fi_eq, fi, tau_ratio in tmp_i, tmp_j and tmp_k, respectively.", false);
+			%	vars_s1 = {"tmp_i", "tmp_j", "tmp_k"};
+			%	vars_s2 = {"s_Feq", "s_F", "s_tau"};
+			%	conds = "(interp_type == 0 && cells_ID_mask[(i_kap_bc+%i)*M_CBLOCK + threadIdx.x]==2) || (interp_type == 1)";
+			%	statements = {
+			%		sprintf("cells_f_F[(i_kap_bc+%%i)*M_CBLOCK + threadIdx.x + %i*n_maxcells] = tmp_i + (tmp_j - tmp_i)*( N_Pf(1.0) - N_Pf(0.25)*dx_L/tmp_k )", pb_all{K}(P))
+			%	};
+			%	interp_linear_tree(fileID{K}, n_ind, dims(K), vars_s1, vars_s2, conds, statements);
+			%add_statement(fileID{K}, 0, "#endif", false);
 			add_statement(fileID{K}, n_ind, "__syncthreads()", true);
 		n_ind = add_bracket(fileID{K}, n_ind, 1, false);
 	end
@@ -237,7 +237,7 @@ for K = 1:3
 	n_ind = add_bracket(fileID{K}, n_ind, 1, false);
 	
 	
-	% Build C++ routine to call collision kernel.
+	% Build C++ routine to call interpolation kernel.
 	add_line(fileID{K});
 	add_line(fileID{K});
 	%

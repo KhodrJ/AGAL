@@ -13,21 +13,14 @@ int Solver_LBM::S_Init(std::map<std::string, int> params_int, std::map<std::stri
 	MAX_LEVELS                             = mesh->MAX_LEVELS;
 	MAX_LEVELS_INTERIOR                    = mesh->MAX_LEVELS_INTERIOR;
 	N_LEVEL_START                          = mesh->N_LEVEL_START;
-	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
-	{
-		/*
-		n_ids[i_dev]                   = mesh->n_ids[i_dev];
-		c_cells_ID_mask[i_dev]         = mesh->c_cells_ID_mask[i_dev];
-		c_cells_f_F[i_dev]             = mesh->c_cells_f_F[i_dev];
-		c_cblock_f_X[i_dev]            = mesh->c_cblock_f_X[i_dev];
-		c_cblock_ID_mask[i_dev]        = mesh->c_cblock_ID_mask[i_dev];
-		c_cblock_ID_nbr[i_dev]         = mesh->c_cblock_ID_nbr[i_dev];
-		c_cblock_ID_nbr_child[i_dev]   = mesh->c_cblock_ID_nbr_child[i_dev];
-		c_cblock_ID_onb[i_dev]         = mesh->c_cblock_ID_onb[i_dev];
-		c_cblock_ID_ref[i_dev]         = mesh->c_cblock_ID_ref[i_dev];
-		c_cblock_level[i_dev]          = mesh->c_cblock_level[i_dev];
-		*/
-	}
+	S_INTERP                               = mesh->S_INTERP;
+	S_AVERAGE                              = mesh->S_AVERAGE;
+	
+	// Update modes of interpolation and averaging in advance routine.
+	V_INTERP_ADVANCE = V_INTERP_INTERFACE;
+	V_AVERAGE_ADVANCE = V_AVERAGE_INTERFACE;
+	if (S_INTERP==1) // If using cubic interpolation, the whole block of cells needs to be updated from fine grid.
+		V_AVERAGE_ADVANCE = V_AVERAGE_BLOCK;
 	
 	std::cout << "Initialized solver (LBM) object..." << std::endl;
 	

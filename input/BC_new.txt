@@ -1,0 +1,26 @@
+-1 0   0 0 0
+-2 0   0 0 0
+-3 0   0 0 0
+-4 0   0.05 0 0
+-6 0   0 0 0
+-8 0   0 0 0
+END
+
+# BC specification.
+#
+# Definitions:
+# - b_id                      -> Boundary Id being specified.
+# - u_{x/y/z}                 -> Velocity vector.
+#
+# Types:
+# - (0) bounce-back           -> b_id 0 u_x u_y u_z
+# - (1) open [outlet]         -> b_id 1
+#
+# Domain Edge Ids:
+# - -1: -X
+# - -2: +X
+# - -3: -Y
+# - -4: +Y
+# - -5: -Z
+# - -6: +Z
+# - -8: Obstacles

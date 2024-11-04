@@ -30,7 +30,7 @@ The "confmake.sh" file defines compilation options and runs the Makefile automat
     - The solution is printed every P_PRINT iterations, and the solution is run for a total of N_PRINT\*P_PRINT iterations. The test cases in the preprint relied on a single print (N_PRINT=1) with P_PRINT scaled with Nx. 
     - One second in solution time corresponds to 1\*Nx iterations.
     - N_PRINT_LEVELS controls the number of grids in the hierarchy to be included in the output (e.g., MAX_LEVELS=4 and N_PRINT_LEVELS=2 results in levels 0 and 1 being printed, excluding levels 2 and 3).
-    - P_SHOW_ADVANCE shows the recursive calls on the console for debugging, P_PRINT_ADVANCE is unused.
+    - P_SHOW_ADVANCE shows the recursive calls on the console for debugging, P_SHOW_ADVANCE is unused.
 12. If the initial and/or boundary conditions were modified, N_REGEN should be set to 1 so that the code generators are called before compilation. Make sure Octave is available in the file path.
 
 Once all of these steps have been checked, simply run `./confmake.sh` from the 'src' directory. This will produce an executable 'a.out' which is executed with `./a.out`. Once the simulation is terminated, the solution is printed and can be viewed with software such as Paraview (make sure that your choice of software can read .vthb files).

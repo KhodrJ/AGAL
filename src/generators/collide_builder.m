@@ -162,6 +162,8 @@ for K = 1:3
 		add_line(fileID{K});
 	%
 		n_ind = add_condition(fileID{K}, n_ind, " i_kap_b > -1 && (i_kap_bc < 0 || block_on_boundary == 1) ", false);
+	%	n_ind = add_for(fileID{K}, n_ind, "l = 0; l < M_CQUAD; l++", false);
+		
 	
 	
 	% Load DDFs and compute macroscopic properties.
@@ -255,6 +257,7 @@ for K = 1:3
 	
 	
 	% Close bracket of 'Loop over blocks in shared memory'.
+	%n_ind = add_for(fileID{K}, n_ind, "", true);
 	n_ind = add_for(fileID{K}, n_ind, "", true);
 	n_ind = add_condition(fileID{K}, n_ind, "", true);
 	

@@ -167,6 +167,8 @@ class Mesh
 	int             PERIODIC_X              = 0;            ///< Indicates periodicity between boundaries aligned with x-axis.
 	int             PERIODIC_Y              = 0;            ///< Indicates periodicity between boundaries aligned with y-axis.
 	int             PERIODIC_Z              = 0;            ///< Indicates periodicity between boundaries aligned with z-axis.
+	int             S_INTERP                = 1;            ///< Indicates the mode of interpolation.
+	int             S_AVERAGE               = 0;            ///< Indicates the mode of averaging.
 	// - Mesh refinement.
 	int             P_REFINE                = 1;            ///< Indicates frequency of refinement.
 	int             N_REFINE_START          = -3;           ///< Tuning parameter for refinement criterion.
@@ -185,6 +187,7 @@ class Mesh
 	int             N_PROBE_AVE_START       = 0;            ///< Indicates the iteration when time-average calculation begins.
 	// - Output.
 	int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
+	int             N_PRINT_LEVELS_LEGACY   = 1;            ///< Number of grid levels to include when printing (legacy .vthb format).
 	int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
 	int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.
 	std::string     output_dir;                             ///< Output directory.
@@ -291,8 +294,8 @@ class Mesh
 	// | GPU paramters.
 	// o====================================================================================
 	
-	size_t          free_t;                                 ///< Number of free bytes in GPU memory.
-	size_t          total_t;                                ///< Number of total bytes in GPU memory.
+	size_t          free_t = 0;                             ///< Number of free bytes in GPU memory.
+	size_t          total_t = 0;                            ///< Number of total bytes in GPU memory.
 	long int        N_bytes_pc;                             ///< Number of bytes required per cell.
 	double          M_FRAC                  = 0.75;         ///< Fraction of free memory to use.
 	cudaStream_t    streams[N_DEV];                         ///< CUDA streams employed by mesh.
@@ -378,20 +381,22 @@ class Mesh
 	//! Computes macroscopic properties from DDFs retrieved from GPU memory.
 	/*! Prints the mesh using VTK's hierarchical box format (.vthb).
             @param i_dev is the ID of the device to be processed.
+            @param i_Q is the ID of the cell-block quadrant whose properties are being computed.
             @param i_kap is the ID of the cell-block whose properties are being computed.
             @param dx_L is the spatial step size in the block.
 	    @param out is the output array storing the macroscopic properties for all cells in a single cell-block.
 	*/
-	int		M_ComputeProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u);
+	int		M_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u);
 	
 	//! Computes the appropriate properties for output. Intermediate step in @M_RenderAndPrint_Uniform routine. 
 	/*! Prints the mesh using VTK's hierarchical box format (.vthb).
             @param i_dev is the ID of the device to be processed.
+            @param i_Q is the ID of the cell-block quadrant whose properties are being computed.
             @param i_kap is the ID of the cell-block whose properties are being computed.
             @param dx_L is the spatial step size in the block.
 	    @param out is the output array storing the macroscopic properties for all cells in a single cell-block.
 	*/
-	int		M_ComputeOutputProperties(int i_dev, int i_kap, ufloat_t dx_L, double *out_u);
+	int		M_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u);
 	
 	//! Print forces along and perpendicular to flow direction to a text file for the flow-past-square-cylinder case studies. This is a temporary function for the manuscript, will be refined later.
 	/*! Checks neighbors on the coarsest level and computes forces via momentum exchange algorithm.
@@ -464,7 +469,7 @@ class Mesh
 	//! Advance the grid using the specified solver and input parameters (for now, only BGK-LBM).
 	/*! @param i_dev is the ID of the device to be processed.
 	    @param L is the grid level being advanced.
-	    @param file is a pointer to the output file storing recorded advancement times (if P_PRINT_ADVANCE is set to 1).
+	    @param file is a pointer to the output file storing recorded advancement times (if P_SHOW_ADVANCE is set to 1).
 	    @param tmp is a pointer to an array temporarily storing the recorded advancement times.
 	*/
 	int		M_Advance(int i_dev, int L, std::ofstream *file, double *tmp);

@@ -22,7 +22,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 			tic_simple("");
 #endif
 			// |
-			S_Interpolate(i_dev, L, V_INTERP_INTERFACE) ;//, N_Pf(0.5)*tau_vec[1]/tau_vec[0]);
+			S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -53,7 +53,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 			tic_simple("");
 #endif
 			// |
-			S_Average(i_dev, L, V_AVERAGE_INTERFACE) ;//, N_Pf(2.0)*tau_vec[L]/tau_vec[L+1]);
+			S_Average(i_dev, L, V_AVERAGE_ADVANCE);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -85,7 +85,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 				tic_simple("");
 #endif
 				// |
-				S_Interpolate(i_dev, L, V_INTERP_INTERFACE) ;//, N_Pf(0.5)*tau_vec[L+1]/tau_vec[L]);
+				S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
 				// |
 #if (P_SHOW_ADVANCE==1)
 				cudaDeviceSynchronize();
@@ -120,7 +120,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 				tic_simple("");
 #endif
 				// |
-				S_Average(i_dev, L, V_AVERAGE_INTERFACE); //, N_Pf(2.0)*tau_vec[L]/tau_vec[L+1]);
+				S_Average(i_dev, L, V_AVERAGE_ADVANCE);
 				// |
 #if (P_SHOW_ADVANCE==1)
 				cudaDeviceSynchronize();
@@ -129,7 +129,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 				tic_simple("");
 #endif
 				// |
-				S_Interpolate(i_dev, L, V_INTERP_INTERFACE); //, N_Pf(0.5)*tau_vec[L+1]/tau_vec[L]);
+				S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
 				// |
 #if (P_SHOW_ADVANCE==1)
 				cudaDeviceSynchronize();
@@ -164,7 +164,7 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 				tic_simple("");
 #endif
 				// |
-				S_Average(i_dev, L, V_AVERAGE_INTERFACE); //, N_Pf(2.0)*tau_vec[L]/tau_vec[L+1]);
+				S_Average(i_dev, L, V_AVERAGE_ADVANCE);
 				// |
 #if (P_SHOW_ADVANCE==1)
 				cudaDeviceSynchronize();
@@ -193,9 +193,26 @@ int Solver_LBM::S_Advance(int i_dev, int L, std::ofstream *file, double *tmp)
 		cudaDeviceSynchronize();
 		tmp[2] += toc_simple("",T_US,0);
 		
-		for (int Lp = 0; Lp < 4; Lp++)
+		double tot_time = 0.0;
+		long int tot_cells = 0;
+		int multip = 1;
+		for (int Lp = N_LEVEL_START; Lp < 4*MAX_LEVELS; Lp++)
+		{
+			tot_time += tmp[Lp];
 			*file << tmp[Lp] << " ";
+		}
+		for (int Lp = N_LEVEL_START; Lp < MAX_LEVELS-1; Lp++)
+		{
+			tot_cells += multip*(mesh->n_ids[i_dev][Lp] - mesh->n_ids[i_dev][Lp+1]/N_CHILDREN);
+			multip *= 2;
+		}
+		tot_cells += multip*(mesh->n_ids[i_dev][MAX_LEVELS-1]);
+		*file << (1.0 / tot_time)*(double)(tot_cells*M_CBLOCK);
 		*file << std::endl;
+		
+		//for (int Lp = 0; Lp < 4; Lp++)
+		//	*file << tmp[Lp] << " ";
+		//*file << std::endl;
 #endif
 	}
 	
@@ -243,26 +260,63 @@ int Solver_LBM::S_Stream(int i_dev, int L)
 
 int Solver_LBM::S_Interpolate(int i_dev, int L, int var)
 {
+	if (S_INTERP==0)
+	{
 #if (N_Q==9)
-	S_Interpolate_Linear_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+		S_Interpolate_Linear_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
 #elif (N_Q==19)
-	S_Interpolate_Linear_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+		S_Interpolate_Linear_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
 #else // N_Q==27
-	S_Interpolate_Linear_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+		S_Interpolate_Linear_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
 #endif
+	}
+	else // S_INTERP==1, or anything else for now.
+	{
+#if (N_Q==9)
+		S_Interpolate_Cubic_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+#elif (N_Q==19)
+		S_Interpolate_Cubic_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+#else // N_Q==27
+		S_Interpolate_Cubic_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
+#endif
+	}
 
 	return 0;
 }
 
 int Solver_LBM::S_Average(int i_dev, int L, int var)
 {
+	if (S_AVERAGE==0)
+	{
 #if (N_Q==9)
-	S_Average_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+		S_Average_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
 #elif (N_Q==19)
-	S_Average_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+		S_Average_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
 #else // N_Q==27
-	S_Average_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+		S_Average_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
 #endif
+	}
+	else // S_AVERAGE==1, or anything else for now.
+	{
+#if (N_Q==9)
+		S_Average_Cubic_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+#elif (N_Q==19)
+		//S_Average_Cubic_d3q19(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+#else // N_Q==27
+		//S_Average_Cubic_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
+#endif
+	}
+	
+	return 0;
+}
+
+int Solver_LBM::S_Debug(int var)
+{
+	if (var == 0)
+	{
+		S_Collide(0,0);
+		S_Stream(0,0);
+	}
 	
 	return 0;
 }

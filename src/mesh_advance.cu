@@ -23,7 +23,7 @@ int Mesh::M_AdvanceLoop()
 	std::ofstream iter_printer;
 	std::ofstream ref_printer;
 	std::ofstream adv_printer;
-	std::ofstream force_printer;
+	std::ofstream force_printer = std::ofstream(output_dir + "forces.txt");
 	
 	
 	// Set initial conditions on the coarse grid.
@@ -31,14 +31,14 @@ int Mesh::M_AdvanceLoop()
 	
 	
 	// Prepare statistics counters.
-#if (P_PRINT_ADVANCE==1)
+#if (P_SHOW_ADVANCE==1)
 	iter_printer.open(output_dir + "iter_counter.txt");
 	adv_printer.open(output_dir + "time_counter.txt");
 	adv_printer << "iter ";
 	for (int L = 0; L < MAX_LEVELS; L++) adv_printer << "n" << L << " ";
 	for (int L = 0; L < MAX_LEVELS; L++) adv_printer << L << "-Interp " << L << "-Collide " << L << "-Stream " << L << "-Average ";
 	adv_printer << "MLUPS" << std::endl;
-	force_printer.open(output_dir + "forces.txt");
+	//force_printer.open(output_dir + "forces.txt");
 #endif
 #if (P_SHOW_REFINE==1)
 	ref_printer.open(output_dir + "refine_counter.txt");
@@ -120,7 +120,7 @@ int Mesh::M_AdvanceLoop()
 		// Print iteration.
 		//if (i%16 == 0)
 		std::cout << "Iteration " << i << ", t = " << i*dxf_vec[0] << std::endl;
-#if (P_PRINT_ADVANCE==1)
+#if (P_SHOW_ADVANCE==1)
 		iter_printer << "Iteration " << i << ", t = " << i*dx << " | ";
 		for (int L = 0; L < MAX_LEVELS; L++)
 			iter_printer << "N" << L << "=" << n_ids[0][L] << ", ";
@@ -135,7 +135,7 @@ int Mesh::M_AdvanceLoop()
 			if (N_LEVEL_START > 0)
 				std::cout << "    Sub-Iteration: " << j << ", t = " << i*dxf_vec[0] + j*dxf_vec[N_LEVEL_START] << std::endl;
 			
-#if (P_PRINT_ADVANCE==1)
+#if (P_SHOW_ADVANCE==1)
 			double tmp_arr[4*MAX_LEVELS]; for (int L = 0; L < 4*MAX_LEVELS; L++) tmp_arr[L] = 0.0;
 			adv_printer << i << " ";
 			for (int L = 0; L < MAX_LEVELS; L++)
@@ -157,7 +157,7 @@ int Mesh::M_AdvanceLoop()
 			if (N_PROBE_AVE == 0 || (N_PROBE_AVE==1 && (i+1) <= N_PROBE_AVE_START))
 			{
 				// Output to refinement time counter (includes grid hierarchy sizes of last iteration).
-				std::cout << "Refining... " << i+1 << ", t = " << (i+1)*dxf_vec[N_LEVEL_START] << std::endl;
+				std::cout << "Refining... " << i+1 << ", t = " << (i+1)*dxf_vec[0] << std::endl;
 				std::cout << "(last) "; for (int L = 0; L < MAX_LEVELS; L++) std::cout << n_ids[0][L] << " "; std::cout << std::endl;
 				
 				// Global average so that data is safely interpolated to new cells.
@@ -275,15 +275,12 @@ int Mesh::M_AdvanceLoop()
 				std::cout << "Finished printing restart file..." << std::endl;
 			}
 			
-			// Print to .vti file.
 			std::cout << "Writing output..." << std::endl;
+				// Print to .vti file.
 			M_RenderAndPrint_Uniform(0, i+1);
+				// Print to .vthb file.
+			M_Print_VTHB(0, i);
 			std::cout << "Finished printing..." << std::endl;
-			
-			// Print to .vthb file.
-			//std::cout << "Writing output..." << std::endl;
-			//mesh.M_Print_VTHB(0, i);
-			//std::cout << "Finished printing..." << std::endl;
 		}
 		
 		

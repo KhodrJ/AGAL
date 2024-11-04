@@ -18,6 +18,7 @@
 88888888 888      "Y88P"  888     "Y8888P "Y8888   88888P' 88888888 
 */                                                  
 
+// NOTE: Current only works with a choice of Nqx=1. Force calculation will be implemented in output_process.cpp soon.
 int Mesh::M_PrintForces(int i_dev, int L, std::ofstream *out)
 {
 	ufloat_t Fxp = N_Pf(0.0);

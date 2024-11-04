@@ -26,7 +26,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	Nz                      = (int)(Nx*(Lz/Lx));
 	Nxi                     = new int[3]{Nx, Ny, Nz};
 	dx                      = Lx/Nx;
-	dx_cblock               = Nbx*dx;
+	dx_cblock               = Nbx*Nqx*dx;
 	MAX_LEVELS              = params_int["MAX_LEVELS"];
 	MAX_LEVELS_INTERIOR     = params_int["MAX_LEVELS_INTERIOR"];
 	N_ITER_TOTAL            = params_int["N_ITER_TOTAL"];
@@ -35,6 +35,8 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	PERIODIC_X              = params_int["PERIODIC_X"];
 	PERIODIC_Y              = params_int["PERIODIC_Y"];
 	PERIODIC_Z              = params_int["PERIODIC_Z"];
+	S_INTERP                = params_int["S_INTERP"];
+	S_AVERAGE               = params_int["S_AVERAGE"];
 	P_REFINE                = params_int["P_REFINE"];
 	N_REFINE_START          = params_int["N_REFINE_START"];
 	N_REFINE_INC            = params_int["N_REFINE_INC"];
@@ -48,29 +50,40 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	N_PROBE_AVE_FREQUENCY   = params_int["N_PROBE_AVE_FREQUENCY"];
 	N_PROBE_AVE_START       = params_int["N_PROBE_AVE_START"];
 	N_PRINT_LEVELS          = params_int["N_PRINT_LEVELS"];
+	N_PRINT_LEVELS_LEGACY   = params_int["N_PRINT_LEVELS_LEGACY"];
 	P_OUTPUT                = params_int["P_OUTPUT"];
 	N_OUTPUT_START          = params_int["N_OUTPUT_START"];
-	VOL_I_MIN               = params_int["VOL_I_MIN"]/Nbx;
-	VOL_I_MAX               = params_int["VOL_I_MAX"]/Nbx;
-	VOL_J_MIN               = params_int["VOL_J_MIN"]/Nbx;
-	VOL_J_MAX               = params_int["VOL_J_MAX"]/Nbx;
-	VOL_K_MIN               = params_int["VOL_K_MIN"]/Nbx;
-	VOL_K_MAX               = params_int["VOL_K_MAX"]/Nbx;
+	VOL_I_MIN               = params_int["VOL_I_MIN"]/(Nbx*Nqx);
+	VOL_I_MAX               = params_int["VOL_I_MAX"]/(Nbx*Nqx);
+	VOL_J_MIN               = params_int["VOL_J_MIN"]/(Nbx*Nqx);
+	VOL_J_MAX               = params_int["VOL_J_MAX"]/(Nbx*Nqx);
+	VOL_K_MIN               = params_int["VOL_K_MIN"]/(Nbx*Nqx);
+	VOL_K_MAX               = params_int["VOL_K_MAX"]/(Nbx*Nqx);
 	output_dir              = output_dir_;
 	
 	
 	// Additional checks on input parameters.
 	if (N_DIM == 2) Nz = 1;
+	if (N_DIM == 2) Nxi[2] = 1;
 	if (N_LEVEL_START > MAX_LEVELS-1)
 		N_LEVEL_START = MAX_LEVELS-1;
 	if (N_PRINT_LEVELS > MAX_LEVELS)
 		N_PRINT_LEVELS = MAX_LEVELS;
+	if (N_PRINT_LEVELS_LEGACY > MAX_LEVELS)
+		N_PRINT_LEVELS_LEGACY = MAX_LEVELS;
 	
 	
 	// Make the output directory if it doesn't already exist.
+	if (output_dir.back() != '/')
+		output_dir = output_dir + "/";
 	std::string debug_string = "echo Checking existence of output directory...";
-	std::string file_check_string = std::string("if ! test -d ") + output_dir + std::string(" ; then mkdir ") + output_dir + std::string("; mkdir ") + output_dir + std::string("/img; echo \"[-] Creating new results directory (") + output_dir + std::string(")...\"; fi");
+	std::string file_check_string = std::string("if ! test -d ") + output_dir + std::string(" ; then mkdir ") + output_dir + std::string("; mkdir ") + output_dir + std::string("/img; mkdir ") + output_dir + std::string("input; echo \"[-] Creating new results directory (") + output_dir + std::string(")...\"; fi");
 	system(file_check_string.c_str());
+	
+	
+	// Make a copy of the input and configuration files for replicability.
+	std::string copy_string = "cp ../input/* " + output_dir + "input/.; cp ./confmake.sh " + output_dir + "input/.;";
+	system(copy_string.c_str());
 	
 	
 	// Create the direct-output binary file and initialize metadata.
@@ -100,11 +113,11 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	output_int_params[7] = N_PRINT_LEVELS;
 	output_int_params[8] = N_PRECISION;
 	output_int_params[9] = VOL_I_MIN;
-	output_int_params[10] = VOL_I_MAX;
-	output_int_params[11] = VOL_J_MIN;
-	output_int_params[12] = VOL_J_MAX;
-	output_int_params[13] = VOL_K_MIN;
-	output_int_params[14] = VOL_K_MAX;
+	output_int_params[10] = VOL_I_MAX*Nqx;
+	output_int_params[11] = VOL_J_MIN*Nqx;
+	output_int_params[12] = VOL_J_MAX*Nqx;
+	output_int_params[13] = VOL_K_MIN*Nqx;
+	output_int_params[14] = VOL_K_MAX*Nqx;
 	output_dbl_params[0] = (double)Lx;
 	output_dbl_params[1] = (double)Ly;
 	output_dbl_params[2] = (double)Lz;
@@ -115,7 +128,8 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	
 	
 	// Get free and total memory from GPU(s). Get max. no. cells and round to nearest 1024.
-	cudaMemGetInfo(&free_t, &total_t);
+	gpuErrchk( cudaMemGetInfo(&free_t, &total_t) );
+	cudaDeviceSynchronize();
 	N_bytes_pc = std::ceil( 
 		sizeof(int)*(1) + sizeof(ufloat_t)*(N_Q + 1) + 
 		(sizeof(float)*(N_DIM) + sizeof(int)*(2*N_Q_max + 1+1+1) + 
@@ -126,7 +140,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	n_maxcblocks = n_maxcells / M_CBLOCK;
 	std::cout << "[-] Before allocations:\n";
 	std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
-	std::cout << "    Free bytes: " << free_t << ", Maximum number of cells: " << n_maxcells/(1e6) << "M, Maximum number of cell blocks: " << n_maxcblocks << std::endl;
+	std::cout << "    Free bytes: " << free_t << ", Maximum number of cells: " << n_maxcells << ", Maximum number of cell blocks: " << n_maxcblocks << std::endl;
 	std::cout << "    Calculated bytes required per cell: " << N_bytes_pc << std::endl << std::endl;
 	
 	
@@ -236,6 +250,8 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_ref[i_dev], V_REF_ID_INACTIVE);
 			// Reset levels to 0.
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_level[i_dev], 0);
+			// Reset cell-block boundary IDs to 0.
+		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb[i_dev], 0);
 			// Fill the counting iterator used in refinement/coarsening.
 		Cu_FillLinear<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(n_maxcblocks, c_tmp_counting_iter[i_dev]);
 		
@@ -259,9 +275,9 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
 		// Define a padded grid from which block neighbors and groups will be built.
-		int block_length_x = Nxi[0]/Nbx;
-		int block_length_y = Nxi[1]/Nbx;
-		int grid_height = N_DIM==2 ? 1 : Nxi[2]/Nbx;
+		int block_length_x = Nxi[0]/(Nbx*Nqx);
+		int block_length_y = Nxi[1]/(Nbx*Nqx);
+		int grid_height = N_DIM==2 ? 1 : Nxi[2]/(Nbx*Nqx);
 		int grid_height_multiplier = N_DIM==2 ? 0 : 1;
 		int grid_IDs[block_length_x+2][block_length_y+2][grid_height+2];
 		
@@ -285,10 +301,9 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 					double D = 1.0/32.0;
 					double x_bi = (i-1)*dx_cblock + dx_cblock*0.5;
 					double y_bi = (j-1)*dx_cblock + dx_cblock*0.5;
-					double z_bi = (k-1)*dx_cblock + dx_cblock*0.5;
 					
 					// Establishes the square square cylinder by removing corresponding coarse blocks.
-					if (x_bi >= 0.3125-(D/2.0) && x_bi <= 0.3125-(D/2.0) + D && y_bi >= ( (L_fy-D)/2.0) && y_bi <= ( (L_fy-D)/2.0 ) + D)
+					if (x_bi >= 0.3125-(D/2.0) && x_bi <= 0.3125-(D/2.0) + D && y_bi >= ( (Ly-D)/2.0) && y_bi <= ( (Ly-D)/2.0 ) + D)
 					{
 						in_interior = false;
 						grid_IDs[i][j][k] = -8;
@@ -348,7 +363,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 				if (PERIODIC_Y==1)
 				{
 					grid_IDs[i][0][k] = grid_IDs[i][block_length_y+2 - 1 - 1][k];
-					grid_IDs[i][block_length_y+2 - 1][k] = grid_IDs[i][1][k];				
+					grid_IDs[i][block_length_y+2 - 1][k] = grid_IDs[i][1][k];
 				}
 				else
 				{

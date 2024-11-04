@@ -22,6 +22,7 @@ src/input.txt
 src/kernel_versions.txt
 src/profile.nvprof
 src/\[TR\]mesh/
+src/\[TR\]old_source/
 src/*.o
 src/solver_lbm_collide_d2q9.cu
 src/solver_lbm_collide_d3q19.cu
@@ -41,6 +42,7 @@ src/solver_lbm_average_d3q27.cu
 src/solver_lbm_interp_linear_d2q9.cu
 src/solver_lbm_interp_linear_d3q19.cu
 src/solver_lbm_interp_linear_d3q27.cu
+src/sljob.sh
 test.txt
 out/Q.mp4
 out/RECEIVE/
@@ -48,3 +50,18 @@ out/run.sh
 out/video.mp4
 out/yiss.mp4
 out/|w|.mp4
+out/LDC128.mp4
+out/LDC256.mp4
+out/LDC512.mp4
+out/TEST_NEW_REVISION/
+out/fitf.m
+out/preprint_data_v1_1
+src/newgen/a.out
+src/newgen/b.out
+src/newgen/lib/
+src/newgen/log.txt
+src/newgen/octave/
+src/newgen/output/
+src/newgen/presentation.pptx
+src/newgen/strategy.docx
+

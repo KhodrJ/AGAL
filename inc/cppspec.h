@@ -61,6 +61,8 @@
 	#define N_PRECISION 0
 	#define N_DIM 2
 	#define N_Q 9
+	#define Nqx 1
+	#define M_LBLOCK 16
 	#define N_Q_max 9
 #endif
 
@@ -75,13 +77,17 @@
 	#define N_Pf(x) (x)
 #endif
 #if (N_DIM==2)
+	#define N_QUADS (Nqx*Nqx)
 	#define N_Q_max 9
 	#define N_CHILDREN 4
-	#define M_CBLOCK 16
+	#define M_TBLOCK 16
+	#define M_CBLOCK (Nqx*Nqx*16)
 #else
+	#define N_QUADS (Nqx*Nqx*Nqx)
 	#define N_Q_max 27
 	#define N_CHILDREN 8
-	#define M_CBLOCK 64
+	#define M_TBLOCK 64
+	#define M_CBLOCK (Nqx*Nqx*Nqx*64)
 #endif
 
 

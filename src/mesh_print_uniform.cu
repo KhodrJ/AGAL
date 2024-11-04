@@ -35,58 +35,67 @@ int Mesh::M_FillBlock(int i_dev, int *Is, int i_kap, int L, double dx_f, int *mu
 	}
 	else // No children, print here.
 	{
-		// Get the macroscopic properties for this block.
-		double out_u_[M_CBLOCK*(3+1)];
-		M_ComputeProperties(i_dev, i_kap, dxf_vec[L], out_u_);
-		
-		// Modify the cell values in the region defined by the leaf block.
 #if (N_DIM==3)
-		for (int k = 0; k < Nbx; k++)
+		for (int k_q = 0; k_q < Nqx; k_q++)
 #else
-		int k = 0;
+		int k_q = 0;
 #endif
 		{
-			for (int j = 0; j < Nbx; j++)
+			for (int j_q = 0; j_q < Nqx; j_q++)
 			{
-				for (int i = 0; i < Nbx; i++)
+				for (int i_q = 0; i_q < Nqx; i_q++)
 				{
-					int Ip = 0;
-					int Jp = 0;
-					int Kp = 0;
-					for (int l = 0; l < L+1; l++)
-					{
-						Ip += mult_f[l]*Nbx*Is[l + 0*N_PRINT_LEVELS];
-						Jp += mult_f[l]*Nbx*Is[l + 1*N_PRINT_LEVELS];
-						Kp += mult_f[l]*Nbx*Is[l + 2*N_PRINT_LEVELS];
-					}
+					// Get the macroscopic properties for this quadrant.
+					int i_Q = i_q + Nqx*j_q + Nqx*Nqx*k_q;
+					double out_u_[M_TBLOCK*(3+1)];
+					M_ComputeProperties(i_dev, i_Q, i_kap, dxf_vec[L], out_u_);
 					
+					// Modify the cell values in the region defined by the leaf block.
 #if (N_DIM==3)
-					for (int kk = 0; kk < mult_f[L]; kk++)
+					for (int k = 0; k < Nbx; k++)
 #else
-					int kk = 0;
+					int k = 0;
 #endif
 					{
-						for (int jj = 0; jj < mult_f[L]; jj++)
+						for (int j = 0; j < Nbx; j++)
 						{
-							for (int ii = 0; ii < mult_f[L]; ii++)
+							for (int i = 0; i < Nbx; i++)
 							{
-								int kap_i = i + Nbx*j + Nbx*Nbx*k;
-								int Ipp = Ip + i*mult_f[L] + ii;
-								int Jpp = Jp + j*mult_f[L] + jj;
-								int Kpp = Kp + k*mult_f[L] + kk;
-								long int Id = Ipp + Nxi_f[0]*Jpp + Nxi_f[0]*Nxi_f[1]*Kpp;
+								int Ip = 0;
+								int Jp = 0;
+								int Kp = 0;
+								for (int l = 0; l < L+1; l++)
+								{
+									Ip += mult_f[l]*Nbx*Nqx*Is[l + 0*N_PRINT_LEVELS];
+									Jp += mult_f[l]*Nbx*Nqx*Is[l + 1*N_PRINT_LEVELS];
+									Kp += mult_f[l]*Nbx*Nqx*Is[l + 2*N_PRINT_LEVELS];
+								}
 								
-								tmp_data[Id + 0*vol] = out_u_[kap_i + 0*M_CBLOCK];
-								tmp_data[Id + 1*vol] = out_u_[kap_i + 1*M_CBLOCK];
-								tmp_data[Id + 2*vol] = out_u_[kap_i + 2*M_CBLOCK];
-								tmp_data[Id + 3*vol] = out_u_[kap_i + 3*M_CBLOCK];
-// 								tmp_data[Id + 4*vol] = out_u_[kap_i + 4*M_CBLOCK];
-// 								tmp_data[Id + 5*vol] = out_u_[kap_i + 5*M_CBLOCK];
-// 								tmp_data[Id + 6*vol] = out_u_[kap_i + 6*M_CBLOCK];
-								//tmp_data[Id + 7*vol] = sqrt(out_u_[kap_i + 1*M_CBLOCK]*out_u_[kap_i + 1*M_CBLOCK] + out_u_[kap_i + 2*M_CBLOCK]*out_u_[kap_i + 2*M_CBLOCK] + out_u_[kap_i + 3*M_CBLOCK]*out_u_[kap_i + 3*M_CBLOCK]);
-								//tmp_data[Id + 8*vol] = sqrt(out_u_[kap_i + 4*M_CBLOCK]*out_u_[kap_i + 4*M_CBLOCK] + out_u_[kap_i + 5*M_CBLOCK]*out_u_[kap_i + 5*M_CBLOCK] + out_u_[kap_i + 6*M_CBLOCK]*out_u_[kap_i + 6*M_CBLOCK]);
-								tmp_data[Id + 4*vol] = L;
-								tmp_data[Id + 5*vol] = i_kap;
+#if (N_DIM==3)
+								for (int kk = 0; kk < mult_f[L]; kk++)
+#else
+								int kk = 0;
+#endif
+								{
+									for (int jj = 0; jj < mult_f[L]; jj++)
+									{
+										for (int ii = 0; ii < mult_f[L]; ii++)
+										{
+											int kap_i = i + Nbx*j + Nbx*Nbx*k;
+											int Ipp = Ip + i*mult_f[L] + ii + i_q*Nbx*mult_f[L];
+											int Jpp = Jp + j*mult_f[L] + jj + j_q*Nbx*mult_f[L];
+											int Kpp = Kp + k*mult_f[L] + kk + k_q*Nbx*mult_f[L];
+											long int Id = Ipp + Nxi_f[0]*Jpp + Nxi_f[0]*Nxi_f[1]*Kpp;
+											
+											tmp_data[Id + 0*vol] = out_u_[kap_i + 0*M_TBLOCK];
+											tmp_data[Id + 1*vol] = out_u_[kap_i + 1*M_TBLOCK];
+											tmp_data[Id + 2*vol] = out_u_[kap_i + 2*M_TBLOCK];
+											tmp_data[Id + 3*vol] = out_u_[kap_i + 3*M_TBLOCK];
+											tmp_data[Id + 4*vol] = L;
+											tmp_data[Id + 5*vol] = i_kap;
+										}
+									}
+								}
 							}
 						}
 					}
@@ -129,9 +138,9 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter)
 	
 	// Resolution array.
 	int Nxi_f[3];
-	Nxi_f[0] = (I_max-I_min)*Nbx;
-	Nxi_f[1] = (J_max-J_min)*Nbx;
-	Nxi_f[2] = (K_max-K_min)*Nbx; if (N_DIM==2) Nxi_f[2] = 1;
+	Nxi_f[0] = (I_max-I_min)*Nbx*Nqx;
+	Nxi_f[1] = (J_max-J_min)*Nbx*Nqx;
+	Nxi_f[2] = (K_max-K_min)*Nbx*Nqx; if (N_DIM==2) Nxi_f[2] = 1;
 	//for (int d = 0; d < 3; d++)
 	//	Nxi_f[d] = Nxi[d];
 	for (int d = 0; d < N_DIM; d++)
@@ -143,6 +152,13 @@ int Mesh::M_RenderAndPrint_Uniform(int i_dev, int iter)
 	double *tmp_data_b = new double[n_data*vol];
 	for (long int p = 0; p < n_data*vol; p++)
 		tmp_data[p] = -1.0;
+	for (long int p = 0; p < vol; p++)
+	{
+		tmp_data[p + 0*vol] = 1.0;
+		tmp_data[p + 1*vol] = 0.0;
+		tmp_data[p + 2*vol] = 0.0;
+		tmp_data[p + 3*vol] = 0.0;
+	}
 	
 	
 	// Traverse the grid and fill data arrays.

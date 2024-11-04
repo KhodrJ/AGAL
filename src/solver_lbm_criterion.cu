@@ -67,8 +67,8 @@ void Cu_ComputeRefCriteria_V1
 			
 #if (N_DIM==2 && N_CASE==1)	
 			ufloat_t D = N_Pf(1.0)/N_Pf(32.0);
-			ufloat_t rad = N_Pf(1.5)*D/( (ufloat_t)(1<<L) );
-			if (x_k_plus >= N_Pf(0.3125)-N_Pf(0.5)*D - rad   &&   x_k_plus <= N_Pf(0.3125)+N_Pf(0.5)*D + rad   &&   y_k_plus >= N_Pf(0.5)*L_fy-N_Pf(0.5)*D - rad   &&   y_k_plus <= N_Pf(0.5)*L_fy+N_Pf(0.5)*D + rad)
+			ufloat_t rad = N_Pf(1.5)*D/( (ufloat_t)(1<<L) ); // Old value was 1.5
+			if (x_k_plus >= N_Pf(0.3125)-N_Pf(0.5)*D - rad   &&   x_k_plus <= N_Pf(0.3125)+N_Pf(0.5)*D + rad   &&   y_k_plus >= N_Pf(0.5)*N_Pf(1.0)-N_Pf(0.5)*D - rad   &&   y_k_plus <= N_Pf(0.5)*N_Pf(1.0)+N_Pf(0.5)*D + rad)
 				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
 			
 			
@@ -78,14 +78,15 @@ void Cu_ComputeRefCriteria_V1
 				// xM
 			//dist_min = x_k_plus - N_Pf(0.0);
 				// xP
-			dist_tmp = L_c - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
+			dist_tmp = N_Pf(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
 				// yM
 			//dist_tmp = y_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
 				// yP
 			//dist_tmp = L_fy - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
 			
-			// Evaluate criterion based on dist_min.
+			// Evaluate criterion based on dist_min. (old value 0.05).
 			if ( dist_min <= N_Pf(0.05)/( (ufloat_t)(1<<L) ) )
+			//if (cblock_ID_onb[i_kap] == 1)
 				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
 #endif	
 			
@@ -129,13 +130,13 @@ void Cu_ComputeRefCriteria_V2
 	int N_REFINE_START, int N_REFINE_INC, int MAX_LEVELS_INTERIOR
 )
 {
-	__shared__ int s_ID_cblock[M_CBLOCK];
-	__shared__ ufloat_t s_Ui[M_CBLOCK];
+	__shared__ int s_ID_cblock[M_TBLOCK];
+	__shared__ ufloat_t s_Ui[M_TBLOCK];
 #if (N_DIM==3)
-	__shared__ ufloat_t s_Ui2[M_CBLOCK];
+	__shared__ ufloat_t s_Ui2[M_TBLOCK];
 #endif
-	__shared__ ufloat_t s_W[M_CBLOCK];
-	__shared__ ufloat_t s_Wmax[M_CBLOCK];
+	__shared__ ufloat_t s_W[M_TBLOCK];
+	__shared__ ufloat_t s_Wmax[M_TBLOCK];
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	int I_kap = threadIdx.x % Nbx;
 	int J_kap = (threadIdx.x / Nbx) % Nbx;
@@ -163,7 +164,7 @@ void Cu_ComputeRefCriteria_V2
 	
 	// Keep in mind that each ID represents a block, not just a cell.
 	s_ID_cblock[threadIdx.x] = -1;
-	s_Wmax[threadIdx.x] = -1;
+	s_Wmax[threadIdx.x] = -1000;
 	if (kap < id_max_curr)
 	{
 		//int i_kap = id_set_idev_L[kap];
@@ -173,184 +174,188 @@ void Cu_ComputeRefCriteria_V2
 	__syncthreads();
 	
 	// Now we loop over all cell-blocks and operate on the cells.
-	for (int k = 0; k < M_CBLOCK; k++)
+	for (int k = 0; k < M_TBLOCK; k++)
 	{
 		int i_kap_b = s_ID_cblock[k];
 		if (i_kap_b > -1 && cblock_ID_ref[i_kap_b] != V_REF_ID_INACTIVE)
 		{
-			// Reset variables.
-			u_kap = N_Pf(0.0);
-			v_kap = N_Pf(0.0);
+			for (int i_Q = 0; i_Q < N_QUADS; i_Q++)
+			{
+				// Reset variables.
+				u_kap = N_Pf(0.0);
+				v_kap = N_Pf(0.0);
 #if (N_DIM==3)
-			w_kap = N_Pf(0.0);
+				w_kap = N_Pf(0.0);
 #endif
-			
-			// Compute local vorticity magnitudes and place in shared memory.
-			//
-			//
-			//
+				
+				// Compute local vorticity magnitudes and place in shared memory.
+				//
+				//
+				//
 #if (N_Q==9)
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; 
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; 
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; 
 #elif (N_Q==19)
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
 #else // (N_Q==27)
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 20*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 19*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 22*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 21*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 24*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 23*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 26*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-			f_i = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 25*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 20*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 19*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 22*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 21*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 24*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 23*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 26*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 25*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
 #endif
-			
+				
 #if (N_DIM==3)
-			vortX = N_Pf(0.0);
-			vortY = N_Pf(0.0);
+				vortX = N_Pf(0.0);
+				vortY = N_Pf(0.0);
 #endif
-			vortZ = N_Pf(0.0);
+				vortZ = N_Pf(0.0);
 #if (N_DIM==2)
-			// X
-			s_Ui[threadIdx.x] = v_kap;
-			__syncthreads();
-			if (I_kap < Nbx-1)
-				vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)] - s_Ui[threadIdx.x];
-			else
-				vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)];
-			
-			// Y
-			s_Ui[threadIdx.x] = u_kap;
-			__syncthreads();
-			if (J_kap < Nbx-1)
-				vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)] - s_Ui[threadIdx.x];
-			else
-				vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)];
-			
-			vortZ /= dx_L;
-			s_W[threadIdx.x] = floor(log2( sqrt(vortZ*vortZ) ));
-			__syncthreads();
+				// X
+				s_Ui[threadIdx.x] = v_kap;
+				__syncthreads();
+				if (I_kap < Nbx-1)
+					vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)] - s_Ui[threadIdx.x];
+				else
+					vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)];
+				
+				// Y
+				s_Ui[threadIdx.x] = u_kap;
+				__syncthreads();
+				if (J_kap < Nbx-1)
+					vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)] - s_Ui[threadIdx.x];
+				else
+					vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)];
+				
+				vortZ /= dx_L;
+				s_W[threadIdx.x] = floor(log2( sqrt(vortZ*vortZ) ));
+				__syncthreads();
 #else
-			// X
-			s_Ui[threadIdx.x] = v_kap;
-			s_Ui2[threadIdx.x] = w_kap;
-			__syncthreads();
-			if (I_kap < Nbx-1)
-			{
-				vortY -= s_Ui2[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
-				vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
-			}
-			else
-			{
-				vortY -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
-				vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
-			}
-			
-			// Y
-			s_Ui[threadIdx.x] = u_kap;
-			s_Ui2[threadIdx.x] = w_kap;
-			__syncthreads();
-			if (J_kap < Nbx-1)
-			{
-				vortX += s_Ui2[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
-				vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
-			}
-			else
-			{
-				vortX += s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
-				vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
-			}
-			
-			// Z
-			s_Ui[threadIdx.x] = u_kap;
-			s_Ui2[threadIdx.x] = v_kap;
-			__syncthreads();
-			if (K_kap < Nbx-1)
-			{
-				vortX -= s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui2[threadIdx.x];
-				vortY += s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui[threadIdx.x];
-			}
-			else
-			{
-				vortX -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
-				vortY += s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
-			}
-			
-			vortX /= dx_L;
-			vortY /= dx_L;
-			vortZ /= dx_L;
-			s_W[threadIdx.x] = floor(log2( sqrt(vortX*vortX + vortY*vortY + vortZ*vortZ) ));
-			__syncthreads();
-#endif
-			//
-			//
-			//
-			
-			// Set vorticity to zero if the cell is a ghost cell (it has wrong values).
-			if (cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] == 2)
-				s_W[threadIdx.x] = N_Pf(0.0);
-			
-			// Block reduction for maximum.
-			for (int s=blockDim.x/2; s>0; s>>=1)
-			{
-				if (threadIdx.x < s)
+				// X
+				s_Ui[threadIdx.x] = v_kap;
+				s_Ui2[threadIdx.x] = w_kap;
+				__syncthreads();
+				if (I_kap < Nbx-1)
 				{
-					s_W[threadIdx.x] = max( s_W[threadIdx.x],s_W[threadIdx.x + s] );
+					vortY -= s_Ui2[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
+					vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
+				}
+				else
+				{
+					vortY -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
+					vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
+				}
+				
+				// Y
+				s_Ui[threadIdx.x] = u_kap;
+				s_Ui2[threadIdx.x] = w_kap;
+				__syncthreads();
+				if (J_kap < Nbx-1)
+				{
+					vortX += s_Ui2[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
+					vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
+				}
+				else
+				{
+					vortX += s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
+					vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
+				}
+				
+				// Z
+				s_Ui[threadIdx.x] = u_kap;
+				s_Ui2[threadIdx.x] = v_kap;
+				__syncthreads();
+				if (K_kap < Nbx-1)
+				{
+					vortX -= s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui2[threadIdx.x];
+					vortY += s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui[threadIdx.x];
+				}
+				else
+				{
+					vortX -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
+					vortY += s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
+				}
+				
+				vortX /= dx_L;
+				vortY /= dx_L;
+				vortZ /= dx_L;
+				s_W[threadIdx.x] = floor(log2( sqrt(vortX*vortX + vortY*vortY + vortZ*vortZ) ));
+				__syncthreads();
+#endif
+				//
+				//
+				//
+				
+				// Set vorticity to zero if the cell is a ghost cell (it has wrong values).
+				if (cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] == 2)
+					s_W[threadIdx.x] = N_Pf(0.0);
+				
+				// Block reduction for maximum.
+				for (int s=blockDim.x/2; s>0; s>>=1)
+				{
+					if (threadIdx.x < s)
+					{
+						s_W[threadIdx.x] = max( s_W[threadIdx.x],s_W[threadIdx.x + s] );
+					}
+					__syncthreads();
+				}
+				
+				// Store maximum.
+				if (threadIdx.x == 0)
+				{
+					//s_Wmax[k] = s_W[0];
+					if (s_W[0] > s_Wmax[k])
+						s_Wmax[k] = s_W[0];
 				}
 				__syncthreads();
 			}
-			
-			// Store maximum.
-			if (threadIdx.x == 0)
-				s_Wmax[k] = s_W[0];
-			__syncthreads();
-			
-			//cells_f_W[i_kap_b*M_CBLOCK + threadIdx.x] = s_W[0];
-			__syncthreads();
 		}
 	}
 	__syncthreads();
@@ -405,14 +410,14 @@ int Solver_LBM::S_ComputeRefCriteria(int i_dev, int L, int var)
 		if (mesh->n_ids[i_dev][L] > 0)
 		{
 			Cu_ComputeRefCriteria_V1<<<(M_BLOCK+mesh->n_ids[i_dev][L]-1)/M_BLOCK,M_BLOCK,0,mesh->streams[i_dev]>>>(
-				mesh->n_ids[i_dev][L], &mesh->c_id_set[i_dev][L * mesh->n_maxcblocks], mesh->n_maxcblocks, mesh->dxf_vec[L]*Nbx, L,
+				mesh->n_ids[i_dev][L], &mesh->c_id_set[i_dev][L * mesh->n_maxcblocks], mesh->n_maxcblocks, mesh->dxf_vec[L]*(Nbx*Nqx), L,
 				mesh->c_cblock_ID_ref[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_X[i_dev]
 			);
 		}
 	}
 	if (var == 1)
 	{
-		Cu_ComputeRefCriteria_V2<<<(M_CBLOCK+mesh->id_max[i_dev][MAX_LEVELS]-1)/M_CBLOCK,M_CBLOCK,0,mesh->streams[i_dev]>>>(
+		Cu_ComputeRefCriteria_V2<<<(M_TBLOCK+mesh->id_max[i_dev][MAX_LEVELS]-1)/M_TBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
 			mesh->id_max[i_dev][MAX_LEVELS], mesh->n_maxcells, mesh->n_maxcblocks, mesh->dxf_vec[L],
 			mesh->c_cblock_ID_ref[i_dev], mesh->c_cblock_level[i_dev], mesh->c_cblock_ID_nbr[i_dev],
 			mesh->c_cells_f_F[i_dev], mesh->c_cells_ID_mask[i_dev],
