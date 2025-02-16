@@ -8,132 +8,24 @@
 #include "mesh.h"
 #include "solver.h"
 
-__global__
-void Cu_ComputeRefCriteria_V1
-(
-	int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dxb_L, int L,
-	int *cblock_ID_ref, int *cblock_ID_onb, ufloat_t *cblock_f_X
-)
-{
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < n_ids_idev_L)
-	{
-		int i_kap = id_set_idev_L[kap];
-		
-		// Evaluate only if current cell-block is not refined already.
-		if (cblock_ID_ref[i_kap] == V_REF_ID_UNREFINED)
-		{
-			// Get the coordinates of the block.
-			ufloat_t x_k_plus = cblock_f_X[i_kap + 0*n_maxcblocks] + N_Pf(0.5)*dxb_L;
-			ufloat_t y_k_plus = cblock_f_X[i_kap + 1*n_maxcblocks] + N_Pf(0.5)*dxb_L;
-#if (N_DIM==3)
-			ufloat_t z_k_plus = cblock_f_X[i_kap + 2*n_maxcblocks] + N_Pf(0.5)*dxb_L;
-#endif
-			
-			
-			
-#if (N_CASE==0)
-			// Loop over cavity walls and identify the closest one.
-			// If this closest wall is within a certain threshhold, mark for refinement.
-			ufloat_t dist_min = N_Pf(1.0);
-			ufloat_t dist_tmp = N_Pf(1.0);
-				// xM
-			//dist_min = x_k_plus - N_Pf(0.0);
-				// xP
-			//dist_tmp = N_Pf(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-#if (N_DIM==2)
-				// yM
-			//dist_tmp = y_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yP
-			//dist_tmp = N_Pf(1.0) - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-#else
-				// zM
-			//dist_tmp = z_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// zP
-			//dist_tmp = N_Pf(1.0) - z_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-#endif
-			
-			// Evaluate criterion based on dist_min.
-			//    + '(cblock_ID_onb[i_kap] == 1)' only refines near boundary.
-			//    + 'dist_min <= N_Pf(d_spec)/( (ufloat_t)(1<<L) )' refined by specified distance d_spec.
-			if (cblock_ID_onb[i_kap] == 1)
-			//if ( dist_min <= N_Pf(0.2)/( (ufloat_t)(1<<L) ) )
-			//if (dist_min < dxb_L)
-				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-#endif
-			
-			
-			
-#if (N_DIM==2 && N_CASE==1)	
-			ufloat_t D = N_Pf(1.0)/N_Pf(32.0);
-			ufloat_t rad = N_Pf(1.5)*D/( (ufloat_t)(1<<L) ); // Old value was 1.5
-			if (x_k_plus >= N_Pf(0.3125)-N_Pf(0.5)*D - rad   &&   x_k_plus <= N_Pf(0.3125)+N_Pf(0.5)*D + rad   &&   y_k_plus >= N_Pf(0.5)*N_Pf(1.0)-N_Pf(0.5)*D - rad   &&   y_k_plus <= N_Pf(0.5)*N_Pf(1.0)+N_Pf(0.5)*D + rad)
-				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-			
-			
-			
-			ufloat_t dist_min = N_Pf(1.0);
-			ufloat_t dist_tmp = N_Pf(1.0);
-				// xM
-			//dist_min = x_k_plus - N_Pf(0.0);
-				// xP
-			dist_tmp = N_Pf(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yM
-			//dist_tmp = y_k_plus - N_Pf(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yP
-			//dist_tmp = L_fy - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-			
-			// Evaluate criterion based on dist_min. (old value 0.05).
-			if ( dist_min <= N_Pf(0.05)/( (ufloat_t)(1<<L) ) )
-			//if (cblock_ID_onb[i_kap] == 1)
-				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-#endif	
-			
-			
-			
-			
-			// DEBUG
-			//if (L == 0 && x_k_plus > N_Pf(0.3) && x_k_plus < N_Pf(0.7) && y_k_plus > N_Pf(0.3) && y_k_plus < N_Pf(0.7) && z_k_plus > N_Pf(0.3) && z_k_plus < N_Pf(0.8))
-			//	cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-			//if (L == 0 && x_k_plus > N_Pf(0.3) && x_k_plus < N_Pf(0.7) && y_k_plus > N_Pf(0.3) && y_k_plus <= N_Pf(0.85))
-			//	cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-		}
-	}
-}
 
 __global__
-void Cu_ComputeRefCriteria_V1_All
-(
-	int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dxb_L, int L,
-	int *cblock_ID_ref
-)
-{
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < n_ids_idev_L)
-	{
-		int i_kap = id_set_idev_L[kap];
-		
-		// Evaluate only if current cell-block is not refined already.
-		if (cblock_ID_ref[i_kap] == V_REF_ID_UNREFINED)
-			cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-	}
-}
-
-__global__
-void Cu_ComputeRefCriteria_V2
+void Cu_ComputeRefCriteria
 (
 	int id_max_curr, int n_maxcells, int n_maxcblocks, ufloat_t dx_L,
 	int *cblock_ID_ref, int *cblock_level, int *cblock_ID_nbr,
 	ufloat_t *cells_f_F, int *cells_ID_mask,
-	int N_REFINE_START, int N_REFINE_INC, int MAX_LEVELS_INTERIOR
+	int S_COLLISION, int S_CRITERION, ufloat_t N_REFINE_START, ufloat_t N_REFINE_INC, ufloat_t N_REFINE_MAX, int MAX_LEVELS_INTERIOR
 )
 {
 	__shared__ int s_ID_cblock[M_TBLOCK];
-	__shared__ ufloat_t s_Ui[M_TBLOCK];
-#if (N_DIM==3)
-	__shared__ ufloat_t s_Ui2[M_TBLOCK];
+#if (N_DIM==2)
+	__shared__ ufloat_t s_u[(Nbx+2)*(Nbx+2)];
+	__shared__ ufloat_t s_v[(Nbx+2)*(Nbx+2)];
+#else
+	__shared__ ufloat_t s_u[(Nbx+2)*(Nbx+2)*(Nbx+2)];
+	__shared__ ufloat_t s_v[(Nbx+2)*(Nbx+2)*(Nbx+2)];
+	__shared__ ufloat_t s_w[(Nbx+2)*(Nbx+2)*(Nbx+2)];
 #endif
 	__shared__ ufloat_t s_W[M_TBLOCK];
 	__shared__ ufloat_t s_Wmax[M_TBLOCK];
@@ -154,12 +46,16 @@ void Cu_ComputeRefCriteria_V2
 #endif
 
 	// Intermediate vorticity variables.
-#if (N_DIM==3)
-	ufloat_t vortX = N_Pf(0.0);
-	ufloat_t vortY = N_Pf(0.0);
-#endif
-	ufloat_t vortZ = N_Pf(0.0);
-	
+	ufloat_t uX = N_Pf(0.0);
+	ufloat_t uY = N_Pf(0.0);
+	ufloat_t uZ = N_Pf(0.0);
+	ufloat_t vX = N_Pf(0.0);
+	ufloat_t vY = N_Pf(0.0);
+	ufloat_t vZ = N_Pf(0.0);
+	ufloat_t wX = N_Pf(0.0);
+	ufloat_t wY = N_Pf(0.0);
+	ufloat_t wZ = N_Pf(0.0);
+	ufloat_t tmp = N_Pf(0.0);
 	bool eligible = true;
 	
 	// Keep in mind that each ID represents a block, not just a cell.
@@ -193,142 +89,179 @@ void Cu_ComputeRefCriteria_V2
 				//
 				//
 #if (N_Q==9)
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; 
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; 
+				if (S_COLLISION==0)
+				{
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; 
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; 
+				}
+				else
+				{
+					rho_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells];
+					u_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells] / rho_kap;
+					v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells] / rho_kap;
+				}
 #elif (N_Q==19)
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				if (S_COLLISION==0)
+				{
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+				}
+				else
+				{
+					rho_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells];
+					u_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells] / rho_kap;
+					v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells] / rho_kap;
+					v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells] / rho_kap;
+				}
 #else // (N_Q==27)
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 20*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 19*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 22*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 21*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 24*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 23*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 26*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
-				f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 25*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				if (S_COLLISION==0)
+				{
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 1*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 5*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 10*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 9*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 12*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 11*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 14*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 13*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 16*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 15*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 18*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 17*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 20*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 19*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 22*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 21*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 24*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 23*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap -f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 26*n_maxcells]; rho_kap += f_i; u_kap = u_kap -f_i; v_kap = v_kap +f_i; w_kap = w_kap +f_i;
+					f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 25*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap -f_i; w_kap = w_kap -f_i;
+				}
+				else
+				{
+					rho_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells];
+					u_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 4*n_maxcells] / rho_kap;
+					v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 6*n_maxcells] / rho_kap;
+					v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells] / rho_kap;
+				}
 #endif
 				
-#if (N_DIM==3)
-				vortX = N_Pf(0.0);
-				vortY = N_Pf(0.0);
-#endif
-				vortZ = N_Pf(0.0);
+				
+				
 #if (N_DIM==2)
-				// X
-				s_Ui[threadIdx.x] = v_kap;
+				s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)] = u_kap;
+				s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)] = v_kap;
 				__syncthreads();
-				if (I_kap < Nbx-1)
-					vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)] - s_Ui[threadIdx.x];
-				else
-					vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)];
+				if (I_kap==0)
+				{
+					s_u[(0)+(Nbx+2)*(J_kap+1)] = N_Pf(4.0)*s_u[(1)+(Nbx+2)*(J_kap+1)] - N_Pf(6.0)*s_u[(2)+(Nbx+2)*(J_kap+1)] + N_Pf(4.0)*s_u[(3)+(Nbx+2)*(J_kap+1)] - N_Pf(1.0)*s_u[(4)+(Nbx+2)*(J_kap+1)];
+					s_u[(5)+(Nbx+2)*(J_kap+1)] = N_Pf(4.0)*s_u[(4)+(Nbx+2)*(J_kap+1)] - N_Pf(6.0)*s_u[(3)+(Nbx+2)*(J_kap+1)] + N_Pf(4.0)*s_u[(2)+(Nbx+2)*(J_kap+1)] - N_Pf(1.0)*s_u[(1)+(Nbx+2)*(J_kap+1)];
+					s_v[(0)+(Nbx+2)*(J_kap+1)] = N_Pf(4.0)*s_v[(1)+(Nbx+2)*(J_kap+1)] - N_Pf(6.0)*s_v[(2)+(Nbx+2)*(J_kap+1)] + N_Pf(4.0)*s_v[(3)+(Nbx+2)*(J_kap+1)] - N_Pf(1.0)*s_v[(4)+(Nbx+2)*(J_kap+1)];
+					s_v[(5)+(Nbx+2)*(J_kap+1)] = N_Pf(4.0)*s_v[(4)+(Nbx+2)*(J_kap+1)] - N_Pf(6.0)*s_v[(3)+(Nbx+2)*(J_kap+1)] + N_Pf(4.0)*s_v[(2)+(Nbx+2)*(J_kap+1)] - N_Pf(1.0)*s_v[(1)+(Nbx+2)*(J_kap+1)];
+				}
+				if (J_kap==0)
+				{
+					s_u[(I_kap+1)+(Nbx+2)*(0)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(1)] - N_Pf(6.0)*s_u[(I_kap+1)+(Nbx+2)*(2)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(3)] - N_Pf(1.0)*s_u[(I_kap+1)+(Nbx+2)*(4)];
+					s_u[(I_kap+1)+(Nbx+2)*(5)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(4)] - N_Pf(6.0)*s_u[(I_kap+1)+(Nbx+2)*(3)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(2)] - N_Pf(1.0)*s_u[(I_kap+1)+(Nbx+2)*(1)];
+					s_v[(I_kap+1)+(Nbx+2)*(0)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(1)] - N_Pf(6.0)*s_v[(I_kap+1)+(Nbx+2)*(2)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(3)] - N_Pf(1.0)*s_v[(I_kap+1)+(Nbx+2)*(4)];
+					s_v[(I_kap+1)+(Nbx+2)*(5)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(4)] - N_Pf(6.0)*s_v[(I_kap+1)+(Nbx+2)*(3)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(2)] - N_Pf(1.0)*s_v[(I_kap+1)+(Nbx+2)*(1)];
+				}
+				__syncthreads();
 				
-				// Y
-				s_Ui[threadIdx.x] = u_kap;
-				__syncthreads();
-				if (J_kap < Nbx-1)
-					vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)] - s_Ui[threadIdx.x];
-				else
-					vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)];
-				
-				vortZ /= dx_L;
-				s_W[threadIdx.x] = floor(log2( sqrt(vortZ*vortZ) ));
-				__syncthreads();
+				uX = (s_u[(I_kap+1 +1)+(Nbx+2)*(J_kap+1)] - s_u[(I_kap+1 -1)+(Nbx+2)*(J_kap+1)])/(2.0*dx_L);
+				uY = (s_u[(I_kap+1)+(Nbx+2)*(J_kap+1 +1)] - s_u[(I_kap+1)+(Nbx+2)*(J_kap+1 -1)])/(2.0*dx_L);
+				uZ = N_Pf(0.0);
+				vX = (s_v[(I_kap+1 +1)+(Nbx+2)*(J_kap+1)] - s_v[(I_kap+1 -1)+(Nbx+2)*(J_kap+1)])/(2.0*dx_L);
+				vY = (s_v[(I_kap+1)+(Nbx+2)*(J_kap+1 +1)] - s_v[(I_kap+1)+(Nbx+2)*(J_kap+1 -1)])/(2.0*dx_L);
+				vZ = N_Pf(0.0);
+				wX = N_Pf(0.0);
+				wY = N_Pf(0.0);
+				wZ = N_Pf(0.0);
 #else
-				// X
-				s_Ui[threadIdx.x] = v_kap;
-				s_Ui2[threadIdx.x] = w_kap;
+				s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = u_kap;
+				s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = v_kap;
+				s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = w_kap;
 				__syncthreads();
-				if (I_kap < Nbx-1)
+				if (I_kap==0)
 				{
-					vortY -= s_Ui2[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
-					vortZ += s_Ui[(I_kap+1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
+					s_u[(0)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_u[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_u[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_u[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_u[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_u[(5)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_u[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_u[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_u[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_u[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					
+					s_v[(0)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_v[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_v[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_v[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_v[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_v[(5)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_v[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_v[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_v[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_v[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_w[(0)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_w[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_w[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_w[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_w[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_w[(5)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_w[(4)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_w[(3)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_w[(2)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_w[(1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
 				}
-				else
+				if (J_kap==0)
 				{
-					vortY -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
-					vortZ += s_Ui[threadIdx.x] - s_Ui[(I_kap-1)+Nbx*(J_kap)+Nbx*Nbx*(K_kap)];
+					s_u[(I_kap+1)+(Nbx+2)*(0)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_u[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_u[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_u[(I_kap+1)+(Nbx+2)*(5)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_u[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_u[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_v[(I_kap+1)+(Nbx+2)*(0)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_v[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_v[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_v[(I_kap+1)+(Nbx+2)*(5)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_v[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_v[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_w[(I_kap+1)+(Nbx+2)*(0)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_w[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_w[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
+					s_w[(I_kap+1)+(Nbx+2)*(5)+(Nbx+2)*(Nbx+2)*(K_kap+1)] = N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(4)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(6.0)*s_w[(I_kap+1)+(Nbx+2)*(3)+(Nbx+2)*(Nbx+2)*(K_kap+1)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(2)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - N_Pf(1.0)*s_w[(I_kap+1)+(Nbx+2)*(1)+(Nbx+2)*(Nbx+2)*(K_kap+1)];
 				}
+				if (K_kap==0)
+				{
+					s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(0)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)];
+					s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(5)] = N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_u[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)];
+					s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(0)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)];
+					s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(5)] = N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_v[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)];
+					s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(0)] = N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)];
+					s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(5)] = N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(4)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(3)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(2)] + N_Pf(4.0)*s_w[(I_kap+1)+(Nbx+2)*(J_kap)+(Nbx+2)*(Nbx+2)*(1)];
+				}
+				__syncthreads();
 				
-				// Y
-				s_Ui[threadIdx.x] = u_kap;
-				s_Ui2[threadIdx.x] = w_kap;
-				__syncthreads();
-				if (J_kap < Nbx-1)
-				{
-					vortX += s_Ui2[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui2[threadIdx.x];
-					vortZ -= s_Ui[(I_kap)+Nbx*(J_kap+1)+Nbx*Nbx*(K_kap)] - s_Ui[threadIdx.x];
-				}
-				else
-				{
-					vortX += s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
-					vortZ -= s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap-1)+Nbx*Nbx*(K_kap)];
-				}
-				
-				// Z
-				s_Ui[threadIdx.x] = u_kap;
-				s_Ui2[threadIdx.x] = v_kap;
-				__syncthreads();
-				if (K_kap < Nbx-1)
-				{
-					vortX -= s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui2[threadIdx.x];
-					vortY += s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap+1)] - s_Ui[threadIdx.x];
-				}
-				else
-				{
-					vortX -= s_Ui2[threadIdx.x] - s_Ui2[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
-					vortY += s_Ui[threadIdx.x] - s_Ui[(I_kap)+Nbx*(J_kap)+Nbx*Nbx*(K_kap-1)];
-				}
-				
-				vortX /= dx_L;
-				vortY /= dx_L;
-				vortZ /= dx_L;
-				s_W[threadIdx.x] = floor(log2( sqrt(vortX*vortX + vortY*vortY + vortZ*vortZ) ));
-				__syncthreads();
+				uX = (s_u[(I_kap+1 +1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_u[(I_kap+1 -1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				uY = (s_u[(I_kap+1)+(Nbx+2)*(J_kap+1 +1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_u[(I_kap+1)+(Nbx+2)*(J_kap+1 -1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				uZ = (s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 +1)] - s_u[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 -1)])/(2*dx_L);
+				vX = (s_v[(I_kap+1 +1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_v[(I_kap+1 -1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				vY = (s_v[(I_kap+1)+(Nbx+2)*(J_kap+1 +1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_v[(I_kap+1)+(Nbx+2)*(J_kap+1 -1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				vZ = (s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 +1)] - s_v[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 -1)])/(2*dx_L);
+				wX = (s_w[(I_kap+1 +1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_w[(I_kap+1 -1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				wY = (s_w[(I_kap+1)+(Nbx+2)*(J_kap+1 +1)+(Nbx+2)*(Nbx+2)*(K_kap+1)] - s_w[(I_kap+1)+(Nbx+2)*(J_kap+1 -1)+(Nbx+2)*(Nbx+2)*(K_kap+1)])/(2*dx_L);
+				wZ = (s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 +1)] - s_w[(I_kap+1)+(Nbx+2)*(J_kap+1)+(Nbx+2)*(Nbx+2)*(K_kap+1 -1)])/(2*dx_L);
 #endif
+				__syncthreads();
+				
+				
+				
+				s_W[threadIdx.x] = 0;
+				if (S_CRITERION == 0)
+					s_W[threadIdx.x] = floor(log2( sqrt((wY-vZ)*(wY-vZ) + (uZ-wX)*(uZ-wX) + (vX-uY)*(vX-uY)) ));
+				if (S_CRITERION == 1)
+					s_W[threadIdx.x] = floor(log2( abs((uX*vY+vY*wZ+wZ*uX)-(uY*vX+vZ*wY+uZ*wX)) ));
 				//
 				//
 				//
@@ -336,6 +269,7 @@ void Cu_ComputeRefCriteria_V2
 				// Set vorticity to zero if the cell is a ghost cell (it has wrong values).
 				if (cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] == 2)
 					s_W[threadIdx.x] = N_Pf(0.0);
+				__syncthreads();
 				
 				// Block reduction for maximum.
 				for (int s=blockDim.x/2; s>0; s>>=1)
@@ -364,27 +298,17 @@ void Cu_ComputeRefCriteria_V2
 	if (kap < id_max_curr && cblock_ID_ref[kap] != V_REF_ID_INACTIVE)
 	{
 		// If vorticity is very large, cap at 1.0 to indicate maximum needed refinement.
-		if (s_Wmax[threadIdx.x] > N_Pf(1.0))
-			s_Wmax[threadIdx.x] = N_Pf(1.0);
+		if (s_Wmax[threadIdx.x] > N_REFINE_MAX)
+			s_Wmax[threadIdx.x] = N_REFINE_MAX;
 		
 		int ref_kap = cblock_ID_ref[kap];
 		int level_kap = cblock_level[kap];
-		
-#if (N_DIM==2)
 		int L_desired = MAX_LEVELS_INTERIOR-1;
 		for (int p = 1; p <= MAX_LEVELS_INTERIOR-1; p++)
 		{
 			if (s_Wmax[threadIdx.x] < N_REFINE_START-N_REFINE_INC*p)
 				L_desired = (MAX_LEVELS_INTERIOR-1)-p;
 		}
-#else
-		int L_desired = MAX_LEVELS_INTERIOR-1;
-		for (int p = 1; p <= MAX_LEVELS_INTERIOR-1; p++)
-		{
-			if (s_Wmax[threadIdx.x] < N_REFINE_START-N_REFINE_INC*p)
-				L_desired = (MAX_LEVELS_INTERIOR-1)-p;
-		}
-#endif
 		
 		// Don't refine near invalid fine-grid boundaries. Only in the interior for quality purposes.
 		for (int p = 0; p < N_Q_max; p++)
@@ -403,36 +327,19 @@ void Cu_ComputeRefCriteria_V2
 	}
 }
 
+
+
+
 int Solver_LBM::S_ComputeRefCriteria(int i_dev, int L, int var)
 {
-	if (var == 0)
+	// Solution-based criterion. Only one type implemented for current solver.
 	{
-		if (mesh->n_ids[i_dev][L] > 0)
-		{
-			Cu_ComputeRefCriteria_V1<<<(M_BLOCK+mesh->n_ids[i_dev][L]-1)/M_BLOCK,M_BLOCK,0,mesh->streams[i_dev]>>>(
-				mesh->n_ids[i_dev][L], &mesh->c_id_set[i_dev][L * mesh->n_maxcblocks], mesh->n_maxcblocks, mesh->dxf_vec[L]*(Nbx*Nqx), L,
-				mesh->c_cblock_ID_ref[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_X[i_dev]
-			);
-		}
-	}
-	if (var == 1)
-	{
-		Cu_ComputeRefCriteria_V2<<<(M_TBLOCK+mesh->id_max[i_dev][MAX_LEVELS]-1)/M_TBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
+		Cu_ComputeRefCriteria<<<(M_TBLOCK+mesh->id_max[i_dev][MAX_LEVELS]-1)/M_TBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
 			mesh->id_max[i_dev][MAX_LEVELS], mesh->n_maxcells, mesh->n_maxcblocks, mesh->dxf_vec[L],
 			mesh->c_cblock_ID_ref[i_dev], mesh->c_cblock_level[i_dev], mesh->c_cblock_ID_nbr[i_dev],
 			mesh->c_cells_f_F[i_dev], mesh->c_cells_ID_mask[i_dev],
-			mesh->N_REFINE_START, mesh->N_REFINE_INC, mesh->MAX_LEVELS_INTERIOR
+			S_COLLISION, S_CRITERION, mesh->N_REFINE_START, mesh->N_REFINE_INC, mesh->N_REFINE_MAX, mesh->MAX_LEVELS_INTERIOR
 		);
-	}
-	if (var == 2)
-	{
-		if (mesh->n_ids[i_dev][L] > 0)
-		{
-			Cu_ComputeRefCriteria_V1_All<<<(M_BLOCK+mesh->n_ids[i_dev][L]-1)/M_BLOCK,M_BLOCK,0,mesh->streams[i_dev]>>>(
-				mesh->n_ids[i_dev][L], &mesh->c_id_set[i_dev][L * mesh->n_maxcblocks], mesh->n_maxcblocks, mesh->dxf_vec[L]*Nbx, L,
-				mesh->c_cblock_ID_ref[i_dev]
-			);
-		}
 	}
 	
 	return 0;

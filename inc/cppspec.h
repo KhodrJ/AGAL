@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <omp.h>
+#include <vector>
+#include <math.h>
 
 // Thrust.
 #include <thrust/host_vector.h>
@@ -92,11 +94,12 @@
 
 
 // Other fixed paramters.
-#define Nbx 4            ///< Number of cells along one cell-block axis, fixed at four.
-#define N_DEV 1          ///< Number of GPU devices (only one for now, will extend soon).
-#define M_BLOCK 128      ///< Number of threads per block.
-#define M_RNDFF 2048     ///< Round-off parameter for computation of n_maxcells.
-#define N_SKIPID -999    ///< Indicator that an Id is invalid.
+#define Nbx 4             ///< Number of cells along one cell-block axis, fixed at four.
+#define N_DEV 1           ///< Number of GPU devices (only one for now, will extend soon).
+#define M_BLOCK 128       ///< Number of threads per block.
+#define M_RNDFF 2048      ///< Round-off parameter for computation of n_maxcells.
+#define N_SYMMETRY -998   ///< Indicator than an Id represents a symmetry boundary condition.
+#define N_SKIPID -999     ///< Indicator that an Id is invalid.
 #define CONV_B2GB 9.313225746154785e-10
 #define T_S 0
 #define T_MS 1

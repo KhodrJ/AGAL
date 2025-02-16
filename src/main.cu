@@ -1,4 +1,7 @@
-#include "main.h"
+#include "cppspec.h"
+#include "geometry.h"
+#include "mesh.h"
+#include "solver.h"
 
 int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::string, double> *input_map_dbl, std::string *output_dir);
 
@@ -10,8 +13,11 @@ int main(int argc, char *argv[])
 	std::string output_dir;
 	ReadInputFile(&input_map_int, &input_map_dbl, &output_dir);
 	
+	// Create a new geometry and import from input folder.
+	//Geometry geom = Geometry();
+	
 	// Create mesh and LBM solver.
-	Mesh mesh = Mesh(input_map_int, input_map_dbl, output_dir);
+	Mesh mesh(input_map_int, input_map_dbl, output_dir);
 	
 	// Solver loop (includes rendering and printing).
 	mesh.M_AdvanceLoop();

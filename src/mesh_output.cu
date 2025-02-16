@@ -91,9 +91,9 @@ int Mesh::M_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L
 	return 0;
 }
 
-int Mesh::M_ComputeForces(int i_dev, int L, std::ofstream *out)
+int Mesh::M_ComputeForces(int i_dev, int L)
 {
-	solver->S_ComputeForces(i_dev, L, out);
+	solver->S_ComputeForces(i_dev, L);
 	
 	return 0;
 }

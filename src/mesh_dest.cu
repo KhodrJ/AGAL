@@ -18,7 +18,7 @@ int Mesh::M_Dest()
 	std::cout << "[-] Before freeing:\n";
 	std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
 	
-	// Free all the memory allocated on the GPU.
+	// Free all the memory allocated on the CPU.
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
 		delete[] cells_ID_mask[i_dev];
@@ -30,6 +30,10 @@ int Mesh::M_Dest()
 		delete[] cblock_ID_onb[i_dev];
 		delete[] cblock_ID_ref[i_dev];
 		delete[] cblock_level[i_dev];
+#if (N_CASE==2)
+		delete[] cblock_ID_face_count[i_dev];
+		delete[] cblock_ID_face[i_dev];
+#endif
 		
 		delete[] tmp_1[i_dev];
 		delete[] tmp_2[i_dev];
@@ -40,7 +44,6 @@ int Mesh::M_Dest()
 		// Allocate memory for id_set and reset to 0.
 		delete[] n_ids[i_dev];
 		delete[] id_max[i_dev];
-		//for (int L = 0; L < MAX_LEVELS; L++)
 		delete[] id_set[i_dev];
 		delete[] gap_set[i_dev];
 		delete[] coarse_I[i_dev];
@@ -71,7 +74,6 @@ int Mesh::M_Dest()
 		gpuErrchk( cudaFree(c_cblock_level[i_dev]) );
 		
 		// ID sets.
-		//for (int L = 0; L < MAX_LEVELS; L++)
 		gpuErrchk( cudaFree(c_id_set[i_dev]) );
 		gpuErrchk( cudaFree(c_gap_set[i_dev]) );
 

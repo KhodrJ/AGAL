@@ -1,6 +1,0 @@
-1.0 0.00 0.0 0.0
-END
-
-# IC specification.
-#
-# Sets rho, ux, uy, uz (last one is ignored when generating 2D code).

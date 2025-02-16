@@ -35,17 +35,19 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	PERIODIC_X              = params_int["PERIODIC_X"];
 	PERIODIC_Y              = params_int["PERIODIC_Y"];
 	PERIODIC_Z              = params_int["PERIODIC_Z"];
-	S_INTERP                = params_int["S_INTERP"];
-	S_AVERAGE               = params_int["S_AVERAGE"];
+	//S_INTERP                = params_int["S_INTERP"];
+	//S_AVERAGE               = params_int["S_AVERAGE"];
 	P_REFINE                = params_int["P_REFINE"];
-	N_REFINE_START          = params_int["N_REFINE_START"];
-	N_REFINE_INC            = params_int["N_REFINE_INC"];
+	N_REFINE_START          = params_dbl["N_REFINE_START"];
+	N_REFINE_INC            = params_dbl["N_REFINE_INC"];
+	N_REFINE_MAX            = params_dbl["N_REFINE_MAX"];
 	N_PROBE                 = params_int["N_PROBE"];
 	N_PROBE_DENSITY         = params_int["N_PROBE_DENSITY"];
 	N_PROBE_FREQUENCY       = params_int["N_PROBE_FREQUENCY"];
 	V_PROBE_TOL             = params_dbl["V_PROBE_TOL"];
 	N_PROBE_FORCE           = params_int["N_PROBE_FORCE"];
 	N_PROBE_F_FREQUENCY     = params_int["N_PROBE_F_FREQUENCY"];
+	N_PROBE_F_START         = params_int["N_PROBE_F_START"];
 	N_PROBE_AVE             = params_int["N_PROBE_AVE"];
 	N_PROBE_AVE_FREQUENCY   = params_int["N_PROBE_AVE_FREQUENCY"];
 	N_PROBE_AVE_START       = params_int["N_PROBE_AVE_START"];
@@ -158,6 +160,12 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		cblock_ID_onb[i_dev] = new int[n_maxcblocks]{0};
 		cblock_ID_ref[i_dev] = new int[n_maxcblocks]{0};
 		cblock_level[i_dev] = new int[n_maxcblocks]{0};
+#if (N_CASE==2)
+		cblock_ID_face_count[i_dev] = new int[n_maxcblocks]{0};
+		cblock_ID_face[i_dev] = new int[n_maxcblocks]{0};
+#endif
+		// cblock_ID_face_attr[i_dev];
+		// cblock_f_X_face[i_dev];
 		
 		tmp_1[i_dev] = new int[n_maxcblocks]{0};
 		tmp_2[i_dev] = new ufloat_t[n_maxcblocks]{0};
@@ -187,12 +195,29 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	}
 	
 	
+	// o====================================================================================
+	// | Construct the geometry from input.
+	// o====================================================================================
+	
+#if (N_CASE==2)
+	//for (int i_dev = 0; i_dev < N_DEV; i_dev++)
+	//	M_AcquireBoundaries(i_dev);
+#endif
+	
+	
 	// Allocate and initialize arrays on GPU(s).
 	std::cout << "[-] Initializing GPU data...\n";
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
 		cudaSetDevice(i_dev);
 		cudaStreamCreate(&streams[i_dev]);
+		
+		// Geometry mesh data.
+#if (N_CASE==2)
+		//gpuErrchk( cudaMalloc((void **)&c_geom_f_node_X[i_dev], 3*n_nodes[i_dev]*sizeof(double)) );
+		//gpuErrchk( cudaMalloc((void **)&c_geom_ID_face[i_dev], 3*n_faces[i_dev]*sizeof(int)) );
+		//gpuErrchk( cudaMalloc((void **)&c_geom_ID_face_attr[i_dev], n_faces[i_dev]*sizeof(double)) );
+#endif
 		
 		// Cell data.
 		gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
@@ -204,9 +229,12 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_ref[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_level[i_dev], n_maxcblocks*sizeof(int)) );
+#if (N_CASE==2)
+		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face_count[i_dev], n_maxcblocks*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_maxcblocks*sizeof(int)) );
+#endif
 		
 		// ID sets.
-		//for (int L = 0; L < MAX_LEVELS; L++)
 		gpuErrchk( cudaMalloc((void **)&c_id_set[i_dev], MAX_LEVELS*n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_gap_set[i_dev], n_maxcblocks*sizeof(int)) );
 		
@@ -222,7 +250,6 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		gpuErrchk( cudaMalloc((void **)&c_tmp_counting_iter[i_dev], n_maxcblocks*sizeof(int)) );
 
 		// Thrust pointer casts.
-		//for (int L = 0; L < MAX_LEVELS; L++)
 		c_id_set_dptr[i_dev] =  thrust::device_pointer_cast(c_id_set[i_dev]);
 		c_gap_set_dptr[i_dev] = thrust::device_pointer_cast(c_gap_set[i_dev]);
 		c_cblock_ID_ref_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_ID_ref[i_dev]);
@@ -254,6 +281,13 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb[i_dev], 0);
 			// Fill the counting iterator used in refinement/coarsening.
 		Cu_FillLinear<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(n_maxcblocks, c_tmp_counting_iter[i_dev]);
+		
+		// Copy geometry.
+#if (N_CASE==2)
+		//gpuErrchk( cudaMemcpy(c_geom_f_node_X[i_dev], geom_f_node_X[i_dev], 3*n_nodes[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
+		//gpuErrchk( cudaMemcpy(c_geom_ID_face[i_dev], geom_ID_face[i_dev], 3*n_faces[i_dev]*sizeof(int), cudaMemcpyHostToDevice) );
+		//gpuErrchk( cudaMemcpy(c_geom_ID_face_attr[i_dev], geom_ID_face_attr[i_dev], n_faces[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
+#endif
 		
 		std::cout << "    Data arrays allocated on GPU " << i_dev << "." << std::endl << std::endl;;
 	}
@@ -297,13 +331,23 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 				{
 					bool in_interior = true;
 					
+					// Check against faces.
+					//for (int p = 0; p < n_faces[i_dev]; p++)
+					//{
+						// If face interects block, add it to list.
+						
+						
+						// cblock_ID_face_count[i_dev]
+					//}
+					
 #if (N_CASE==1)
+					double xl = 0.3125; // Was 0.3125 before.
 					double D = 1.0/32.0;
 					double x_bi = (i-1)*dx_cblock + dx_cblock*0.5;
 					double y_bi = (j-1)*dx_cblock + dx_cblock*0.5;
 					
 					// Establishes the square square cylinder by removing corresponding coarse blocks.
-					if (x_bi >= 0.3125-(D/2.0) && x_bi <= 0.3125-(D/2.0) + D && y_bi >= ( (Ly-D)/2.0) && y_bi <= ( (Ly-D)/2.0 ) + D)
+					if (x_bi >= xl-(D/2.0) && x_bi <= xl-(D/2.0) + D && y_bi >= ( (Ly-D)/2.0) && y_bi <= ( (Ly-D)/2.0 ) + D)
 					{
 						in_interior = false;
 						grid_IDs[i][j][k] = -8;
@@ -311,7 +355,8 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 						n_coarsecblocks--;
 					}
 #endif
-					
+
+					// If block is in the domain interior, assign an ID. Check and add to list of probed locations.
 					if (in_interior)
 					{
 						// Structured grid.

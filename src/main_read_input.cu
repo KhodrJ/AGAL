@@ -1,4 +1,4 @@
-#include "main.h"
+#include "cppspec.h"
 
 int ParseNxFactor(std::string str_val, int Nx)
 {
@@ -27,16 +27,18 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 		{"PERIODIC_X",              0},
 		{"PERIODIC_Y",              0},
 		{"PERIODIC_Z",              0},
+		{"S_COLLISION",             0},
 		{"S_INTERP",                1},
+		{"S_INTERP_HYBRID",         0},
 		{"S_AVERAGE",               0},
+		{"S_CRITERION",             0},
 		{"S_LES",                   0},
 		{"P_REFINE",                32},
-		{"N_REFINE_START",          -3},
-		{"N_REFINE_INC",            1},
 		{"N_PROBE",                 0},
 		{"N_PROBE_DENSITY",         4},
 		{"N_PROBE_FREQUENCY",       32},
 		{"N_PROBE_FORCE",           0},
+		{"N_PROBE_F_START",         0},
 		{"N_PROBE_F_FREQUENCY",     16},
 		{"N_PROBE_AVE",             0},
 		{"N_PROBE_AVE_FREQUENCY",   1},
@@ -58,8 +60,17 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 		{"L_c",                     1.0},
 		{"L_fy",                    1.0},
 		{"L_fz",                    1.0},
-		{"v0",                      5.00e-5},
+		{"v0",                      1.5625e-5},
+		{"s1",                      1.19},
+		{"s2",                      1.40},
+		{"s3",                      1.20},
+		{"s4",                      1.20},
+		{"s5",                      1.20},
+		{"s6",                      1.98},
 		{"V_PROBE_TOL",             1e-4},
+		{"N_REFINE_START",          -3.0},
+		{"N_REFINE_INC",            1.0},
+		{"N_REFINE_MAX",            1.0},
 	};
 	*output_dir = "../out/TEST_UPLOAD/";
 	

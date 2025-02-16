@@ -1994,7 +1994,7 @@ int Mesh::M_FreezeRefinedCells(int var)
 	return 0;
 }
 
-int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
+int Mesh::M_RefineAndCoarsenCells(int var)
 {
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
@@ -2072,7 +2072,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[Pre]",T_US);
 		tot_time += tmp_time;
-		*file << var << " " << n_ids_marked_refine << " " << n_ids_marked_coarsen << " " << tmp_time << " ";
+		ref_printer << var << " " << n_ids_marked_refine << " " << n_ids_marked_coarsen << " " << tmp_time << " ";
 #endif
 		
 		
@@ -2129,7 +2129,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S1]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2179,7 +2179,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S2]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2234,7 +2234,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S3]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " " << n_ids_marked_coarsen << " ";
+		ref_printer << tmp_time << " " << n_ids_marked_coarsen << " ";
 #endif
 		
 		
@@ -2256,7 +2256,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S4]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2327,7 +2327,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S5]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2382,7 +2382,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S6]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2423,7 +2423,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S7]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " ";
+		ref_printer << tmp_time << " ";
 #endif
 		
 		
@@ -2460,7 +2460,7 @@ int Mesh::M_RefineAndCoarsenCells(int var, std::ofstream *file)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S8]",T_US);
 		tot_time += tmp_time;
-		*file << tmp_time << " " << tot_time << "\n";
+		ref_printer << tmp_time << " " << tot_time << "\n";
 #endif
 		
 		

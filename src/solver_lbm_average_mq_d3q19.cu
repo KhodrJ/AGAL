@@ -1,3 +1,9 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
 #include "solver.h"
 #include "mesh.h"
 
@@ -128,7 +134,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -139,7 +145,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -150,7 +156,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -161,7 +167,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -172,7 +178,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -183,7 +189,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -194,7 +200,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -205,7 +211,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -216,7 +222,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -227,7 +233,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -238,7 +244,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -249,7 +255,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -260,7 +266,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -271,7 +277,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -282,7 +288,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -293,7 +299,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -304,7 +310,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -315,7 +321,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -326,7 +332,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -387,7 +393,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -398,7 +404,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -409,7 +415,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -420,7 +426,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -431,7 +437,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -442,7 +448,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -453,7 +459,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -464,7 +470,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -475,7 +481,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -486,7 +492,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -497,7 +503,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -508,7 +514,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -519,7 +525,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -530,7 +536,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -541,7 +547,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -552,7 +558,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -563,7 +569,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -574,7 +580,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -585,7 +591,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -646,7 +652,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -657,7 +663,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -668,7 +674,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -679,7 +685,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -690,7 +696,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -701,7 +707,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -712,7 +718,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -723,7 +729,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -734,7 +740,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -745,7 +751,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -756,7 +762,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -767,7 +773,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -778,7 +784,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -789,7 +795,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -800,7 +806,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -811,7 +817,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -822,7 +828,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -833,7 +839,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -844,7 +850,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -905,7 +911,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -916,7 +922,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -927,7 +933,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -938,7 +944,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -949,7 +955,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -960,7 +966,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -971,7 +977,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -982,7 +988,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -993,7 +999,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1004,7 +1010,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1015,7 +1021,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1026,7 +1032,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1037,7 +1043,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1048,7 +1054,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1059,7 +1065,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1070,7 +1076,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1081,7 +1087,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1092,7 +1098,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1103,7 +1109,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1164,7 +1170,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1175,7 +1181,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1186,7 +1192,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1197,7 +1203,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1208,7 +1214,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1219,7 +1225,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1230,7 +1236,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1241,7 +1247,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1252,7 +1258,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1263,7 +1269,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1274,7 +1280,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1285,7 +1291,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1296,7 +1302,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1307,7 +1313,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1318,7 +1324,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1329,7 +1335,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1340,7 +1346,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1351,7 +1357,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1362,7 +1368,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1423,7 +1429,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1434,7 +1440,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1445,7 +1451,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1456,7 +1462,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1467,7 +1473,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1478,7 +1484,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1489,7 +1495,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1500,7 +1506,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1511,7 +1517,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1522,7 +1528,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1533,7 +1539,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1544,7 +1550,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1555,7 +1561,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1566,7 +1572,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1577,7 +1583,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1588,7 +1594,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1599,7 +1605,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1610,7 +1616,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1621,7 +1627,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1682,7 +1688,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1693,7 +1699,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1704,7 +1710,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1715,7 +1721,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1726,7 +1732,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1737,7 +1743,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1748,7 +1754,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1759,7 +1765,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1770,7 +1776,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1781,7 +1787,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1792,7 +1798,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1803,7 +1809,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1814,7 +1820,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1825,7 +1831,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1836,7 +1842,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1847,7 +1853,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1858,7 +1864,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1869,7 +1875,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1880,7 +1886,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1941,7 +1947,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 0
-									cdotu = 0.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.333333333333333)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_0 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1952,7 +1958,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 1
-									cdotu = 1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_1 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1963,7 +1969,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 2
-									cdotu = -1.0*u_kap + 0.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_2 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1974,7 +1980,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 3
-									cdotu = 0.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_3 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1985,7 +1991,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 4
-									cdotu = 0.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_4 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -1996,7 +2002,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 5
-									cdotu = 0.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_5 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2007,7 +2013,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 6
-									cdotu = 0.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.055555555555556)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_6 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2018,7 +2024,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 7
-									cdotu = 1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_7 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2029,7 +2035,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 8
-									cdotu = -1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_8 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2040,7 +2046,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 9
-									cdotu = 1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_9 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2051,7 +2057,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 10
-									cdotu = -1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_10 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2062,7 +2068,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 11
-									cdotu = 0.0*u_kap + 1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_11 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2073,7 +2079,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 12
-									cdotu = 0.0*u_kap + -1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_12 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2084,7 +2090,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 13
-									cdotu = 1.0*u_kap + -1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_13 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2095,7 +2101,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 14
-									cdotu = -1.0*u_kap + 1.0*v_kap + 0.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(0.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_14 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2106,7 +2112,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 15
-									cdotu = 1.0*u_kap + 0.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_15 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2117,7 +2123,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 16
-									cdotu = -1.0*u_kap + 0.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(-1.0)*u_kap + N_Pf(0.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_16 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2128,7 +2134,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 17
-									cdotu = 0.0*u_kap + 1.0*v_kap + -1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(1.0)*v_kap + N_Pf(-1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_17 - tmp_i)*tau_ratio;
 									__syncthreads();
@@ -2139,7 +2145,7 @@ void Cu_Average_d3q19
 									__syncthreads();
 
 									//	 p = 18
-									cdotu = 0.0*u_kap + -1.0*v_kap + 1.0*w_kap;
+									cdotu = N_Pf(0.0)*u_kap + N_Pf(-1.0)*v_kap + N_Pf(1.0)*w_kap;
 									tmp_i = N_Pf(0.027777777777778)*rho_kap*(N_Pf(1.0) + N_Pf(3.0)*cdotu + N_Pf(4.5)*cdotu*cdotu - N_Pf(1.5)*udotu);
 									s_Fc[threadIdx.x] = tmp_i + (f_18 - tmp_i)*tau_ratio;
 									__syncthreads();

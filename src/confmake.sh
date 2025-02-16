@@ -13,15 +13,15 @@
 #
 
 # Solver parameters.
-N_PRECISION=0
+N_PRECISION=1
 N_Q=9
-Nqx=8
-M_LBLOCK=16
+Nqx=1
+M_LBLOCK=2
 S_LES=0
-N_CASE=0
+N_CASE=2
 
 # Refinement parameters.
-P_SHOW_REFINE=1
+P_SHOW_REFINE=0
 	
 # Printing parameters.
 P_SHOW_ADVANCE=1
