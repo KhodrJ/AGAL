@@ -13,8 +13,9 @@ int Geometry::G_Init(std::map<std::string, int> params_int, std::map<std::string
 
 int Geometry::G_Init_Arrays_IndexLists_CPU(int i_dev)
 {
-	if (init_index_lists == 0)
+	if (v_geom_f_node_X.size() > 0)
 	{
+		init_index_lists = 1;
 		G_UpdateCounts(i_dev);
 		geom_f_node_X[i_dev] = new double[3*n_nodes_a[i_dev]];
 		geom_ID_face[i_dev] = new int[3*n_faces_a[i_dev]];
@@ -43,7 +44,6 @@ int Geometry::G_Init_Arrays_IndexLists_CPU(int i_dev)
 				geom_ID_face[i_dev][j + 2*n_faces_a[i_dev]] = v_geom_ID_face_3[j];
 			}
 		}
-		init_index_lists = 1;
 	}
 	else
 		std::cout << "[-] Index lists already built, reset first to rebuild..." << std::endl;
@@ -53,8 +53,9 @@ int Geometry::G_Init_Arrays_IndexLists_CPU(int i_dev)
 
 int Geometry::G_Init_Arrays_CoordsList_CPU(int i_dev)
 {
-	if (init_coords_list == 0)
+	if (v_geom_f_face_1_X.size() > 0)
 	{
+		init_coords_list = 1;
 		G_UpdateCounts(i_dev);
 		geom_f_face_X[i_dev] = new double[9*n_faces_a[i_dev]];
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
@@ -82,7 +83,11 @@ int Geometry::G_Init_Arrays_CoordsList_CPU(int i_dev)
 			}
 		}
 		
-		init_coords_list = 1;
+		//gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
+		//gpuErrchk( cudaMemcpy(c_geom_f_node_X[i_dev], geom_f_node_X[i_dev], 3*n_nodes[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
+		
+		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X[i_dev], 9*n_faces_a[i_dev]*sizeof(double)) );
+		gpuErrchk( cudaMemcpy(c_geom_f_face_X[i_dev], geom_f_face_X[i_dev], 9*n_faces_a[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
 	}
 	else
 		std::cout << "[-] Coords list already built, reset first to rebuild..." << std::endl;
@@ -92,10 +97,23 @@ int Geometry::G_Init_Arrays_CoordsList_CPU(int i_dev)
 
 int Geometry::G_UpdateCounts(int i_dev)
 {
-	n_nodes[i_dev] = v_geom_f_node_X.size();
-	n_faces[i_dev] = v_geom_ID_face_1.size();
-	n_nodes_a[i_dev] = n_nodes[i_dev] + 256-(n_nodes[i_dev]%256);
-	n_faces_a[i_dev] = n_faces[i_dev] + 256-(n_faces[i_dev]%256);
+	if (init_index_lists)
+	{
+		n_nodes[i_dev] = v_geom_f_node_X.size();
+		n_faces[i_dev] = v_geom_ID_face_1.size();
+		n_nodes_a[i_dev] = n_nodes[i_dev] + 256-(n_nodes[i_dev]%256);
+		n_faces_a[i_dev] = n_faces[i_dev] + 256-(n_faces[i_dev]%256);
+	}
+	if (init_coords_list)
+	{
+		n_faces[i_dev] = v_geom_f_face_1_X.size();
+		n_nodes[i_dev] = 3*n_faces[i_dev];
+		n_nodes_a[i_dev] = n_nodes[i_dev] + 256-(n_nodes[i_dev]%256);
+		n_faces_a[i_dev] = n_faces[i_dev] + 256-(n_faces[i_dev]%256);
+	}
+	
+	if (!init_index_lists && !init_coords_list)
+		std::cout << "[-] Warning: neither set of lists has been loaded. Count is zero..." << std::endl;
 	
 	return 0;
 }

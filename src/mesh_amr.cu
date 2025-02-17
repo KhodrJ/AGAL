@@ -975,64 +975,68 @@ void Cu_UpdateMasks_2
 				for (int i_q = 0; i_q < Nqx; i_q += 1)
 				{
 					int i_Q = i_q + Nqx*j_q;
-					s_ID_mask[threadIdx.x] = 0;
-					if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((i_q==0)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
-						s_ID_mask[threadIdx.x] = 1;
-					if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+					s_ID_mask[threadIdx.x] = cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x];
+					if (s_ID_mask[threadIdx.x] >= 0)
 					{
-						if ((I_kap >= 2))
-							s_ID_mask[threadIdx.x] = 2;
+						s_ID_mask[threadIdx.x] = 0;
+						if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((i_q==0)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
+							s_ID_mask[threadIdx.x] = 1;
+						if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+						{
+							if ((I_kap >= 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
+						{
+							if ((J_kap >= 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((i_q==0)))
+						{
+							if ((I_kap < 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
+						{
+							if ((J_kap < 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
+						{
+							if ((I_kap >= 2)and(J_kap >= 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
+						{
+							if ((I_kap < 2)and(J_kap >= 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
+						{
+							if ((I_kap < 2)and(J_kap < 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
+						{
+							if ((I_kap >= 2)and(J_kap < 2))
+								s_ID_mask[threadIdx.x] = 2;
+						}
+						cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] = s_ID_mask[threadIdx.x];
 					}
-					if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
-					{
-						if ((J_kap >= 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((i_q==0)))
-					{
-						if ((I_kap < 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
-					{
-						if ((J_kap < 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
-					{
-						if ((I_kap >= 2)and(J_kap >= 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
-					{
-						if ((I_kap < 2)and(J_kap >= 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
-					{
-						if ((I_kap < 2)and(J_kap < 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
-					{
-						if ((I_kap >= 2)and(J_kap < 2))
-							s_ID_mask[threadIdx.x] = 2;
-					}
-					cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] = s_ID_mask[threadIdx.x];
 					__syncthreads();
 				}
 			}
@@ -1044,190 +1048,194 @@ void Cu_UpdateMasks_2
 					for (int i_q = 0; i_q < Nqx; i_q += 1)
 					{
 						int i_Q = i_q+Nqx*j_q+Nqx*Nqx*k_q;
-						s_ID_mask[threadIdx.x] = 0;
-						if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((i_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 9*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 10*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 11*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 12*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 13*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 14*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 15*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 16*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 17*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 18*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 19*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 20*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 21*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 22*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 23*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 24*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 25*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==Nqx-1)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 26*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==0)))
-							s_ID_mask[threadIdx.x] = 1;
-						if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+						s_ID_mask[threadIdx.x] = cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x];
+						if (s_ID_mask[threadIdx.x] >= 0)
 						{
-							if ((I_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
+							s_ID_mask[threadIdx.x] = 0;
+							if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((i_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 9*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 10*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 11*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 12*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 13*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 14*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 15*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 16*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 17*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 18*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 19*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 20*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 21*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 22*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 23*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 24*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 25*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==Nqx-1)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 26*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==0)))
+								s_ID_mask[threadIdx.x] = 1;
+							if ((cblock_ID_nbr[i_kap_b + 1*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)))
+							{
+								if ((I_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((i_q==0)))
+							{
+								if ((I_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
+							{
+								if ((J_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
+							{
+								if ((J_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((k_q==Nqx-1)))
+							{
+								if ((K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((k_q==0)))
+							{
+								if ((K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
+							{
+								if ((I_kap >= 2)and(J_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
+							{
+								if ((I_kap < 2)and(J_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 9*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==Nqx-1)))
+							{
+								if ((I_kap >= 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 10*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==0)))
+							{
+								if ((I_kap < 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 11*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==Nqx-1)))
+							{
+								if ((J_kap >= 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 12*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==0)))
+							{
+								if ((J_kap < 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 13*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
+							{
+								if ((I_kap >= 2)and(J_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 14*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
+							{
+								if ((I_kap < 2)and(J_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 15*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==0)))
+							{
+								if ((I_kap >= 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 16*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==Nqx-1)))
+							{
+								if ((I_kap < 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 17*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==0)))
+							{
+								if ((J_kap >= 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 18*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==Nqx-1)))
+							{
+								if ((J_kap < 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 19*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==Nqx-1)))
+							{
+								if ((I_kap >= 2)and(J_kap >= 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 20*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==0)))
+							{
+								if ((I_kap < 2)and(J_kap < 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 21*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==0)))
+							{
+								if ((I_kap >= 2)and(J_kap >= 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 22*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==Nqx-1)))
+							{
+								if ((I_kap < 2)and(J_kap < 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 23*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==Nqx-1)))
+							{
+								if ((I_kap >= 2)and(J_kap < 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 24*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==0)))
+							{
+								if ((I_kap < 2)and(J_kap >= 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 25*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==Nqx-1)))
+							{
+								if ((I_kap < 2)and(J_kap >= 2)and(K_kap >= 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							if ((cblock_ID_nbr[i_kap_b + 26*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==0)))
+							{
+								if ((I_kap >= 2)and(J_kap < 2)and(K_kap < 2))
+									s_ID_mask[threadIdx.x] = 2;
+							}
+							cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] = s_ID_mask[threadIdx.x];
 						}
-						if ((cblock_ID_nbr[i_kap_b + 2*n_maxcblocks]==N_SKIPID)and((i_q==0)))
-						{
-							if ((I_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 3*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)))
-						{
-							if ((J_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 4*n_maxcblocks]==N_SKIPID)and((j_q==0)))
-						{
-							if ((J_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 5*n_maxcblocks]==N_SKIPID)and((k_q==Nqx-1)))
-						{
-							if ((K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 6*n_maxcblocks]==N_SKIPID)and((k_q==0)))
-						{
-							if ((K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 7*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)))
-						{
-							if ((I_kap >= 2)and(J_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 8*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)))
-						{
-							if ((I_kap < 2)and(J_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 9*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==Nqx-1)))
-						{
-							if ((I_kap >= 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 10*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==0)))
-						{
-							if ((I_kap < 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 11*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==Nqx-1)))
-						{
-							if ((J_kap >= 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 12*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==0)))
-						{
-							if ((J_kap < 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 13*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)))
-						{
-							if ((I_kap >= 2)and(J_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 14*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)))
-						{
-							if ((I_kap < 2)and(J_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 15*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(k_q==0)))
-						{
-							if ((I_kap >= 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 16*n_maxcblocks]==N_SKIPID)and((i_q==0)and(k_q==Nqx-1)))
-						{
-							if ((I_kap < 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 17*n_maxcblocks]==N_SKIPID)and((j_q==Nqx-1)and(k_q==0)))
-						{
-							if ((J_kap >= 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 18*n_maxcblocks]==N_SKIPID)and((j_q==0)and(k_q==Nqx-1)))
-						{
-							if ((J_kap < 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 19*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==Nqx-1)))
-						{
-							if ((I_kap >= 2)and(J_kap >= 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 20*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==0)))
-						{
-							if ((I_kap < 2)and(J_kap < 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 21*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==Nqx-1)and(k_q==0)))
-						{
-							if ((I_kap >= 2)and(J_kap >= 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 22*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==0)and(k_q==Nqx-1)))
-						{
-							if ((I_kap < 2)and(J_kap < 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 23*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==Nqx-1)))
-						{
-							if ((I_kap >= 2)and(J_kap < 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 24*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==0)))
-						{
-							if ((I_kap < 2)and(J_kap >= 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 25*n_maxcblocks]==N_SKIPID)and((i_q==0)and(j_q==Nqx-1)and(k_q==Nqx-1)))
-						{
-							if ((I_kap < 2)and(J_kap >= 2)and(K_kap >= 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						if ((cblock_ID_nbr[i_kap_b + 26*n_maxcblocks]==N_SKIPID)and((i_q==Nqx-1)and(j_q==0)and(k_q==0)))
-						{
-							if ((I_kap >= 2)and(J_kap < 2)and(K_kap < 2))
-								s_ID_mask[threadIdx.x] = 2;
-						}
-						cells_ID_mask[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + threadIdx.x] = s_ID_mask[threadIdx.x];
 						__syncthreads();
 					}
 				}

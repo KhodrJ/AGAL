@@ -16,15 +16,19 @@ int main(int argc, char *argv[])
 	
 	// Create a new geometry and import from input folder.
 	Geometry geometry(input_map_int, input_map_dbl, input_map_str);
-	geometry.G_ImportSTL_ASCII("monkey.stl");
-	//geometry.G_ImportBoundariesFromTextFile(0);
+	//geometry.G_ImportSTL_ASCII("monkey.stl");
+	geometry.G_ImportBoundariesFromTextFile(0);
+	geometry.G_Convert_IndexListsToCoordList(0);
+	geometry.G_Init_Arrays_CoordsList_CPU(0);
+	geometry.G_PrintSTL(0);
 	
 	// Create mesh and LBM solver.
-	//Mesh mesh(input_map_int, input_map_dbl, input_map_str);
-	//mesh.M_NewSolver_LBM_BGK(input_map_int, input_map_dbl, input_map_str);
+	Mesh mesh(input_map_int, input_map_dbl, input_map_str);
+	mesh.geometry = &geometry;
+	mesh.M_NewSolver_LBM_BGK(input_map_int, input_map_dbl, input_map_str);
 	
 	// Solver loop (includes rendering and printing).
-	//mesh.M_AdvanceLoop();
+	mesh.M_AdvanceLoop();
 	
 	return 0;
 }

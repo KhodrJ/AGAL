@@ -72,7 +72,8 @@ int Mesh::M_Advance_RefineNearWall()
 		for (int L = N_LEVEL_START; L < (MAX_LEVELS)-1; L++)
 		{
 			std::cout << "Near wall refinement #" << L+1 << std::endl;
-			solver->S_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
+			M_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
+			M_ComputeRefCriteria(0,L,V_MESH_REF_NW_GEOMETRY);
 			M_RefineAndCoarsenCells(0);
 			solver->S_SetIC(0,L+1);
 		}
@@ -90,7 +91,7 @@ int Mesh::M_Advance_RefineNearWall()
 		for (int L = 0; L < MAX_LEVELS-1; L++)
 		{
 			std::cout << "Refining to get to starting level [L=" << L << "]..." << std::endl;
-			solver->S_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
+			M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
 			M_RefineAndCoarsenCells(0);
 		}
 		solver->S_SetIC(0,N_LEVEL_START);

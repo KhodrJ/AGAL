@@ -116,6 +116,7 @@ class Geometry
 	int G_Init_Arrays_IndexLists_CPU(int i_dev);
 	int G_Init_Arrays_CoordsList_CPU(int i_dev);
 	int G_Dest_Arrays_IndexLists(int i_dev);
+	int G_Dest_Arrays_CoordsList(int i_dev);
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
 	

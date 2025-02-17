@@ -10,7 +10,7 @@ PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
 Nx                              256
-N_ITER_TOTAL                    150*Nx
+N_ITER_TOTAL                    2
 
 # SOLVER
 v0                              1.5625e-5
@@ -50,7 +50,7 @@ P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  1
 N_PRINT_LEVELS_LEGACY           3
 N_OUTPUT_START                  0*Nx
-P_OUTPUT                        150*Nx
+P_OUTPUT                        2
 
 # RENDERING
 VOL_I_MIN                       0

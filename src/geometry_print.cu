@@ -2,25 +2,34 @@
 
 int Geometry::G_PrintSTL(int i_dev)
 {
-	std::cout << "[-] Finished reading, print STL file..." << std::endl;
 	std::ofstream stl = std::ofstream(output_dir + "geometry.stl");
 	stl << "solid Geometry" << std::endl;
 	
 	// Compute facet normals and print.
 	for (int i = 0; i < n_faces[i_dev]; i++)
 	{
-		int p1 = geom_ID_face[i_dev][i + 0*n_faces[i_dev]];
-		int p2 = geom_ID_face[i_dev][i + 1*n_faces[i_dev]];
-		int p3 = geom_ID_face[i_dev][i + 2*n_faces[i_dev]];
-		double v1x = geom_f_node_X[i_dev][p1 + 0*n_nodes[i_dev]];
-		double v1y = geom_f_node_X[i_dev][p1 + 1*n_nodes[i_dev]];
-		double v1z = geom_f_node_X[i_dev][p1 + 2*n_nodes[i_dev]];
-		double v2x = geom_f_node_X[i_dev][p2 + 0*n_nodes[i_dev]];
-		double v2y = geom_f_node_X[i_dev][p2 + 1*n_nodes[i_dev]];
-		double v2z = geom_f_node_X[i_dev][p2 + 2*n_nodes[i_dev]];
-		double v3x = geom_f_node_X[i_dev][p3 + 0*n_nodes[i_dev]];
-		double v3y = geom_f_node_X[i_dev][p3 + 1*n_nodes[i_dev]];
-		double v3z = geom_f_node_X[i_dev][p3 + 2*n_nodes[i_dev]];
+// 		int p1 = geom_ID_face[i_dev][i + 0*n_faces[i_dev]];
+// 		int p2 = geom_ID_face[i_dev][i + 1*n_faces[i_dev]];
+// 		int p3 = geom_ID_face[i_dev][i + 2*n_faces[i_dev]];
+// 		double v1x = geom_f_node_X[i_dev][p1 + 0*n_nodes[i_dev]];
+// 		double v1y = geom_f_node_X[i_dev][p1 + 1*n_nodes[i_dev]];
+// 		double v1z = geom_f_node_X[i_dev][p1 + 2*n_nodes[i_dev]];
+// 		double v2x = geom_f_node_X[i_dev][p2 + 0*n_nodes[i_dev]];
+// 		double v2y = geom_f_node_X[i_dev][p2 + 1*n_nodes[i_dev]];
+// 		double v2z = geom_f_node_X[i_dev][p2 + 2*n_nodes[i_dev]];
+// 		double v3x = geom_f_node_X[i_dev][p3 + 0*n_nodes[i_dev]];
+// 		double v3y = geom_f_node_X[i_dev][p3 + 1*n_nodes[i_dev]];
+// 		double v3z = geom_f_node_X[i_dev][p3 + 2*n_nodes[i_dev]];
+		double v1x = geom_f_face_X[i_dev][i + 0*n_faces_a[i_dev]];
+		double v1y = geom_f_face_X[i_dev][i + 1*n_faces_a[i_dev]];
+		double v1z = geom_f_face_X[i_dev][i + 2*n_faces_a[i_dev]];
+		double v2x = geom_f_face_X[i_dev][i + 3*n_faces_a[i_dev]];
+		double v2y = geom_f_face_X[i_dev][i + 4*n_faces_a[i_dev]];
+		double v2z = geom_f_face_X[i_dev][i + 5*n_faces_a[i_dev]];
+		double v3x = geom_f_face_X[i_dev][i + 6*n_faces_a[i_dev]];
+		double v3y = geom_f_face_X[i_dev][i + 7*n_faces_a[i_dev]];
+		double v3z = geom_f_face_X[i_dev][i + 8*n_faces_a[i_dev]];
+		
 		
 // 		int p1 = (*v_geom_ID_face_1)[i];
 // 		int p2 = (*v_geom_ID_face_2)[i];
@@ -68,7 +77,6 @@ int Geometry::G_PrintSTL(int i_dev)
 
 int Geometry::G_PrintOBJ(int i_dev)
 {
-	std::cout << "[-] Finished reading, print OBJ file..." << std::endl;
 	std::ofstream obj = std::ofstream(output_dir + "geometry.obj");
 	obj << "# Geometry." << std::endl << std::endl;;
 	

@@ -748,7 +748,6 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 			}
 		}
 	}
-	G_UpdateCounts(i_dev);
 	
 	// Make node and face indices permanent. 
 // 	n_nodes[i_dev] = v_geom_f_node_X.size();

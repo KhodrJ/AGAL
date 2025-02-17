@@ -17,20 +17,20 @@ int Geometry::G_Convert_IndexListsToCoordList(int i_dev)
 	}
 	
 	// Now fill it with the index list data.
-	for (int j = 0; j < n_faces[i_dev]; j++)
+	for (int j = 0; j < v_geom_ID_face_1.size(); j++)
 	{
 		int f1 = v_geom_ID_face_1[j];
 		int f2 = v_geom_ID_face_2[j];
 		int f3 = v_geom_ID_face_3[j];
-		int v1x = v_geom_f_node_X[f1];
-		int v1y = v_geom_f_node_Y[f1];
-		int v1z = v_geom_f_node_Z[f1];
-		int v2x = v_geom_f_node_X[f2];
-		int v2y = v_geom_f_node_Y[f2];
-		int v2z = v_geom_f_node_Z[f2];
-		int v3x = v_geom_f_node_X[f3];
-		int v3y = v_geom_f_node_Y[f3];
-		int v3z = v_geom_f_node_Z[f3];
+		double v1x = v_geom_f_node_X[f1];
+		double v1y = v_geom_f_node_Y[f1];
+		double v1z = v_geom_f_node_Z[f1];
+		double v2x = v_geom_f_node_X[f2];
+		double v2y = v_geom_f_node_Y[f2];
+		double v2z = v_geom_f_node_Z[f2];
+		double v3x = v_geom_f_node_X[f3];
+		double v3y = v_geom_f_node_Y[f3];
+		double v3z = v_geom_f_node_Z[f3];
 		
 		v_geom_f_face_1_X.push_back(v1x);
 		v_geom_f_face_1_Y.push_back(v1y);

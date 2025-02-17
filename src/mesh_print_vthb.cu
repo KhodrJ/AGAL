@@ -88,6 +88,11 @@ int Mesh::M_Print_VTHB(int i_dev, int iter)
 			data_kap_dbg->SetName("debug - ref ID");
 			data_kap_dbg->SetNumberOfComponents(1);
 			data_kap_dbg->SetNumberOfTuples(M_CBLOCK);
+				// Cell mask.
+			vtkNew<vtkDoubleArray> data_kap_mask_cell;
+			data_kap_mask_cell->SetName("Cell Mask");
+			data_kap_mask_cell->SetNumberOfComponents(1);
+			data_kap_mask_cell->SetNumberOfTuples(M_CBLOCK);
 				// Density.
 			vtkNew<vtkDoubleArray> data_kap_sc;
 			data_kap_sc->SetName("Density");
@@ -140,6 +145,7 @@ int Mesh::M_Print_VTHB(int i_dev, int iter)
 					// Debug.
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_ref[i_dev][i_kap]);
 					data_kap_dbg->SetTuple1(i_global, (double)cells_ID_mask[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i]);
+					data_kap_mask_cell->SetTuple1(i_global, (double)cells_ID_mask[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i]);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_onb[i_dev][i_kap]);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_mask[i_dev][i_kap]);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)min_nbr_id);
@@ -178,6 +184,7 @@ int Mesh::M_Print_VTHB(int i_dev, int iter)
 				}
 			}
 			grid_kap->GetCellData()->AddArray(data_kap_dbg);
+			grid_kap->GetCellData()->AddArray(data_kap_mask_cell);
 			grid_kap->GetCellData()->AddArray(data_kap_sc);
 			grid_kap->GetCellData()->AddArray(data_kap_v);
 			grid_kap->GetCellData()->AddArray(data_kap_w);

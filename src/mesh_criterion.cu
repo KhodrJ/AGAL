@@ -7,6 +7,15 @@
 
 #include "mesh.h"
 
+template <class T>
+__device__
+void Cu_CrossProduct(T a1, T a2, T a3, T b1, T b2, T b3, T &s1, T &s2, T &s3)
+{
+	s1 = a2*b3 - a3*b2;
+	s2 = a3*b1 - a1*b3;
+	s3 = a1*b2 - a2*b1;
+}
+
 __global__
 void Cu_ComputeRefCriteria_NearWall_Cases
 (
@@ -32,7 +41,7 @@ void Cu_ComputeRefCriteria_NearWall_Cases
 			
 			
 			
-#if (N_CASE==0)
+#if (N_CASE==0 || N_CASE==2)
 			// Loop over cavity walls and identify the closest one.
 			// If this closest wall is within a certain threshhold, mark for refinement.
 			ufloat_t dist_min = N_Pf(1.0);
@@ -102,6 +111,199 @@ void Cu_ComputeRefCriteria_NearWall_Cases
 	}
 }
 
+
+
+
+
+__global__
+void Cu_ComputeRefCriteria_NearWall_Geometry
+(
+	int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dx_L, int L,
+	int *cells_ID_mask, int *cblock_ID_ref, int *cblock_ID_onb, ufloat_t *cblock_f_X, int *cblock_ID_nbr,
+	int n_faces, int n_faces_a, double *geom_f_face_X, double R, double R2
+)
+{
+	__shared__ int s_ID_cblock[M_TBLOCK];
+	__shared__ int s_D[M_TBLOCK];
+	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
+	int I_kap = threadIdx.x % Nbx;
+	int J_kap = (threadIdx.x / Nbx) % Nbx;
+#if (N_DIM==3)
+	int K_kap = (threadIdx.x / Nbx) / Nbx;
+#endif
+	int i_kap_b = -1;
+	double vx1 = 0.0;
+	double vy1 = 0.0;
+	double vz1 = 0.0;
+	double vx2 = 0.0;
+	double vy2 = 0.0;
+	double vz2 = 0.0;
+	double vx3 = 0.0;
+	double vy3 = 0.0;
+	double vz3 = 0.0;
+	double nx = 0.0;
+	double ny = 0.0;
+	double nz = 0.0;
+	double ex1 = 0.0;
+	double ey1 = 0.0;
+	double ez1 = 0.0;
+	double ex2 = 0.0;
+	double ey2 = 0.0;
+	double ez2 = 0.0;
+	double v_xp = 0.0;
+	double v_yp = 0.0;
+	double v_zp = 0.0;
+	double tmp = 0.0;
+	double tmp1 = 0.0;
+	double tmp2 = 0.0;
+	double tmp3 = 0.0;
+	double tmp4 = 0.0;
+	bool in_region = false;
+	bool in_solid = false;
+	bool C1 = false;
+	bool C2 = false;
+	bool C3 = false;
+	bool C4 = false;
+	bool C5 = false;
+	bool C6 = false;
+	int intersect_counter = 0;
+	
+	s_ID_cblock[threadIdx.x] = -1;
+	s_D[threadIdx.x] = 0;
+	if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
+	{
+		s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
+	}
+	__syncthreads();
+	
+	// Loop over block Ids.
+	for (int k = 0; k < M_LBLOCK; k += 1)
+	{
+		i_kap_b = s_ID_cblock[k];
+
+		// Latter condition is added only if n>0.
+		if (i_kap_b > -1 && cblock_ID_ref[i_kap_b] == V_REF_ID_UNREFINED)
+		{
+			v_xp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I_kap*dx_L + 0.5*dx_L;
+			v_yp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J_kap*dx_L + 0.5*dx_L;
+#if (N_DIM==3)
+			v_zp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K_kap*dx_L + 0.5*dx_L;
+#endif
+			
+			// For each face, check if the current cell is within the appropriate bounds. If at least
+			// one condition is satisfied, exit the loop and make a note.
+			s_D[threadIdx.x] = 0;
+			for (int p = 0; p < n_faces; p++)
+			{
+				vx1 = geom_f_face_X[p + 0*n_faces_a];
+				vy1 = geom_f_face_X[p + 1*n_faces_a];
+				vz1 = geom_f_face_X[p + 2*n_faces_a];
+				vx2 = geom_f_face_X[p + 3*n_faces_a];
+				vy2 = geom_f_face_X[p + 4*n_faces_a];
+				vz2 = geom_f_face_X[p + 5*n_faces_a];
+				vx3 = geom_f_face_X[p + 6*n_faces_a];
+				vy3 = geom_f_face_X[p + 7*n_faces_a];
+				vz3 = geom_f_face_X[p + 8*n_faces_a];
+				
+#if (N_DIM==2)
+				nx = vy2-vy1;
+				ny = vx1-vx2;
+				tmp = sqrt(nx*nx + ny*ny);
+				nx /= tmp;
+				ny /= tmp;
+				
+				// Checking in circles.
+				if ( (v_xp-vx1)*(v_xp-vx1) + (v_yp-vy1)*(v_yp-vy1) < R2 )
+				{
+					in_region = true;
+					break;
+				}
+				if ( (v_xp-vx2)*(v_xp-vx2) + (v_yp-vy2)*(v_yp-vy2) < R2 )
+				{
+					in_region = true;
+					break;
+				}
+				
+				// Checking in rectangle.
+				C1 = -(   (vx1+nx*R-v_xp)*(vx2-vx1) + (vy1+ny*R-v_yp)*(vy2-vy1) )   > 0;
+				C2 = (   (vx2+nx*R-v_xp)*(vx2-vx1) + (vy2+ny*R-v_yp)*(vy2-vy1)   ) > 0;
+				C3 = -(   (vx1-nx*R-v_xp)*(nx) + (vy1-ny*R-v_yp)*(ny)   ) > 0;
+				C4 = (   (vx1+nx*R-v_xp)*(nx) + (vy1+ny*R-v_yp)*(ny)   ) > 0;
+				if (C1 && C2 && C3 && C4)
+				{
+					in_region = true;
+					break;
+				}
+				
+				// Check if the cell lies in the solid region.
+				//C5 = -(   ()*() + ()*()   ) > 0;
+				//if (C5)
+				//	intersect_counter++;
+				
+#else // N_DIM==3
+				ex1 = vx2-vx1;
+				ey1 = vy2-vy1;
+				ez1 = vz2-vz1;
+				ex2 = vx3-vx1;
+				ey2 = vy3-vy1;
+				ez2 = vz3-vz1;
+				nx = ey1*ez2 - ez1*ey2;
+				ny = ez1*ex2 - ex1*ez2;
+				nz = ex1*ey2 - ey1*ex2;
+// 				Cu_CrossProduct(vx2-vx1,vy2-vy1,vz2-vz1,vx3-vx1,vy3-vy1,vz3-vz1,   nx,ny,nz);
+				tmp = sqrt(nx*nx + ny*ny + nz*nz);
+				nx /= tmp;
+				ny /= tmp;
+				nz /= tmp;
+				
+				
+				if ( (v_xp-vx1)*(v_xp-vx1) + (v_yp-vy1)*(v_yp-vy1) + (v_zp-v_z1)*(v_zp-v_z1) < R2 )
+				{
+					in_region = true;
+					break;
+				}
+				if ( (v_xp-vx2)*(v_xp-vx2) + (v_yp-vy2)*(v_yp-vy2) + (v_zp-v_z2)*(v_zp-v_z2) < R2 )
+				{
+					in_region = true;
+					break;
+				}
+				if ( (v_xp-vx3)*(v_xp-vx3) + (v_yp-vy3)*(v_yp-vy3) + (v_zp-v_z3)*(v_zp-v_z3) < R2 )
+				{
+					in_region = true;
+					break;
+				}
+#endif
+			}
+			if (in_region)
+			{
+				s_D[threadIdx.x] = 1;
+				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = -1;
+			}
+			__syncthreads();
+			
+			// Block reduction for maximum.
+			for (int s=blockDim.x/2; s>0; s>>=1)
+			{
+				if (threadIdx.x < s)
+				{
+					s_D[threadIdx.x] = max( s_D[threadIdx.x],s_D[threadIdx.x + s] );
+				}
+				__syncthreads();
+			}
+			
+			if (threadIdx.x == 0)
+			{
+				if (s_D[threadIdx.x] == 1)
+					cblock_ID_ref[i_kap_b] = V_REF_ID_MARK_REFINE;
+			}
+			in_region = false;
+			in_solid = false;
+			intersect_counter = 0;
+			
+			
+		}
+	}
+}
 
 
 /*
@@ -288,16 +490,16 @@ int Mesh::M_ComputeRefCriteria(int i_dev, int L, int var)
 	}
 	if (var == V_MESH_REF_NW_GEOMETRY) // Complex geometry.
 	{
-		/*
+		double R = 0.05/pow(2.0,(double)L);
+		double R2 = R*R;
 		if (n_ids[i_dev][L] > 0)
 		{
 			Cu_ComputeRefCriteria_NearWall_Geometry<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
-				c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-				n_nodes[i_dev], n_faces[i_dev], c_geom_f_node_X[i_dev], c_geom_ID_face[i_dev]
+				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
+				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
 			);
 		}
-		*/
 	}
 	if (var == V_MESH_REF_UNIFORM) // Refine the whole level.
 	{

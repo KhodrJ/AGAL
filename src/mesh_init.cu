@@ -86,7 +86,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	
 	
 	// Make a copy of the input and configuration files for replicability.
-	std::string copy_string = "cp ../input/* " + output_dir + "input/.; cp ./confmake.sh " + output_dir + "input/.;";
+	std::string copy_string = "cp -r ../input/* " + output_dir + "input/.; cp ./confmake.sh " + output_dir + "input/.;";
 	system(copy_string.c_str());
 	
 	
