@@ -1,7 +1,8 @@
 #include "geometry.h"
 
-int Geometry::PrintSTL(int i_dev)
+int Geometry::G_PrintSTL(int i_dev)
 {
+	std::cout << "[-] Finished reading, print STL file..." << std::endl;
 	std::ofstream stl = std::ofstream(output_dir + "geometry.stl");
 	stl << "solid Geometry" << std::endl;
 	
@@ -60,12 +61,14 @@ int Geometry::PrintSTL(int i_dev)
 	
 	stl << "endsolid Geometry" << std::endl;
 	stl.close();
+	std::cout << "[-] Finished printing STL file..." << std::endl;
 	
 	return 0;
 }
 
-int Geometry::PrintOBJ(int i_dev)
+int Geometry::G_PrintOBJ(int i_dev)
 {
+	std::cout << "[-] Finished reading, print OBJ file..." << std::endl;
 	std::ofstream obj = std::ofstream(output_dir + "geometry.obj");
 	obj << "# Geometry." << std::endl << std::endl;;
 	
@@ -79,19 +82,8 @@ int Geometry::PrintOBJ(int i_dev)
 	obj << "Faces." << std::endl;
 	for (int i = 0; i < n_faces[i_dev]; i++)
 		obj << "f " << geom_ID_face[i_dev][i + 0*n_faces[i_dev]]+1 << " " << geom_ID_face[i_dev][i + 1*n_faces[i_dev]]+1 << " " << geom_ID_face[i_dev][i + 2*n_faces[i_dev]]+1 << std::endl;
-	
-// 	// Print vertices.
-// 	obj << "Vertices." << std::endl;
-// 	for (int i = 0; i < (*v_geom_f_node_X).size(); i++)
-// 		obj << "v " << (*v_geom_f_node_X)[i] << " " << (*v_geom_f_node_Y)[i] << " " << (*v_geom_f_node_Z)[i] << std::endl;
-// 	obj << std::endl;
-// 	
-// 	// Print facs.
-// 	obj << "Faces." << std::endl;
-// 	for (int i = 0; i < (*v_geom_ID_face_1).size(); i++)
-// 		obj << "f " << (*v_geom_ID_face_1)[i]+1 << " " << (*v_geom_ID_face_2)[i]+1 << " " << (*v_geom_ID_face_3)[i]+1 << std::endl;
-	
 	obj.close();
-
+	std::cout << "[-] Finished printing OBJ file..." << std::endl;
+	
 	return 0;
 }

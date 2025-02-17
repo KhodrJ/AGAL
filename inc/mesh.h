@@ -149,7 +149,7 @@ class Mesh
 	// | Routines.
 	// o====================================================================================
 	
-	int M_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::string output_dir_);
+	int M_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str);
 	int M_Dest();
 	
 	
@@ -214,11 +214,12 @@ class Mesh
 	int             N_PROBE_AVE             = 0;            ///< Indicates if computing time-averaged velocity.
 	int             N_PROBE_AVE_FREQUENCY   = 1;            ///< Indicates how frequently the time-averaged velocity is updated.
 	int             N_PROBE_AVE_START       = 0;            ///< Indicates the iteration when time-average calculation begins.
-	// - Output.
+	// - Input/Output.
 	int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
 	int             N_PRINT_LEVELS_LEGACY   = 1;            ///< Number of grid levels to include when printing (legacy .vthb format).
 	int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
 	int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.
+	std::string     input_dir;                              ///< Input directory.
 	std::string     output_dir;                             ///< Output directory.
 	std::ofstream   *output_file_direct;                    ///< Direct output file (stores time-series data in binary format).
 	// - Rendering.
@@ -230,7 +231,7 @@ class Mesh
 	int             VOL_K_MAX               = Nx;           ///< Upper bounding z-index for output subdomain.
 	
 	// o====================================================================================
-	// | CPU paramters.
+	// | CPU parameters.
 	// o====================================================================================
 	
 	//! Array of cell masks used for correcting fine-coarse data transfers.
@@ -341,7 +342,7 @@ class Mesh
 	};
 	
 	// o====================================================================================
-	// | GPU paramters.
+	// | GPU parameters.
 	// o====================================================================================
 	
 	size_t          free_t = 0;                             ///< Number of free bytes in GPU memory.
@@ -557,7 +558,9 @@ class Mesh
 	int             M_Advance_ProbeAverage(int i, int iter_s, int &N_iter_ave);
 	int             M_Advance_PrintData(int i, int iter_s);
 	int             M_Advance_PrintForces(int i, int iter_s);
+	int             M_ComplexGeom();
 	
+	int             M_NewSolver_LBM_BGK(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str);
 	
 	//! Sets up a solver loop and advances the grid for a specified number of iterations (equal to @ref P_PRINT * @ref N_PRINT) with mesh refinement/coarsening, rendering and printing every @ref P_REFINE, @ref P_RENDER and @ref P_PRINT iterations, respectively.
 	int             M_AdvanceLoop();
@@ -585,15 +588,10 @@ class Mesh
 	
 	
 	// NOTE: This will be redone to incorporate proper intialization.
-	Mesh(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::string output_dir_)
+	Mesh(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
 	{
-		M_Init(params_int, params_dbl, output_dir_);
+		M_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making mesh object." << std::endl << std::endl;
-		
-		// Only one solver available: BGK-LBM. Will add more, hopefully.
-		solver = new Solver_LBM(this, params_int, params_dbl);
-		solver_init = 1;
-		std::cout << "[-] Making new solver (LBM) object." << std::endl << std::endl;
 	}
 
 	~Mesh()

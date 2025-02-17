@@ -44,7 +44,8 @@ N_PROBE_AVE                     0
 N_PROBE_AVE_FREQUENCY           1
 N_PROBE_AVE_START               100*Nx
 
-# OUTPUT       
+# INPUT/OUTPUT       
+I_DIR_NAME                      ../input/
 P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  1
 N_PRINT_LEVELS_LEGACY           3

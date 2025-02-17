@@ -96,6 +96,8 @@ endif
 SRC_GEOMETRY = geometry_init.cu\
       geometry_dest.cu\
       geometry_add.cu\
+      geometry_import.cu\
+      geometry_convert.cu\
       geometry_print.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 geometry_%.o: geometry_%.cu geometry.h cppspec.h
@@ -109,6 +111,7 @@ SRC_MESH = mesh_init.cu\
       mesh_comm.cu\
       mesh_criterion.cu\
       mesh_amr.cu\
+      mesh_solvers.cu\
       mesh_advance.cu\
       mesh_restart.cu\
       mesh_output.cu\

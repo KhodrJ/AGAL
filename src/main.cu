@@ -3,24 +3,28 @@
 #include "mesh.h"
 #include "solver.h"
 
-int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::string, double> *input_map_dbl, std::string *output_dir);
+int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);
 
 int main(int argc, char *argv[])
 {
 	// Read input file and use map to make solver input.
+	std::string input_file_directory = "../input/";
 	std::map<std::string, int> input_map_int;
 	std::map<std::string, double> input_map_dbl;
-	std::string output_dir;
-	ReadInputFile(&input_map_int, &input_map_dbl, &output_dir);
+	std::map<std::string, std::string> input_map_str;
+	ReadInputFile(input_file_directory, input_map_int, input_map_dbl, input_map_str);
 	
 	// Create a new geometry and import from input folder.
-	//Geometry geom = Geometry();
+	Geometry geometry(input_map_int, input_map_dbl, input_map_str);
+	geometry.G_ImportSTL_ASCII("monkey.stl");
+	//geometry.G_ImportBoundariesFromTextFile(0);
 	
 	// Create mesh and LBM solver.
-	Mesh mesh(input_map_int, input_map_dbl, output_dir);
+	//Mesh mesh(input_map_int, input_map_dbl, input_map_str);
+	//mesh.M_NewSolver_LBM_BGK(input_map_int, input_map_dbl, input_map_str);
 	
 	// Solver loop (includes rendering and printing).
-	mesh.M_AdvanceLoop();
+	//mesh.M_AdvanceLoop();
 	
 	return 0;
 }

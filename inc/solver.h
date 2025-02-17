@@ -9,7 +9,7 @@ class Solver
 {
 	private:
 	
-	virtual int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl) = 0;
+	virtual int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str) = 0;
 	
 	public:
 	
@@ -40,7 +40,7 @@ class Solver
 	virtual int S_ComputeRefCriteria(int i_dev, int L, int var) = 0;
 	virtual int S_Debug(int var) = 0;
 	
-	Solver(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl)
+	Solver(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
 	{
 		mesh = mesh_;
 	}
@@ -55,7 +55,7 @@ class Solver_LBM : public Solver
 {
 	private:
 	
-	int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl);
+	int S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str);
 	
 	public:
 	
@@ -157,9 +157,9 @@ class Solver_LBM : public Solver
 	int S_ComputeRefCriteria(int i_dev, int L, int var);
 	int S_Debug(int var);
 	
-	Solver_LBM(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl) : Solver(mesh_, params_int, params_dbl)
+	Solver_LBM(Mesh *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str) : Solver(mesh_, params_int, params_dbl, params_str)
 	{
-		S_Init(params_int, params_dbl);
+		S_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making solver (LBM) object." << std::endl << std::endl;
 	}
 	

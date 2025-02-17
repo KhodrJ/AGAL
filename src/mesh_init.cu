@@ -7,7 +7,7 @@
 
 #include "mesh.h"
 
-int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::string output_dir_)
+int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
 {
 	std::cout << " o====================================================================================" << std::endl;
 	std::cout << " | New: Mesh Object                                                                   " << std::endl;
@@ -61,7 +61,9 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	VOL_J_MAX               = params_int["VOL_J_MAX"]/(Nbx*Nqx);
 	VOL_K_MIN               = params_int["VOL_K_MIN"]/(Nbx*Nqx);
 	VOL_K_MAX               = params_int["VOL_K_MAX"]/(Nbx*Nqx);
-	output_dir              = output_dir_;
+	input_dir               = params_str["I_DIR_NAME"];
+	output_dir              = params_str["P_DIR_NAME"];
+// 	output_dir              = output_dir_;
 	
 	
 	// Additional checks on input parameters.

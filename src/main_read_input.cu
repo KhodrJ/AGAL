@@ -12,11 +12,23 @@ int ParseNxFactor(std::string str_val, int Nx)
 		return A;
 }
 
-int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::string, double> *input_map_dbl, std::string *output_dir)
+double ParseNxFactor_D(std::string str_val, int Nx)
+{
+	// Returns the result of A*Nx where A is the specified integer. Nx must come second (so not Nx*A), and 1*Nx should be written explicitly (not just Nx).
+	int pos = str_val.find("*");
+	double A = std::stod(str_val.substr(0, pos));
+	
+	if (pos != std::string::npos)
+		return A*Nx;
+	else
+		return A;
+}
+
+int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str)
 {
 	// Setup default input map.
-	std::ifstream input = std::ifstream("../input/input.txt");
-	*input_map_int = std::map<std::string, int> // Define map of integer parameters with default values.
+	std::ifstream input = std::ifstream(input_file_directory + "input.txt");
+	input_map_int = std::map<std::string, int> // Define map of integer parameters with default values.
 	{
 		{"MAX_LEVELS",              5},
 		{"MAX_LEVELS_INTERIOR",     4},
@@ -55,7 +67,7 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 		{"VOL_K_MIN",               0},
 		{"VOL_K_MAX",               64}
 	};
-	*input_map_dbl = std::map<std::string, double> // Define map of double parameters with default values.
+	input_map_dbl = std::map<std::string, double> // Define map of double parameters with default values.
 	{
 		{"L_c",                     1.0},
 		{"L_fy",                    1.0},
@@ -72,7 +84,12 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 		{"N_REFINE_INC",            1.0},
 		{"N_REFINE_MAX",            1.0},
 	};
-	*output_dir = "../out/TEST_UPLOAD/";
+	input_map_str = std::map<std::string, std::string> // Define map of string parameters with default values.
+	{
+		{"I_DIR_NAME",              input_file_directory},
+		{"P_DIR_NAME",              "../out/TEST_UPLOAD/"},
+	};
+// 	*output_dir = "../out/TEST_UPLOAD/";
 	
 	// Extract Nx first.
 	int Nx = -1;
@@ -100,26 +117,28 @@ int ReadInputFile(std::map<std::string, int> *input_map_int, std::map<std::strin
 			std::stringstream ss(line);
 			ss >> str_name >> str_val;
 			
-			if (str_name == "P_DIR_NAME")
-				*output_dir = str_val;
-			else
-			{
-				if ( (*input_map_int).count(str_name) == 1 )
-					(*input_map_int)[str_name] = ParseNxFactor(str_val, Nx);
-				else if ( (*input_map_dbl).count(str_name) == 1 )
-					(*input_map_dbl)[str_name] = std::stod(str_val);
+// 			if (str_name == "P_DIR_NAME")
+// 				*output_dir = str_val;
+// 			else
+// 			{
+				if ( input_map_int.count(str_name) == 1 )
+					input_map_int[str_name] = ParseNxFactor(str_val, Nx);
+				else if ( input_map_dbl.count(str_name) == 1 )
+					input_map_dbl[str_name] = std::stod(str_val);
+				else if ( input_map_str.count(str_name) == 1 )
+					input_map_str[str_name] = str_val;
 				else
 					std::cout << "Error: Invalid input (" << str_name << ") skipped..." << std::endl;
-			}
+// 			}
 		}
 	}
 	
 	// Check (debug).
-// 	for (std::map<std::string, int>::iterator it = (*input_map_int).begin(); it != (*input_map_int).end(); ++it)
+// 	for (std::map<std::string, int>::iterator it = input_map_int.begin(); it != input_map_int.end(); ++it)
 // 	{
 // 		std::cout << it->first << " " << it->second << std::endl;
 // 	}
-// 	for (std::map<std::string, double>::iterator it = (*input_map_dbl).begin(); it != (*input_map_dbl).end(); ++it)
+// 	for (std::map<std::string, double>::iterator it = input_map_dbl.begin(); it != input_map_dbl.end(); ++it)
 // 	{
 // 		std::cout << it->first << " " << it->second << std::endl;
 // 	}

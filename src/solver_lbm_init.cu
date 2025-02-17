@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "solver.h"
 
-int Solver_LBM::S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl)
+int Solver_LBM::S_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
 {
 	// Set solver (LBM) parameters from input.
 	//S_LES   = params_int["S_LES"];
