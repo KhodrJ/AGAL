@@ -9,8 +9,12 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              256
+Nx                              32
 N_ITER_TOTAL                    2
+
+# GEOMETRY
+G_NEAR_WALL_DISTANCE            0.2
+G_BIN_DENSITY                   16
 
 # SOLVER
 v0                              1.5625e-5

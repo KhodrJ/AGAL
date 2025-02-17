@@ -38,6 +38,8 @@ class Geometry
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
 	float           Ly                      = 1.0F;         ///< Length of domain in y-axis as a fraction of @ref Lx.
 	float           Lz                      = 1.0F;         ///< Length of domain in z-axis as a fraction of @ref Lx.
+	double          G_NEAR_WALL_DISTANCE    = 1;            ///< The number of quad/octants to divide the geometry surface.
+	int             G_BIN_DENSITY           = 1;            ///< The number of quad/octants to divide the geometry surface.
 	std::string     input_dir;                              ///< Input directory.
 	std::string     output_dir;                             ///< Output directory.
 	
@@ -119,6 +121,7 @@ class Geometry
 	int G_Dest_Arrays_CoordsList(int i_dev);
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
+	int G_MakeQuadrants();
 	
 	int G_AddBoundingBox(double ax, double bx, double ay, double by, double az, double bz);
 	int G_AddRectangle(double ax, double bx, double ay, double by);

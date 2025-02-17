@@ -7,6 +7,8 @@ int Geometry::G_Init(std::map<std::string, int> params_int, std::map<std::string
 	Lz                      = params_dbl["L_fz"]*Lx;
 	input_dir               = params_str["I_DIR_NAME"];
 	output_dir              = params_str["P_DIR_NAME"];
+	G_NEAR_WALL_DISTANCE    = params_dbl["G_NEAR_WALL_DISTANCE"];
+	G_BIN_DENSITY           = params_int["G_BIN_DENSITY"];
 	
 	return 0;
 }

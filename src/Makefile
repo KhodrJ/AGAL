@@ -98,6 +98,7 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_add.cu\
       geometry_import.cu\
       geometry_convert.cu\
+      geometry_bin.cu\
       geometry_print.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 geometry_%.o: geometry_%.cu geometry.h cppspec.h
@@ -124,6 +125,22 @@ mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
 
 
 # Building the solver object.
+# solver_lbm_collide_mrt_interp_linear_d2q9.cu
+# solver_lbm_collide_mrt_interp_linear_d3q19.cu
+# solver_lbm_collide_mrt_interp_cubic_d2q9.cu
+# solver_lbm_collide_mrt_interp_cubic_d3q19.cu
+# solver_lbm_vel2mom_mrt_d2q9.cu
+# solver_lbm_vel2mom_mrt_d3q19.cu
+# solver_lbm_mom2vel_mrt_d2q9.cu
+# solver_lbm_mom2vel_mrt_d3q19.cu
+# solver_lbm_collide_mrt_d2q9.cu
+# solver_lbm_collide_mrt_d3q19.cu
+# solver_lbm_interp_linear_mrt_d2q9.cu
+# solver_lbm_interp_linear_mrt_d3q19.cu
+# solver_lbm_interp_cubic_mrt_d2q9.cu
+# solver_lbm_interp_cubic_mrt_d3q19.cu
+# solver_lbm_average_mrt_d2q9.cu
+# solver_lbm_average_mrt_d3q19.cu
 SRC_SOLVER = solver_lbm_init.cu\
       solver_lbm_advance.cu\
       solver_lbm_criterion.cu\
@@ -140,16 +157,6 @@ SRC_SOLVER = solver_lbm_init.cu\
       solver_lbm_collide_bgk_interp_cubic_d2q9.cu\
       solver_lbm_collide_bgk_interp_cubic_d3q19.cu\
       solver_lbm_collide_bgk_interp_cubic_d3q27.cu\
-      solver_lbm_collide_mrt_interp_linear_d2q9.cu\
-      solver_lbm_collide_mrt_interp_linear_d3q19.cu\
-      solver_lbm_collide_mrt_interp_cubic_d2q9.cu\
-      solver_lbm_collide_mrt_interp_cubic_d3q19.cu\
-      solver_lbm_vel2mom_mrt_d2q9.cu\
-      solver_lbm_vel2mom_mrt_d3q19.cu\
-      solver_lbm_mom2vel_mrt_d2q9.cu\
-      solver_lbm_mom2vel_mrt_d3q19.cu\
-      solver_lbm_collide_mrt_d2q9.cu\
-      solver_lbm_collide_mrt_d3q19.cu\
       solver_lbm_enforce_symmetry_d2q9.cu\
       solver_lbm_enforce_symmetry_d3q19.cu\
       solver_lbm_enforce_symmetry_d3q27.cu\
@@ -162,16 +169,10 @@ SRC_SOLVER = solver_lbm_init.cu\
       solver_lbm_interp_cubic$(MQ)_d2q9.cu\
       solver_lbm_interp_cubic$(MQ)_d3q19.cu\
       solver_lbm_interp_cubic$(MQ)_d3q27.cu\
-      solver_lbm_interp_linear_mrt_d2q9.cu\
-      solver_lbm_interp_linear_mrt_d3q19.cu\
-      solver_lbm_interp_cubic_mrt_d2q9.cu\
-      solver_lbm_interp_cubic_mrt_d3q19.cu\
       solver_lbm_average$(MQ)_d2q9.cu\
       solver_lbm_average$(MQ)_d3q19.cu\
       solver_lbm_average$(MQ)_d3q27.cu\
-      solver_lbm_average_cubic_d2q9.cu\
-      solver_lbm_average_mrt_d2q9.cu\
-      solver_lbm_average_mrt_d3q19.cu
+      solver_lbm_average_cubic_d2q9.cu
 OBJ_SOLVER = $(SRC_SOLVER:.cu=.o)
 solver_%.o: solver_%.cu solver.h cppspec.h
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<

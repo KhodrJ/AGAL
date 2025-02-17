@@ -157,15 +157,20 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 	double tmp1 = 0.0;
 	double tmp2 = 0.0;
 	double tmp3 = 0.0;
-	double tmp4 = 0.0;
+// 	double ax = 0.0;
+// 	double ay = 0.0;
+// 	double az = 0.0;
+// 	double bx = 0.0;
+// 	double by = 0.0;
+// 	double bz = 0.0;
 	bool in_region = false;
-	bool in_solid = false;
 	bool C1 = false;
 	bool C2 = false;
 	bool C3 = false;
 	bool C4 = false;
 	bool C5 = false;
 	bool C6 = false;
+	bool eligible = true;
 	int intersect_counter = 0;
 	
 	s_ID_cblock[threadIdx.x] = -1;
@@ -214,31 +219,26 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 				
 				// Checking in circles.
 				if ( (v_xp-vx1)*(v_xp-vx1) + (v_yp-vy1)*(v_yp-vy1) < R2 )
-				{
 					in_region = true;
-					break;
-				}
 				if ( (v_xp-vx2)*(v_xp-vx2) + (v_yp-vy2)*(v_yp-vy2) < R2 )
-				{
 					in_region = true;
-					break;
-				}
 				
 				// Checking in rectangle.
-				C1 = -(   (vx1+nx*R-v_xp)*(vx2-vx1) + (vy1+ny*R-v_yp)*(vy2-vy1) )   > 0;
+				C1 = -(   (vx1+nx*R-v_xp)*(vx2-vx1) + (vy1+ny*R-v_yp)*(vy2-vy1)   )   > 0;
 				C2 = (   (vx2+nx*R-v_xp)*(vx2-vx1) + (vy2+ny*R-v_yp)*(vy2-vy1)   ) > 0;
 				C3 = -(   (vx1-nx*R-v_xp)*(nx) + (vy1-ny*R-v_yp)*(ny)   ) > 0;
 				C4 = (   (vx1+nx*R-v_xp)*(nx) + (vy1+ny*R-v_yp)*(ny)   ) > 0;
 				if (C1 && C2 && C3 && C4)
-				{
 					in_region = true;
-					break;
-				}
 				
 				// Check if the cell lies in the solid region.
-				//C5 = -(   ()*() + ()*()   ) > 0;
-				//if (C5)
-				//	intersect_counter++;
+				tmp = ( (vx1-v_xp)*(nx) + (vy1-v_yp)*(ny) ) / nx;
+				tmp1 = v_xp + tmp;
+				ay = v_yp;
+				C1 = -(   (vx1-tmp1)*(vx2-vx1) + (vy1-tmp2)*(vy2-vy1)   )   > 0;
+				C2 = (   (vx2-tmp1)*(vx2-vx1) + (vy2-tmp2)*(vy2-vy1)   ) > 0;
+				if (tmp > 0 && C1 && C2)
+					intersect_counter++;
 				
 #else // N_DIM==3
 				ex1 = vx2-vx1;
@@ -256,29 +256,100 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 				ny /= tmp;
 				nz /= tmp;
 				
+				// Check in spheres.
+				if ( (v_xp-vx1)*(v_xp-vx1) + (v_yp-vy1)*(v_yp-vy1) + (v_zp-vz1)*(v_zp-vz1) < R2 )
+					in_region = true;
+				if ( (v_xp-vx2)*(v_xp-vx2) + (v_yp-vy2)*(v_yp-vy2) + (v_zp-vz2)*(v_zp-vz2) < R2 )
+					in_region = true;
+				if ( (v_xp-vx3)*(v_xp-vx3) + (v_yp-vy3)*(v_yp-vy3) + (v_zp-vz3)*(v_zp-vz3) < R2 )
+					in_region = true;
 				
-				if ( (v_xp-vx1)*(v_xp-vx1) + (v_yp-vy1)*(v_yp-vy1) + (v_zp-v_z1)*(v_zp-v_z1) < R2 )
-				{
+				// Check in cylinders.
+				ex1 = vx2-vx1;
+				ey1 = vy2-vy1;
+				ez1 = vz2-vz1;
+				ex2 = vx1-v_xp;
+				ey2 = vy1-v_yp;
+				ez2 = vz1-v_zp;
+				tmp1 = ey1*ez2 - ez1*ey2;
+				tmp2 = ez1*ex2 - ex1*ez2;
+				tmp3 = ex1*ey2 - ey1*ex2;
+				tmp = tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3;
+				tmp = tmp / (ex1*ex1 + ey1*ey1 + ez1*ez1);
+				C1 = -(   (vx1-v_xp)*(ex1) + (vy1-v_yp)*(ey1) + (vz1-v_zp)*(ez1)  )   > 0;
+				C2 = (   (vx2-v_xp)*(ex1) + (vy2-v_yp)*(ey1) + (vz2-v_zp)*(ez1)  ) > 0;
+				if (tmp < R2 && C1 && C2)
 					in_region = true;
-					break;
-				}
-				if ( (v_xp-vx2)*(v_xp-vx2) + (v_yp-vy2)*(v_yp-vy2) + (v_zp-v_z2)*(v_zp-v_z2) < R2 )
-				{
+				ex1 = vx3-vx2;
+				ey1 = vy3-vy2;
+				ez1 = vz3-vz2;
+				ex2 = vx2-v_xp;
+				ey2 = vy2-v_yp;
+				ez2 = vz2-v_zp;
+				tmp1 = ey1*ez2 - ez1*ey2;
+				tmp2 = ez1*ex2 - ex1*ez2;
+				tmp3 = ex1*ey2 - ey1*ex2;
+				tmp = tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3;
+				tmp = tmp / (ex1*ex1 + ey1*ey1 + ez1*ez1);
+				C1 = -(   (vx2-v_xp)*(ex1) + (vy2-v_yp)*(ey1) + (vz2-v_zp)*(ez1)  )   > 0;
+				C2 = (   (vx3-v_xp)*(ex1) + (vy3-v_yp)*(ey1) + (vz3-v_zp)*(ez1)  ) > 0;
+				if (tmp < R2 && C1 && C2)
 					in_region = true;
-					break;
-				}
-				if ( (v_xp-vx3)*(v_xp-vx3) + (v_yp-vy3)*(v_yp-vy3) + (v_zp-v_z3)*(v_zp-v_z3) < R2 )
-				{
+				ex1 = vx1-vx3;
+				ey1 = vy1-vy3;
+				ez1 = vz1-vz3;
+				ex2 = vx3-v_xp;
+				ey2 = vy3-v_yp;
+				ez2 = vz3-v_zp;
+				tmp1 = ey1*ez2 - ez1*ey2;
+				tmp2 = ez1*ex2 - ex1*ez2;
+				tmp3 = ex1*ey2 - ey1*ex2;
+				tmp = tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3;
+				tmp = tmp / (ex1*ex1 + ey1*ey1 + ez1*ez1);
+				C1 = -(   (vx3-v_xp)*(ex1) + (vy3-v_yp)*(ey1) + (vz3-v_zp)*(ez1)  )   > 0;
+				C2 = (   (vx1-v_xp)*(ex1) + (vy1-v_yp)*(ey1) + (vz1-v_zp)*(ez1)  ) > 0;
+				if (tmp < R2 && C1 && C2)
 					in_region = true;
-					break;
-				}
+				
+				// Check in trianglular prism.
+				C1 = -(   (vx1-nx*R-v_xp)*(nx) + (vy1-ny*R-v_yp)*(ny) + (vz1-nz*R-v_zp)*(nz)  )   > 0;
+				C2 = (   (vx1+nx*R-v_xp)*(nx) + (vy1+ny*R-v_yp)*(ny) + (vz1+nz*R-v_zp)*(nz)  ) > 0;
+				tmp1 = -( (vy2-vy1)*nz - (vz2-vz1)*ny );
+				tmp2 = -( (vz2-vz1)*nx - (vx2-vx1)*nz );
+				tmp3 = -( (vx2-vx1)*ny - (vy2-vy1)*nx );
+				C3 = -(   (vx1-v_xp)*(tmp1) + (vy1-v_yp)*(tmp2) + (vz1-v_zp)*(tmp3)  )   > 0;
+				tmp1 = -( (vy3-vy2)*nz - (vz3-vz2)*ny );
+				tmp2 = -( (vz3-vz2)*nx - (vx3-vx2)*nz );
+				tmp3 = -( (vx3-vx2)*ny - (vy3-vy2)*nx );
+				C4 = -(   (vx2-v_xp)*(tmp1) + (vy2-v_yp)*(tmp2) + (vz2-v_zp)*(tmp3)  )   > 0;
+				tmp1 = -( (vy1-vy3)*nz - (vz1-vz3)*ny );
+				tmp2 = -( (vz1-vz3)*nx - (vx1-vx3)*nz );
+				tmp3 = -( (vx1-vx3)*ny - (vy1-vy3)*nx );
+				C5 = -(   (vx3-v_xp)*(tmp1) + (vy3-v_yp)*(tmp2) + (vz3-v_zp)*(tmp3)  )   > 0;
+				if (C1 && C2 && C3 && C4 && C5)
+					in_region = true;
+				
+				// Check if the cell lies in the solid region.
+// 				tmp = ( (vx1-v_xp)*(nx) + (vy1-v_yp)*(ny) + (vz1-v_zp)*(nz) ) / nx;
+// 				tmp1 = v_xp + tmp;
+// 				tmp2 = v_yp;
+// 				tmp3 = v_zp;
+// 				C1 = -(   (vx1-tmp1)*(vx2-vx1) + (vy1-tmp2)*(vy2-vy1)   )   > 0;
+// 				C2 = (   (vx2-tmp1)*(vx2-vx1) + (vy2-tmp2)*(vy2-vy1)   ) > 0;
+// 				C3 = ;
+// 				if (tmp > 0 && C1 && C2 && C3)
+// 					intersect_counter++;
 #endif
 			}
+			
+			// If the cell was detected in the near-wall region, update its mask.
 			if (in_region)
 			{
 				s_D[threadIdx.x] = 1;
 				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = -1;
 			}
+			if (intersect_counter%2 == 1)
+				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = -2;
 			__syncthreads();
 			
 			// Block reduction for maximum.
@@ -291,16 +362,24 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 				__syncthreads();
 			}
 			
+			// Don't refine near invalid fine-grid boundaries. Only in the interior for quality purposes.
+			for (int p = 0; p < N_Q_max; p++)
+			{
+				if (cblock_ID_nbr[i_kap_b + p*n_maxcblocks] == N_SKIPID)
+					eligible = false;
+			}
+			
+			// Mark for refinement.
 			if (threadIdx.x == 0)
 			{
-				if (s_D[threadIdx.x] == 1)
+				if (eligible && s_D[threadIdx.x] == 1)
 					cblock_ID_ref[i_kap_b] = V_REF_ID_MARK_REFINE;
 			}
+			
+			// Reset some parameters.
 			in_region = false;
-			in_solid = false;
+			eligible = true;
 			intersect_counter = 0;
-			
-			
 		}
 	}
 }
@@ -490,7 +569,7 @@ int Mesh::M_ComputeRefCriteria(int i_dev, int L, int var)
 	}
 	if (var == V_MESH_REF_NW_GEOMETRY) // Complex geometry.
 	{
-		double R = 0.05/pow(2.0,(double)L);
+		double R = geometry->G_NEAR_WALL_DISTANCE/pow(2.0,(double)L);
 		double R2 = R*R;
 		if (n_ids[i_dev][L] > 0)
 		{

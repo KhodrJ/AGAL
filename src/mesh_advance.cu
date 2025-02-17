@@ -72,8 +72,12 @@ int Mesh::M_Advance_RefineNearWall()
 		for (int L = N_LEVEL_START; L < (MAX_LEVELS)-1; L++)
 		{
 			std::cout << "Near wall refinement #" << L+1 << std::endl;
-			M_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
+			//M_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
+			cudaDeviceSynchronize();
+			tic_simple("");
 			M_ComputeRefCriteria(0,L,V_MESH_REF_NW_GEOMETRY);
+			cudaDeviceSynchronize();
+			toc_simple("",T_MS);
 			M_RefineAndCoarsenCells(0);
 			solver->S_SetIC(0,L+1);
 		}

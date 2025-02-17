@@ -230,6 +230,7 @@ int Solver_LBM::S_SetIC(int i_dev, int L)
 	
 	if (S_COLLISION==1)
 	{
+		/*
 #if (N_Q==9)
 		S_Vel2Mom_MRT_d2q9(i_dev, L);
 #elif (N_Q==19)
@@ -237,6 +238,7 @@ int Solver_LBM::S_SetIC(int i_dev, int L)
 #else // N_Q==27
 		//S_Vel2Mom_MRT_d2q27(i_dev, L);
 #endif	
+		*/
 	}
 
 	return 0;
@@ -284,6 +286,7 @@ int Solver_LBM::S_Collide(int i_dev, int L)
 	}
 	else
 	{
+		/*
 		if (S_INTERP_HYBRID==0)
 		{
 #if (N_Q==9)
@@ -319,6 +322,7 @@ int Solver_LBM::S_Collide(int i_dev, int L)
 			//S_EnforceSymmetry_d3q27(i_dev, L);
 #endif
 		}
+		*/
 	}
 
 	return 0;
@@ -336,6 +340,7 @@ int Solver_LBM::S_Stream(int i_dev, int L)
 	
 	if (S_COLLISION==1)
 	{
+		/*
 #if (N_Q==9)
 		S_Vel2Mom_MRT_d2q9(i_dev, L);
 #elif (N_Q==19)
@@ -343,6 +348,7 @@ int Solver_LBM::S_Stream(int i_dev, int L)
 #else // N_Q==27
 		//S_Vel2Mom_MRT_d2q27(i_dev, L);
 #endif	
+		*/
 	}
 
 	return 0;
@@ -371,6 +377,7 @@ int Solver_LBM::S_Interpolate(int i_dev, int L, int var)
 	}
 	else
 	{
+		/*
 #if (N_Q==9)
 		if (S_INTERP==0)
 			S_Interpolate_Linear_MRT_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
@@ -387,6 +394,7 @@ int Solver_LBM::S_Interpolate(int i_dev, int L, int var)
 		else
 			S_Interpolate_Cubic_MRT_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_C2F[L]);
 #endif
+		*/
 	}
 
 	return 0;
@@ -409,6 +417,7 @@ int Solver_LBM::S_Average(int i_dev, int L, int var)
 	}
 	else
 	{
+		/*
 #if (N_Q==9)
 		S_Average_MRT_d2q9(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
 #elif (N_Q==19)
@@ -416,6 +425,7 @@ int Solver_LBM::S_Average(int i_dev, int L, int var)
 #else // N_Q==27
 		S_Average_MRT_d3q27(i_dev, L, var, tau_vec[L], tau_ratio_vec_F2C[L]);
 #endif
+		*/
 	}
 	
 	return 0;
