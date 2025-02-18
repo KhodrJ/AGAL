@@ -116,7 +116,7 @@ void Cu_ComputeRefCriteria_NearWall_Cases
 
 
 __global__
-void Cu_ComputeRefCriteria_NearWall_Geometry
+void Cu_ComputeRefCriteria_NearWall_Geometry_Naive
 (
 	int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dx_L, int L,
 	int *cells_ID_mask, int *cblock_ID_ref, int *cblock_ID_onb, ufloat_t *cblock_f_X, int *cblock_ID_nbr,
@@ -234,7 +234,7 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 				// Check if the cell lies in the solid region.
 				tmp = ( (vx1-v_xp)*(nx) + (vy1-v_yp)*(ny) ) / nx;
 				tmp1 = v_xp + tmp;
-				ay = v_yp;
+				tmp2 = v_yp;
 				C1 = -(   (vx1-tmp1)*(vx2-vx1) + (vy1-tmp2)*(vy2-vy1)   )   > 0;
 				C2 = (   (vx2-tmp1)*(vx2-vx1) + (vy2-tmp2)*(vy2-vy1)   ) > 0;
 				if (tmp > 0 && C1 && C2)
@@ -330,15 +330,21 @@ void Cu_ComputeRefCriteria_NearWall_Geometry
 					in_region = true;
 				
 				// Check if the cell lies in the solid region.
-// 				tmp = ( (vx1-v_xp)*(nx) + (vy1-v_yp)*(ny) + (vz1-v_zp)*(nz) ) / nx;
-// 				tmp1 = v_xp + tmp;
-// 				tmp2 = v_yp;
-// 				tmp3 = v_zp;
-// 				C1 = -(   (vx1-tmp1)*(vx2-vx1) + (vy1-tmp2)*(vy2-vy1)   )   > 0;
-// 				C2 = (   (vx2-tmp1)*(vx2-vx1) + (vy2-tmp2)*(vy2-vy1)   ) > 0;
-// 				C3 = ;
-// 				if (tmp > 0 && C1 && C2 && C3)
-// 					intersect_counter++;
+				tmp = ( (vx1-(v_xp))*(nx) + (vy1-v_yp)*(ny) + (vz1-v_zp)*(nz) ) / nx;
+				tmp1 = -( (vy2-vy1)*nz - (vz2-vz1)*ny );
+				tmp2 = -( (vz2-vz1)*nx - (vx2-vx1)*nz );
+				tmp3 = -( (vx2-vx1)*ny - (vy2-vy1)*nx );
+				C1 = -(   (vx1-(v_xp + tmp))*(tmp1) + (vy1-v_yp)*(tmp2) + (vz1-v_zp)*(tmp3)  )   > 0;
+				tmp1 = -( (vy3-vy2)*nz - (vz3-vz2)*ny );
+				tmp2 = -( (vz3-vz2)*nx - (vx3-vx2)*nz );
+				tmp3 = -( (vx3-vx2)*ny - (vy3-vy2)*nx );
+				C2 = -(   (vx2-(v_xp + tmp))*(tmp1) + (vy2-v_yp)*(tmp2) + (vz2-v_zp)*(tmp3)  )   > 0;
+				tmp1 = -( (vy1-vy3)*nz - (vz1-vz3)*ny );
+				tmp2 = -( (vz1-vz3)*nx - (vx1-vx3)*nz );
+				tmp3 = -( (vx1-vx3)*ny - (vy1-vy3)*nx );
+				C3 = -(   (vx3-(v_xp + tmp))*(tmp1) + (vy3-v_yp)*(tmp2) + (vz3-v_zp)*(tmp3)  )   > 0;
+				if (tmp > 0 && C1 && C2 && C3)
+					intersect_counter++;
 #endif
 			}
 			
@@ -573,11 +579,16 @@ int Mesh::M_ComputeRefCriteria(int i_dev, int L, int var)
 		double R2 = R*R;
 		if (n_ids[i_dev][L] > 0)
 		{
-			Cu_ComputeRefCriteria_NearWall_Geometry<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+			Cu_ComputeRefCriteria_NearWall_Geometry_Naive<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
 				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
 				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
 			);
+// 			Cu_ComputeRefCriteria_NearWall_Geometry_Binned<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+// 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
+// 				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
+// 				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
+// 			);
 		}
 	}
 	if (var == V_MESH_REF_UNIFORM) // Refine the whole level.

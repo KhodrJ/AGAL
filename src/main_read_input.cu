@@ -37,6 +37,7 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 		{"Nx",                      64},
 		{"N_RESTART",               1},
 		{"G_BIN_DENSITY",           1},
+		{"G_BIN_FRAC",              1},
 		{"PERIODIC_X",              0},
 		{"PERIODIC_Y",              0},
 		{"PERIODIC_Z",              0},

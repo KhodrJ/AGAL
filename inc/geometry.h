@@ -38,8 +38,9 @@ class Geometry
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
 	float           Ly                      = 1.0F;         ///< Length of domain in y-axis as a fraction of @ref Lx.
 	float           Lz                      = 1.0F;         ///< Length of domain in z-axis as a fraction of @ref Lx.
-	double          G_NEAR_WALL_DISTANCE    = 1;            ///< The number of quad/octants to divide the geometry surface.
-	int             G_BIN_DENSITY           = 1;            ///< The number of quad/octants to divide the geometry surface.
+	double          G_NEAR_WALL_DISTANCE    = 1;            ///< The near-wall distance for refinement.
+	int             G_BIN_DENSITY           = 1;            ///< The number of bins to divide the geometry surface.
+	int             G_BIN_FRAC              = 1;            ///< Fraction of bin arrays to consider at a time.
 	std::string     input_dir;                              ///< Input directory.
 	std::string     output_dir;                             ///< Output directory.
 	
@@ -70,6 +71,11 @@ class Geometry
 	
 	//! Array of geometry face attributes attributes.
 	double          *geom_ID_face_attr[N_DEV];
+	
+	int *bin_indicators[N_DEV];
+	int *c_bin_indicators[N_DEV];
+	int *c_binned_face_ids[N_DEV];
+	int *c_binned_face_ids_N[N_DEV];
 	
 	std::vector<double>     v_geom_f_node_X;
 	std::vector<double>     v_geom_f_node_Y;
@@ -121,7 +127,7 @@ class Geometry
 	int G_Dest_Arrays_CoordsList(int i_dev);
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
-	int G_MakeQuadrants();
+	int G_MakeBins(int i_dev);
 	
 	int G_AddBoundingBox(double ax, double bx, double ay, double by, double az, double bz);
 	int G_AddRectangle(double ax, double bx, double ay, double by);

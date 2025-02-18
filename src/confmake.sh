@@ -14,7 +14,7 @@
 
 # Solver parameters.
 N_PRECISION=1
-N_Q=19
+N_Q=9
 Nqx=1
 M_LBLOCK=1
 S_LES=0

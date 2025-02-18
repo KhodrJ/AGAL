@@ -14,7 +14,8 @@ N_ITER_TOTAL                    2
 
 # GEOMETRY
 G_NEAR_WALL_DISTANCE            0.2
-G_BIN_DENSITY                   16
+G_BIN_DENSITY                   4
+G_BIN_FRAC                      2
 
 # SOLVER
 v0                              1.5625e-5

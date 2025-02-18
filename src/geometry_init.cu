@@ -9,6 +9,7 @@ int Geometry::G_Init(std::map<std::string, int> params_int, std::map<std::string
 	output_dir              = params_str["P_DIR_NAME"];
 	G_NEAR_WALL_DISTANCE    = params_dbl["G_NEAR_WALL_DISTANCE"];
 	G_BIN_DENSITY           = params_int["G_BIN_DENSITY"];
+	G_BIN_FRAC              = params_int["G_BIN_FRAC"];
 	
 	return 0;
 }
@@ -59,6 +60,8 @@ int Geometry::G_Init_Arrays_CoordsList_CPU(int i_dev)
 	{
 		init_coords_list = 1;
 		G_UpdateCounts(i_dev);
+		
+		std::cout << "[-] Initializing the CPU coords list array..." << std::endl;
 		geom_f_face_X[i_dev] = new double[9*n_faces_a[i_dev]];
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
 		{
@@ -88,8 +91,11 @@ int Geometry::G_Init_Arrays_CoordsList_CPU(int i_dev)
 		//gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
 		//gpuErrchk( cudaMemcpy(c_geom_f_node_X[i_dev], geom_f_node_X[i_dev], 3*n_nodes[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
 		
+		std::cout << "[-] Initializing the GPU coords list array..." << std::endl;
 		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X[i_dev], 9*n_faces_a[i_dev]*sizeof(double)) );
 		gpuErrchk( cudaMemcpy(c_geom_f_face_X[i_dev], geom_f_face_X[i_dev], 9*n_faces_a[i_dev]*sizeof(double), cudaMemcpyHostToDevice) );
+		std::cout << "[-] Finished copying the coords list array to the GPU..." << std::endl;
+		cudaDeviceSynchronize();
 	}
 	else
 		std::cout << "[-] Coords list already built, reset first to rebuild..." << std::endl;

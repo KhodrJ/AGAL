@@ -61,6 +61,7 @@ int Geometry::G_ImportSTL_ASCII(std::string filename)
 	// Close file.
 	init_coords_list = 1;
 	input.close();
-
+	std::cout << "[-] Finished importing " << filename << ", added " << counter << " triangles..." << std::endl;
+	
 	return 0;
 }
