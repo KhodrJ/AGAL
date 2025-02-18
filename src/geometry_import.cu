@@ -12,15 +12,15 @@ int Geometry::G_ImportSTL_ASCII(std::string filename)
 	
 	// Now loop over the various facets and add face vertices to the vectors.
 	int counter = 0;
-	double v1x = 0.0;
-	double v1y = 0.0;
-	double v1z = 0.0;
-	double v2x = 0.0;
-	double v2y = 0.0;
-	double v2z = 0.0;
-	double v3x = 0.0;
-	double v3y = 0.0;
-	double v3z = 0.0;
+	ufloat_g_t v1x = 0.0;
+	ufloat_g_t v1y = 0.0;
+	ufloat_g_t v1z = 0.0;
+	ufloat_g_t v2x = 0.0;
+	ufloat_g_t v2y = 0.0;
+	ufloat_g_t v2z = 0.0;
+	ufloat_g_t v3x = 0.0;
+	ufloat_g_t v3y = 0.0;
+	ufloat_g_t v3z = 0.0;
 	std::getline(input, line);          // To start the loop (face normal ... ).
 	std::stringstream ss(line);
 	while (word != "endsolid")

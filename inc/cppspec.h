@@ -78,6 +78,13 @@
 	typedef double ufloat_t;
 	#define N_Pf(x) (x)
 #endif
+#if (N_PRECISION_G==0)
+	typedef float ufloat_g_t;
+	#define N_Pf_g(x) (APPEND(x,F))
+#else
+	typedef double ufloat_g_t;
+	#define N_Pf_g(x) (x)
+#endif
 #if (N_DIM==2)
 	#define N_QUADS (Nqx*Nqx)
 	#define N_Q_max 9

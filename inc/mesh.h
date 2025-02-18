@@ -13,6 +13,7 @@
 #define V_REF_ID_NEW                   6    ///< Indicates cell-block was newly inserted (as a child).
 #define V_REF_ID_REMOVE                7    ///< Indicates cell-block will be removed (as a child).
 #define V_REF_ID_INACTIVE              8    ///< Indicates cell-block is inactive in the simulation.
+#define V_REF_ID_INDETERMINATE         11   ///< Indicates cell-block is an indeterminate state.
 
 // Mesh communication.
 #define V_INTERP_INTERFACE             0    ///< Interpolate to interface cells only.
@@ -548,6 +549,8 @@ class Mesh
 	
 	
 	int             M_ComputeRefCriteria(int i_dev, int L, int var);
+	int             M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L);
+	int             M_ComputeRefCriteria_Geometry_Binned(int i_dev, int L);
 	int             M_Advance_InitTextOutput();
 	int             M_Advance_RefineNearWall();
 	int             M_Advance_LoadRestartFile(int &iter_s);

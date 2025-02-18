@@ -2,61 +2,36 @@
 
 int Geometry::G_PrintSTL(int i_dev)
 {
+	std::cout << "[-] Printing STL file..." << std::endl;
 	std::ofstream stl = std::ofstream(output_dir + "geometry.stl");
 	stl << "solid Geometry" << std::endl;
 	
 	// Compute facet normals and print.
 	for (int i = 0; i < n_faces[i_dev]; i++)
 	{
-// 		int p1 = geom_ID_face[i_dev][i + 0*n_faces[i_dev]];
-// 		int p2 = geom_ID_face[i_dev][i + 1*n_faces[i_dev]];
-// 		int p3 = geom_ID_face[i_dev][i + 2*n_faces[i_dev]];
-// 		double v1x = geom_f_node_X[i_dev][p1 + 0*n_nodes[i_dev]];
-// 		double v1y = geom_f_node_X[i_dev][p1 + 1*n_nodes[i_dev]];
-// 		double v1z = geom_f_node_X[i_dev][p1 + 2*n_nodes[i_dev]];
-// 		double v2x = geom_f_node_X[i_dev][p2 + 0*n_nodes[i_dev]];
-// 		double v2y = geom_f_node_X[i_dev][p2 + 1*n_nodes[i_dev]];
-// 		double v2z = geom_f_node_X[i_dev][p2 + 2*n_nodes[i_dev]];
-// 		double v3x = geom_f_node_X[i_dev][p3 + 0*n_nodes[i_dev]];
-// 		double v3y = geom_f_node_X[i_dev][p3 + 1*n_nodes[i_dev]];
-// 		double v3z = geom_f_node_X[i_dev][p3 + 2*n_nodes[i_dev]];
-		double v1x = geom_f_face_X[i_dev][i + 0*n_faces_a[i_dev]];
-		double v1y = geom_f_face_X[i_dev][i + 1*n_faces_a[i_dev]];
-		double v1z = geom_f_face_X[i_dev][i + 2*n_faces_a[i_dev]];
-		double v2x = geom_f_face_X[i_dev][i + 3*n_faces_a[i_dev]];
-		double v2y = geom_f_face_X[i_dev][i + 4*n_faces_a[i_dev]];
-		double v2z = geom_f_face_X[i_dev][i + 5*n_faces_a[i_dev]];
-		double v3x = geom_f_face_X[i_dev][i + 6*n_faces_a[i_dev]];
-		double v3y = geom_f_face_X[i_dev][i + 7*n_faces_a[i_dev]];
-		double v3z = geom_f_face_X[i_dev][i + 8*n_faces_a[i_dev]];
-		
-		
-// 		int p1 = (*v_geom_ID_face_1)[i];
-// 		int p2 = (*v_geom_ID_face_2)[i];
-// 		int p3 = (*v_geom_ID_face_3)[i];
-// 		double v1x = (*v_geom_f_node_X)[p1];
-// 		double v1y = (*v_geom_f_node_Y)[p1];
-// 		double v1z = (*v_geom_f_node_Z)[p1];
-// 		double v2x = (*v_geom_f_node_X)[p2];
-// 		double v2y = (*v_geom_f_node_Y)[p2];
-// 		double v2z = (*v_geom_f_node_Z)[p2];
-// 		double v3x = (*v_geom_f_node_X)[p3];
-// 		double v3y = (*v_geom_f_node_Y)[p3];
-// 		double v3z = (*v_geom_f_node_Z)[p3];
+		ufloat_g_t v1x = geom_f_face_X[i_dev][i + 0*n_faces_a[i_dev]];
+		ufloat_g_t v1y = geom_f_face_X[i_dev][i + 1*n_faces_a[i_dev]];
+		ufloat_g_t v1z = geom_f_face_X[i_dev][i + 2*n_faces_a[i_dev]];
+		ufloat_g_t v2x = geom_f_face_X[i_dev][i + 3*n_faces_a[i_dev]];
+		ufloat_g_t v2y = geom_f_face_X[i_dev][i + 4*n_faces_a[i_dev]];
+		ufloat_g_t v2z = geom_f_face_X[i_dev][i + 5*n_faces_a[i_dev]];
+		ufloat_g_t v3x = geom_f_face_X[i_dev][i + 6*n_faces_a[i_dev]];
+		ufloat_g_t v3y = geom_f_face_X[i_dev][i + 7*n_faces_a[i_dev]];
+		ufloat_g_t v3z = geom_f_face_X[i_dev][i + 8*n_faces_a[i_dev]];
 #if (N_DIM==2)
-		double n1 = v2y-v1y;
-		double n2 = -(v2x-v1x);
-		double n3 = 0.0;
+		ufloat_g_t n1 = v2y-v1y;
+		ufloat_g_t n2 = -(v2x-v1x);
+		ufloat_g_t n3 = 0.0;
 #else
-		double dx1 = v2x-v1x;
-		double dy1 = v2y-v1y;
-		double dz1 = v2z-v1z;
-		double dx2 = v3x-v1x;
-		double dy2 = v3y-v1y;
-		double dz2 = v3z-v1z;
-		double n1 = dy1*dz2-dz1*dy2;
-		double n2 = dz1*dx2-dx1*dz2;
-		double n3 = dx1*dy2-dy1*dx2;
+		ufloat_g_t dx1 = v2x-v1x;
+		ufloat_g_t dy1 = v2y-v1y;
+		ufloat_g_t dz1 = v2z-v1z;
+		ufloat_g_t dx2 = v3x-v1x;
+		ufloat_g_t dy2 = v3y-v1y;
+		ufloat_g_t dz2 = v3z-v1z;
+		ufloat_g_t n1 = dy1*dz2-dz1*dy2;
+		ufloat_g_t n2 = dz1*dx2-dx1*dz2;
+		ufloat_g_t n3 = dx1*dy2-dy1*dx2;
 #endif
 		
 		stl << "facet normal " << n1 << " " << n2 << " " << n3 << std::endl;

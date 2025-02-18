@@ -7,7 +7,7 @@
 
 #include "mesh.h"
 
-int Geometry::G_AddBoundingBox(double ax, double bx, double ay, double by, double az, double bz)
+int Geometry::G_AddBoundingBox(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz)
 {
 	int N_nodes_curr = v_geom_f_node_X.size();
 	
@@ -126,7 +126,7 @@ int Geometry::G_AddBoundingBox(double ax, double bx, double ay, double by, doubl
 	return 0;
 }
 
-int Geometry::G_AddRectangle(double ax, double bx, double ay, double by)
+int Geometry::G_AddRectangle(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by)
 {
 	int N_nodes_curr = v_geom_f_node_X.size();
 	
@@ -165,18 +165,18 @@ int Geometry::G_AddRectangle(double ax, double bx, double ay, double by)
 	return 0;
 }
 
-int Geometry::G_AddCircle(int N, double cx, double cy, double R)
+int Geometry::G_AddCircle(int N, ufloat_g_t cx, ufloat_g_t cy, ufloat_g_t R)
 {
-	double pi = M_PI;
-	double denom = (double)N-1.0;
+	ufloat_g_t pi = M_PI;
+	ufloat_g_t denom = (ufloat_g_t)N-1.0;
 	int N_nodes_curr = v_geom_f_node_X.size();
 	
 	for (int j = 0; j < N; j++)
 	{
-		double t_j = (2*pi/denom)*j;
-		double x_j = R*cos(t_j) + cx;
-		double y_j = R*sin(t_j) + cy;
-		double z_j = 0.0;
+		ufloat_g_t t_j = (2*pi/denom)*j;
+		ufloat_g_t x_j = R*cos(t_j) + cx;
+		ufloat_g_t y_j = R*sin(t_j) + cy;
+		ufloat_g_t z_j = 0.0;
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
@@ -192,7 +192,7 @@ int Geometry::G_AddCircle(int N, double cx, double cy, double R)
 	return 0;
 }
 
-int Geometry::G_AddPrism(double ax, double bx, double ay, double by, double az, double bz)
+int Geometry::G_AddPrism(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz)
 {
 	int N_nodes_curr = v_geom_f_node_X.size();
 	
@@ -273,11 +273,11 @@ int Geometry::G_AddPrism(double ax, double bx, double ay, double by, double az, 
 	return 0;
 }
 
-int Geometry::G_AddSphere(int N1, int N2, double cx, double cy, double cz, double R)
+int Geometry::G_AddSphere(int N1, int N2, ufloat_g_t cx, ufloat_g_t cy, ufloat_g_t cz, ufloat_g_t R)
 {
-	double pi = M_PI;
-	double denom1 = (double)N1-1.0;
-	double denom2 = (double)N2-1.0;
+	ufloat_g_t pi = M_PI;
+	ufloat_g_t denom1 = (ufloat_g_t)N1-1.0;
+	ufloat_g_t denom2 = (ufloat_g_t)N2-1.0;
 	int N_nodes_curr = v_geom_f_node_X.size();
 	
 	// N1 and N2 are resolutions in the polar (0-pi) and azimuthal (0-2*pi) axes, respectively.
@@ -285,11 +285,11 @@ int Geometry::G_AddSphere(int N1, int N2, double cx, double cy, double cz, doubl
 	{
 		for (int k = 0; k < N2; k++)
 		{
-			double t_jk = (pi/denom1)*j;
-			double p_jk = (2*pi/denom2)*k;
-			double x_jk = R*sin(t_jk)*cos(p_jk) + cx;
-			double y_jk = R*sin(t_jk)*sin(p_jk) + cy;
-			double z_jk = R*cos(t_jk) + cz;
+			ufloat_g_t t_jk = (pi/denom1)*j;
+			ufloat_g_t p_jk = (2*pi/denom2)*k;
+			ufloat_g_t x_jk = R*sin(t_jk)*cos(p_jk) + cx;
+			ufloat_g_t y_jk = R*sin(t_jk)*sin(p_jk) + cy;
+			ufloat_g_t z_jk = R*cos(t_jk) + cz;
 			v_geom_f_node_X.push_back(x_jk);
 			v_geom_f_node_Y.push_back(y_jk);
 			v_geom_f_node_Z.push_back(z_jk);
@@ -310,10 +310,10 @@ int Geometry::G_AddSphere(int N1, int N2, double cx, double cy, double cz, doubl
 	return 0;
 }
 
-int Geometry::G_AddNACA002D(int N, double t, double ax, double bx, double ay, double by, int te)
+int Geometry::G_AddNACA002D(int N, ufloat_g_t t, ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, int te)
 {
-	double denom = (double)N-1.0;
-	double last_coeff = -0.1036;
+	ufloat_g_t denom = (ufloat_g_t)N-1.0;
+	ufloat_g_t last_coeff = -0.1036;
 	if (te)
 		last_coeff = -0.1015;
 	int N_nodes_curr = v_geom_f_node_X.size();
@@ -321,20 +321,20 @@ int Geometry::G_AddNACA002D(int N, double t, double ax, double bx, double ay, do
 	// Nodes.
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = (ay+by)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
-		double z_j = 0.0;
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = (ay+by)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t z_j = 0.0;
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = (ay+by)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
-		double z_j = 0.0;
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = (ay+by)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t z_j = 0.0;
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
@@ -367,10 +367,10 @@ int Geometry::G_AddNACA002D(int N, double t, double ax, double bx, double ay, do
 	return 0;
 }
 
-int Geometry::G_AddNACA003D(int N, double t, double ax, double bx, double ay, double by, double az, double bz, int te)
+int Geometry::G_AddNACA003D(int N, ufloat_g_t t, ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz, int te)
 {
-	double denom = (double)N-1.0;
-	double last_coeff = -0.1036;
+	ufloat_g_t denom = (ufloat_g_t)N-1.0;
+	ufloat_g_t last_coeff = -0.1036;
 	if (te)
 		last_coeff = -0.1015;
 	int N_nodes_curr = v_geom_f_node_X.size();
@@ -378,62 +378,62 @@ int Geometry::G_AddNACA003D(int N, double t, double ax, double bx, double ay, do
 	// Nodes.
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double y_j = by;
-		double z_j = (bz+az)/2.0;
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t y_j = by;
+		ufloat_g_t z_j = (bz+az)/2.0;
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = by;
-		//double z_j = bz;
-		double z_j = (bz+az)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = by;
+		//ufloat_g_t z_j = bz;
+		ufloat_g_t z_j = (bz+az)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = by;
-		//double z_j = az;
-		double z_j = (bz+az)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = by;
+		//ufloat_g_t z_j = az;
+		ufloat_g_t z_j = (bz+az)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double y_j = ay;
-		double z_j = (bz+az)/2.0;
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t y_j = ay;
+		ufloat_g_t z_j = (bz+az)/2.0;
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = ay;
-		//double z_j = bz;
-		double z_j = (bz+az)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = ay;
+		//ufloat_g_t z_j = bz;
+		ufloat_g_t z_j = (bz+az)/2.0 + 5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
 	}
 	for (int j = 0; j < N; j++)
 	{
-		double x_j = ax + ((bx-ax)/denom)*j;
-		double x_jp = (1.0/denom)*j;
-		double y_j = ay;
-		//double z_j = az;
-		double z_j = (bz+az)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
+		ufloat_g_t x_j = ax + ((bx-ax)/denom)*j;
+		ufloat_g_t x_jp = (1.0/denom)*j;
+		ufloat_g_t y_j = ay;
+		//ufloat_g_t z_j = az;
+		ufloat_g_t z_j = (bz+az)/2.0 + -5*t*(0.2969*sqrt(x_jp) + x_jp*(-0.1260 + x_jp*(-0.3516 + x_jp*(0.2843 + x_jp*(last_coeff)))));
 		v_geom_f_node_X.push_back(x_j);
 		v_geom_f_node_Y.push_back(y_j);
 		v_geom_f_node_Z.push_back(z_j);
@@ -523,9 +523,9 @@ int Geometry::G_AddNACA003D(int N, double t, double ax, double bx, double ay, do
 int PrintSTL
 (
 	std::string output_dir,
-	std::vector<double> &v_geom_f_node_X,
-	std::vector<double> &v_geom_f_node_Y,
-	std::vector<double> &v_geom_f_node_Z,
+	std::vector<ufloat_g_t> &v_geom_f_node_X,
+	std::vector<ufloat_g_t> &v_geom_f_node_Y,
+	std::vector<ufloat_g_t> &v_geom_f_node_Z,
 	std::vector<int> &v_geom_ID_face_1,
 	std::vector<int> &v_geom_ID_face_2,
 	std::vector<int> &v_geom_ID_face_3
@@ -540,29 +540,29 @@ int PrintSTL
 		int p1 = v_geom_ID_face_1[i];
 		int p2 = v_geom_ID_face_2[i];
 		int p3 = v_geom_ID_face_3[i];
-		double v1x = v_geom_f_node_X[p1];
-		double v1y = v_geom_f_node_Y[p1];
-		double v1z = v_geom_f_node_Z[p1];
-		double v2x = v_geom_f_node_X[p2];
-		double v2y = v_geom_f_node_Y[p2];
-		double v2z = v_geom_f_node_Z[p2];
-		double v3x = v_geom_f_node_X[p3];
-		double v3y = v_geom_f_node_Y[p3];
-		double v3z = v_geom_f_node_Z[p3];
+		ufloat_g_t v1x = v_geom_f_node_X[p1];
+		ufloat_g_t v1y = v_geom_f_node_Y[p1];
+		ufloat_g_t v1z = v_geom_f_node_Z[p1];
+		ufloat_g_t v2x = v_geom_f_node_X[p2];
+		ufloat_g_t v2y = v_geom_f_node_Y[p2];
+		ufloat_g_t v2z = v_geom_f_node_Z[p2];
+		ufloat_g_t v3x = v_geom_f_node_X[p3];
+		ufloat_g_t v3y = v_geom_f_node_Y[p3];
+		ufloat_g_t v3z = v_geom_f_node_Z[p3];
 #if (N_DIM==2)
-		double n1 = v2y-v1y;
-		double n2 = -(v2x-v1x);
-		double n3 = 0.0;
+		ufloat_g_t n1 = v2y-v1y;
+		ufloat_g_t n2 = -(v2x-v1x);
+		ufloat_g_t n3 = 0.0;
 #else
-		double dx1 = v2x-v1x;
-		double dy1 = v2y-v1y;
-		double dz1 = v2z-v1z;
-		double dx2 = v3x-v1x;
-		double dy2 = v3y-v1y;
-		double dz2 = v3z-v1z;
-		double n1 = dy1*dz2-dz1*dy2;
-		double n2 = dz1*dx2-dx1*dz2;
-		double n3 = dx1*dy2-dy1*dx2;
+		ufloat_g_t dx1 = v2x-v1x;
+		ufloat_g_t dy1 = v2y-v1y;
+		ufloat_g_t dz1 = v2z-v1z;
+		ufloat_g_t dx2 = v3x-v1x;
+		ufloat_g_t dy2 = v3y-v1y;
+		ufloat_g_t dz2 = v3z-v1z;
+		ufloat_g_t n1 = dy1*dz2-dz1*dy2;
+		ufloat_g_t n2 = dz1*dx2-dx1*dz2;
+		ufloat_g_t n3 = dx1*dy2-dy1*dx2;
 #endif
 		
 		stl << "facet normal " << n1 << " " << n2 << " " << n3 << std::endl;
@@ -583,9 +583,9 @@ int PrintSTL
 int PrintOBJ
 (
 	std::string output_dir,
-	std::vector<double> &v_geom_f_node_X,
-	std::vector<double> &v_geom_f_node_Y,
-	std::vector<double> &v_geom_f_node_Z,
+	std::vector<ufloat_g_t> &v_geom_f_node_X,
+	std::vector<ufloat_g_t> &v_geom_f_node_Y,
+	std::vector<ufloat_g_t> &v_geom_f_node_Z,
 	std::vector<int> &v_geom_ID_face_1,
 	std::vector<int> &v_geom_ID_face_2,
 	std::vector<int> &v_geom_ID_face_3
@@ -646,13 +646,13 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				if (word == "RECTANGLE")
 				{
 					std::string s;
-					double ax, bx, ay, by;
+					ufloat_g_t ax, bx, ay, by;
 					ss >> s;
 					if (s == "CORNER")
 						ss >> ax >> bx >> ay >> by;
 					else
 					{
-						double cx, cy, lx, ly;
+						ufloat_g_t cx, cy, lx, ly;
 						ss >> cx >> cy >> lx >> ly;
 						ax = cx-lx/2.0;
 						bx = cx+lx/2.0;
@@ -666,7 +666,7 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				if (word == "CIRCLE")
 				{
 					int N;
-					double cx, cy, R;
+					ufloat_g_t cx, cy, R;
 					ss >> N >> cx >> cy >> R;
 					G_AddCircle(N, cx, cy, R);
 					std::cout << "[-] Detected CIRCLE, adding..." << std::endl;
@@ -674,13 +674,13 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				if (word == "PRISM")
 				{
 					std::string s;
-					double ax, bx, ay, by, az, bz;
+					ufloat_g_t ax, bx, ay, by, az, bz;
 					ss >> s;
 					if (s == "CORNER")
 						ss >> ax >> bx >> ay >> by >> az >> bz;
 					else
 					{
-						double cx, cy, cz, lx, ly, lz;
+						ufloat_g_t cx, cy, cz, lx, ly, lz;
 						ss >> cx >> cy >> cz >> lx >> ly >> lz;
 						ax = cx-lx/2.0;
 						bx = cx+lx/2.0;
@@ -696,7 +696,7 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				if (word == "SPHERE")
 				{
 					int N1, N2;
-					double cx, cy, cz, R;
+					ufloat_g_t cx, cy, cz, R;
 					ss >> N1 >> N2 >> cx >> cy >> cz >> R;
 					G_AddSphere(N1, N2, cx, cy, cz, R);
 					std::cout << "[-] Detected SPHERE, adding..." << std::endl;
@@ -705,13 +705,13 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				{
 					std::string s;
 					int N, te;
-					double t, ax, bx, ay, by;
+					ufloat_g_t t, ax, bx, ay, by;
 					ss >> s;
 					if (s == "CORNER")
 						ss >> N >> t >> ax >> bx >> ay >> by >> te;
 					else
 					{
-						double cx, cy, lx, ly;
+						ufloat_g_t cx, cy, lx, ly;
 						ss >> N >> t >> cx >> cy >> lx >> ly >> te;
 						ax = cx-lx/2.0;
 						bx = cx+lx/2.0;
@@ -726,13 +726,13 @@ int Geometry::G_ImportBoundariesFromTextFile(int i_dev)
 				{
 					std::string s;
 					int N, te;
-					double t, ax, bx, ay, by, az, bz;
+					ufloat_g_t t, ax, bx, ay, by, az, bz;
 					ss >> s;
 					if (s == "CORNER")
 						ss >> N >> t >> ax >> bx >> ay >> by >> az >> bz >> te;
 					else
 					{
-						double cx, cy, cz, lx, ly, lz;
+						ufloat_g_t cx, cy, cz, lx, ly, lz;
 						ss >> N >> t >> cx >> cy >> cz >> lx >> ly >> lz >> te;
 						ax = cx-lx/2.0;
 						bx = cx+lx/2.0;

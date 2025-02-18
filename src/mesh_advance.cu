@@ -69,6 +69,7 @@ int Mesh::M_Advance_RefineNearWall()
 		solver->S_SetIC(0,N_LEVEL_START);
 		
 		// Near-wall refinement, starting from N_LEVEL_START.
+		//M_RetrieveFromGPU(); // TEMP
 		for (int L = N_LEVEL_START; L < (MAX_LEVELS)-1; L++)
 		{
 			std::cout << "Near wall refinement #" << L+1 << std::endl;
@@ -76,10 +77,12 @@ int Mesh::M_Advance_RefineNearWall()
 			cudaDeviceSynchronize();
 			tic_simple("");
 			M_ComputeRefCriteria(0,L,V_MESH_REF_NW_GEOMETRY);
+			//M_LoadToGPU(); // TEMP
 			cudaDeviceSynchronize();
 			toc_simple("",T_MS);
 			M_RefineAndCoarsenCells(0);
 			solver->S_SetIC(0,L+1);
+			//M_RetrieveFromGPU(); // TEMP
 		}
 		
 		// Freeze mesh: these new near-wall cells are not eligible for coarsening.
