@@ -96,49 +96,49 @@ class Mesh
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store indices of cell-blocks marked for refinement.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store indices of cell-blocks marked for refinement.
 	*/
 	int		*c_tmp_1[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store the scattered map for constructing new cell-blocks and updating child connectivity.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store the scattered map for constructing new cell-blocks and updating child connectivity.
 	*/	
 	int		*c_tmp_2[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store gap indices to be used for generating new cell-blocks.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store gap indices to be used for generating new cell-blocks.
 	*/
 	int		*c_tmp_3[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store levels of cell-blocks to be removed for coarsening.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store levels of cell-blocks to be removed for coarsening.
 	*/
 	int		*c_tmp_4[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store indices of cell-blocks to be removed for coarsening.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store indices of cell-blocks to be removed for coarsening.
 	*/
 	int		*c_tmp_5[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store 'efficient' map of IDs involved in the connectivity update.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
 	int		*c_tmp_6[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store 'efficient' map of IDs involved in the connectivity update.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
 	int		*c_tmp_7[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
-	    @ref M_RefineAndCoarsenCells to temporarily store 'efficient' map of IDs involved in the connectivity update.
+	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
 	int		*c_tmp_8[N_DEV];
 	
@@ -188,6 +188,8 @@ class Mesh
 	int             n_maxcblocks            = 1;            ///< Maximum number of cell-blocks corresponding to @ref n_maxcells.
 	
 	// Other parameters.
+	// - Debug.
+	int             use_cpu                 = 0;            ///< Indicates to use the CPU version of the routines.
 	// - Grid and hierarchy.
 	int             MAX_LEVELS              = 1;            ///< Maximum number of grids for the domain interior and boundary.
 	int             MAX_LEVELS_INTERIOR     = 1;            ///< Maximum number of grids for the domain interior alone.
@@ -523,7 +525,7 @@ class Mesh
 	/*! @param var is a debugging indicator.
 	    @param file is the file to output step execution times.
 	*/
-	int             M_RefineAndCoarsenCells(int var);
+	int             M_RefineAndCoarsenBlocks(int var);
 	
 	//! Interpolate values between grid levels.
 	/*! @param i_dev is the ID of the device to be processed.

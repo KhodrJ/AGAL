@@ -9,11 +9,11 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              64
+Nx                              256
 N_ITER_TOTAL                    2
 
 # GEOMETRY
-G_NEAR_WALL_DISTANCE            0.4
+G_NEAR_WALL_DISTANCE            0.1
 G_BIN_DENSITY                   8
 G_BIN_FRAC                      1
 
@@ -26,7 +26,7 @@ s4                              1.7
 s5                              1.7
 s6                              1.7
 S_COLLISION                     0
-S_INTERP                        1
+S_INTERP                        0
 S_INTERP_HYBRID                 0
 S_AVERAGE                       0
 S_CRITERION                     0
@@ -64,3 +64,6 @@ VOL_J_MIN                       0
 VOL_J_MAX                       1*Nx
 VOL_K_MIN                       0
 VOL_K_MAX                       1*Nx
+
+#DEBUG
+USE_CPU                         0

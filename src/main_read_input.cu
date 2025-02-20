@@ -67,7 +67,8 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 		{"VOL_J_MIN",               0},
 		{"VOL_J_MAX",               64},
 		{"VOL_K_MIN",               0},
-		{"VOL_K_MAX",               64}
+		{"VOL_K_MAX",               64},
+		{"USE_CPU",                 1}
 	};
 	input_map_dbl = std::map<std::string, double> // Define map of double parameters with default values.
 	{

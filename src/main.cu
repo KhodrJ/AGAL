@@ -16,11 +16,11 @@ int main(int argc, char *argv[])
 	
 	// Create a new geometry and import from input folder.
 	Geometry geometry(input_map_int, input_map_dbl, input_map_str);
-        geometry.G_ImportSTL_ASCII("bunny_ascii.stl");
-	//geometry.G_ImportBoundariesFromTextFile(0);
-	//geometry.G_Convert_IndexListsToCoordList(0);
+        //geometry.G_ImportSTL_ASCII("bunny_ascii.stl");
+	geometry.G_ImportBoundariesFromTextFile(0);
+	geometry.G_Convert_IndexListsToCoordList(0);
 	geometry.G_Init_Arrays_CoordsList_CPU(0);
-	//geometry.G_PrintSTL(0);
+	geometry.G_PrintSTL(0);
 	geometry.G_MakeBins(0);
 	
 	// Create mesh and LBM solver.

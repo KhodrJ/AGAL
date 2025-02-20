@@ -61,6 +61,7 @@
 // Input parameters from 'confmake.sh'.
 #ifndef INPUT_CONFMAKE
 	#define N_PRECISION 0
+	#define N_PRECISION_G 0
 	#define N_DIM 2
 	#define N_Q 9
 	#define Nqx 1

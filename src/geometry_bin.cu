@@ -57,8 +57,6 @@ void Cu_FillBins(
 			ufloat_g_t vBx_M = max(vx1,vx2);
 			ufloat_g_t vBy_m = min(vy1,vy2);
 			ufloat_g_t vBy_M = max(vy1,vy2);
-			//printf("Bounding box of edge %i ([%17.5f,%17.5f]-[%17.5f,%17.5f]) is [%17.5f,%17.5f]x[%17.5f,%17.5f]\n",kap,vx1,vy1,vx2,vy2,vBx_m,vBx_M,vBy_m,vBy_M);
-			//printf("Current bin (edge %i): %i (%i,%i), [%17.5f,%17.5f]x[%17.5f,%17.5f]\n",kap, bi+G_BIN_DENSITY*bj, bi, bj, xm,xM,ym,yM);
 			
 			// Discretize the line and check if one of the points ends up inside the bin.
 			// Only do the check by discretization if the bounding box intersects the current bin.
@@ -66,7 +64,7 @@ void Cu_FillBins(
 			{
 				ufloat_g_t L_l = sqrt((vx2-vx1)*(vx2-vx1) + (vy2-vy1)*(vy2-vy1) + (vz2-vz1)*(vz2-vz1));
 				int Nu = 100;
-				Nu = max((L_l / 0.25*minL0g), (ufloat_g_t)Nu);
+				Nu = 2*max((L_l / 0.25*minL0g), (ufloat_g_t)Nu);
 				//printf("Length of current line %i is %17.15f, minL=%17.15f\n", kap, L_l, minL0g);
 				for (int p = 0; p < Nu; p++)
 				{
@@ -78,7 +76,6 @@ void Cu_FillBins(
 					{
 						// At the first inidication that a point lies in the bounding box, terminate the loop.
 						bin_indicators[kap + (j-j0)*n_faces_a] = kap;
-						//printf("Face %i ([%17.5f,%17.5f]-[%17.5f,%17.5f]) lies in bin %i\n", kap, vx1, vy1, vx2, vy2, bi+G_BIN_DENSITY*bj);
 						break;
 					}
 				}
@@ -113,7 +110,7 @@ void Cu_FillBins(
 				ufloat_g_t L_l3 = sqrt((vx1-vx3)*(vx1-vx3) + (vy1-vy3)*(vy1-vy3) + (vz1-vz3)*(vz1-vz3));
 				L_l1 = max(L_l1,L_l2);
 				L_l1 = max(L_l1,L_l3);
-				int Nu = 10;
+				int Nu = 5;
 				Nu = max((L_l1 / 0.25*minL0g),(ufloat_g_t)Nu);
 				for (int p = 0; p < Nu; p++)
 				{
@@ -168,18 +165,18 @@ int Geometry::G_MakeBins(int i_dev)
 	int rad = 0; //(int)(G_NEAR_WALL_DISTANCE/minL0g)+1;
 	
 	// Initialize the intermediate device array to store the bin indicators. Set values to -1 as default.
-	//bin_indicators[i_dev] = new int[G_BIN_NUM*n_faces_a[i_dev]];
 	gpuErrchk( cudaMalloc((void **)&c_bin_indicators[i_dev], G_BIN_NUM*n_faces_a[i_dev]*sizeof(int)) );
 	Cu_ResetToValue<<<(M_BLOCK+G_BIN_NUM*n_faces_a[i_dev]-1)/M_BLOCK, M_BLOCK>>>(G_BIN_NUM*n_faces_a[i_dev], c_bin_indicators[i_dev], -1);
 	
-	// NOTE: Just assuming max. of 10*n_faces_a, need to make this more robust. I don't want to store n_bins*n_faces of data.
+	// Just assuming max. of 2*n_faces_a, need to make this more robust. I don't want to store n_bins*n_faces of data.
 	binned_face_ids_N[i_dev] = new int[n_bins];
 	binned_face_ids_n[i_dev] = new int[n_bins];
 	binned_face_ids[i_dev] = new int[10*n_faces_a[i_dev]];
-	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids[i_dev], 10*n_faces_a[i_dev]*sizeof(int)) );
+	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids[i_dev], 2*n_faces_a[i_dev]*sizeof(int)) );
 	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n[i_dev], n_bins*sizeof(int)) );
 	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N[i_dev], n_bins*sizeof(int)) );
 	
+	// Fill the bins, and then do stream compaction to get contiguous binned data.
 	int n_pm1 = 0;
 	int n_p = 0;
 	cudaDeviceSynchronize();
@@ -189,6 +186,7 @@ int Geometry::G_MakeBins(int i_dev)
 	{
 		// Fill the bins.
 		int j0 = j*G_BIN_NUM;
+		//std::cout << "Iter " << j << ", filling bins " << j0 << "-" << (j0+G_BIN_NUM) << std::endl;
 		Cu_FillBins<<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
 			j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators[i_dev],
 			rad, Lx0g, Ly0g, Lz0g, minL0g, G_BIN_DENSITY
@@ -248,9 +246,6 @@ int Geometry::G_MakeBins(int i_dev)
 // 	std::cout << std::endl;
 	
 	// Free memory in intermediate device arrays.
-	//delete[] binned_face_ids;
-	//delete[] binned_face_ids_n;
-	//delete[] binned_face_ids_N;
 	gpuErrchk( cudaFree(c_bin_indicators[i_dev]) );
 	
 	return 0;

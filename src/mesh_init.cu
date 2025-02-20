@@ -35,8 +35,6 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	PERIODIC_X              = params_int["PERIODIC_X"];
 	PERIODIC_Y              = params_int["PERIODIC_Y"];
 	PERIODIC_Z              = params_int["PERIODIC_Z"];
-	//S_INTERP                = params_int["S_INTERP"];
-	//S_AVERAGE               = params_int["S_AVERAGE"];
 	P_REFINE                = params_int["P_REFINE"];
 	N_REFINE_START          = params_dbl["N_REFINE_START"];
 	N_REFINE_INC            = params_dbl["N_REFINE_INC"];
@@ -63,7 +61,7 @@ int Mesh::M_Init(std::map<std::string, int> params_int, std::map<std::string, do
 	VOL_K_MAX               = params_int["VOL_K_MAX"]/(Nbx*Nqx);
 	input_dir               = params_str["I_DIR_NAME"];
 	output_dir              = params_str["P_DIR_NAME"];
-// 	output_dir              = output_dir_;
+	use_cpu                 = params_int["USE_CPU"];
 	
 	
 	// Additional checks on input parameters.

@@ -48,7 +48,7 @@ void ComputeRefCriteria_NearWall_Geometry_Naive
 	for (int k = 0; k < n_ids_idev_L; k++)
 	{
 		int i_kap_b = id_set_idev_L[k];
-		std::cout << "Doing block no. " << i_kap_b << std::endl;
+		//std::cout << "Doing block no. " << i_kap_b << std::endl;
 		if (i_kap_b > -1 && cblock_ID_ref[i_kap_b] == V_REF_ID_UNREFINED)
 		{
 			for (int t = 0; t < M_TBLOCK; t++)
@@ -247,13 +247,6 @@ void ComputeRefCriteria_NearWall_Geometry_Naive
 		}
 	}
 }
-
-
-
-
-
-
-
 
 
 
@@ -533,25 +526,38 @@ void Cu_ComputeRefCriteria_NearWall_Geometry_Naive
 	}
 }
 
+
+
+
+
+
+
+
+
+
 int Mesh::M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L)
 {
 	ufloat_g_t R = geometry->G_NEAR_WALL_DISTANCE/pow(2.0,(ufloat_g_t)L);
 	ufloat_g_t R2 = R*R;
 	if (n_ids[i_dev][L] > 0)
 	{
-		Cu_ComputeRefCriteria_NearWall_Geometry_Naive<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
-			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
-			c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
-		);
-		
-		/*
-		ComputeRefCriteria_NearWall_Geometry_Naive(
-			n_ids[i_dev][L], &id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
-			cells_ID_mask[i_dev], cblock_ID_ref[i_dev], cblock_ID_onb[i_dev], cblock_f_X[i_dev], cblock_ID_nbr[i_dev],
-			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->geom_f_face_X[i_dev], R, R2
-		);
-		*/
+		if (!use_cpu)
+		{
+			Cu_ComputeRefCriteria_NearWall_Geometry_Naive<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
+				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
+				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
+			);
+		}
+		else
+		{
+			std::cout << "USING CPU VERSION" << std::endl;
+			ComputeRefCriteria_NearWall_Geometry_Naive(
+				n_ids[i_dev][L], &id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
+				cells_ID_mask[i_dev], cblock_ID_ref[i_dev], cblock_ID_onb[i_dev], cblock_f_X[i_dev], cblock_ID_nbr[i_dev],
+				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->geom_f_face_X[i_dev], R, R2
+			);
+		}
 	}
 	
 	return 0;

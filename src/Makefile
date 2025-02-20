@@ -50,6 +50,7 @@ LIBS = -lcuda \
 
 # Fixed solver parameters (defaults specified).
 N_PRECISION?=0
+N_PRECISION_G?=0
 N_DIM?=2
 N_Q?=9
 Nqx?=1
@@ -61,6 +62,7 @@ P_SHOW_ADVANCE?=0
 N_REGEN?=0
 OPTS = -DINPUT_CONFMAKE\
        -DN_PRECISION=$(N_PRECISION)\
+       -DN_PRECISION_G=$(N_PRECISION_G)\
        -DN_DIM=$(N_DIM)\
        -DN_Q=$(N_Q)\
        -DNqx=$(Nqx)\

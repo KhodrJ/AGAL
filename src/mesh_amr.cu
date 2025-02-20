@@ -2002,7 +2002,7 @@ int Mesh::M_FreezeRefinedCells(int var)
 	return 0;
 }
 
-int Mesh::M_RefineAndCoarsenCells(int var)
+int Mesh::M_RefineAndCoarsenBlocks(int var)
 {
 	for (int i_dev = 0; i_dev < N_DEV; i_dev++)
 	{
