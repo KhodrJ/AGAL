@@ -1,48 +1,58 @@
 #ifndef MESH_H
 #define MESH_H
 
-// Mesh refinement/coarsening.
-#define V_REF_ID_UNREFINED             0    ///< Indicates cell-block is unrefined.
-#define V_REF_ID_UNREFINED_VIO         9    ///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
-#define V_REF_ID_REFINED               1    ///< Indicates cell-block is refined.
-#define V_REF_ID_REFINED_WCHILD        2    ///< Indicates cell-block is refined and has at least one refined child.
-#define V_REF_ID_REFINED_PERM          3    ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-#define V_REF_ID_REFINED_WCHILD_PERM   10   ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-#define V_REF_ID_MARK_REFINE           4    ///< Indicates cell-block is marked for refinement.
-#define V_REF_ID_MARK_COARSEN          5    ///< Indicates cell-block is marked for coarsening.
-#define V_REF_ID_NEW                   6    ///< Indicates cell-block was newly inserted (as a child).
-#define V_REF_ID_REMOVE                7    ///< Indicates cell-block will be removed (as a child).
-#define V_REF_ID_INACTIVE              8    ///< Indicates cell-block is inactive in the simulation.
-#define V_REF_ID_INDETERMINATE         11   ///< Indicates cell-block is an indeterminate state.
-
-// Mesh communication.
-#define V_INTERP_INTERFACE             0    ///< Interpolate to interface cells only.
-#define V_INTERP_ADDED                 1    ///< Interpolate to newly-added cells.
-#define V_AVERAGE_INTERFACE            0    ///< Average involves interface cells only.
-#define V_AVERAGE_BLOCK                1    ///< Average involves whole masked block.
-#define V_AVERAGE_GRID                 2    ///< Average involves whole grid.
-
-// Mesh refinements types.
-#define V_MESH_REF_NW_CASES            0    ///< Near-wall refinement for the benchmark cases.
-#define V_MESH_REF_NW_GEOMETRY         1    ///< Near-wall refinement for a general geometry.
-#define V_MESH_REF_UNIFORM             2    ///< Uniform refinement of the mesh at a specified level.
-#define V_MESH_REF_SOLUTION            3    ///< Refinement based on the numerical solution (depends on solver).
-
-// Mesh restart.
-#define V_MESH_RESTART_SAVE            0    ///< Save the mesh to restart later.
-#define V_MESH_RESTART_LOAD            1    ///< Load mesh data from previous save.
-
-// Mesh solvers.
-#define V_SOLVER_LBM_BGK               0
-#define V_SOLVER_LBM_TRT               1
-#define V_SOLVER_LBM_MRT               2
-
 #include "cppspec.h"
 #include "geometry.h"
 #include "solver.h"
 
+// Mesh refinement/coarsening.
+constexpr int V_REF_ID_UNREFINED             = 0;    ///< Indicates cell-block is unrefined.
+constexpr int V_REF_ID_UNREFINED_VIO         = 9;    ///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
+constexpr int V_REF_ID_REFINED               = 1;    ///< Indicates cell-block is refined.
+constexpr int V_REF_ID_REFINED_WCHILD        = 2;    ///< Indicates cell-block is refined and has at least one refined child.
+constexpr int V_REF_ID_REFINED_PERM          = 3;    ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+constexpr int V_REF_ID_REFINED_WCHILD_PERM   = 10;   ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+constexpr int V_REF_ID_MARK_REFINE           = 4;    ///< Indicates cell-block is marked for refinement.
+constexpr int V_REF_ID_MARK_COARSEN          = 5;    ///< Indicates cell-block is marked for coarsening.
+constexpr int V_REF_ID_NEW                   = 6;    ///< Indicates cell-block was newly inserted (as a child).
+constexpr int V_REF_ID_REMOVE                = 7;    ///< Indicates cell-block will be removed (as a child).
+constexpr int V_REF_ID_INACTIVE              = 8;    ///< Indicates cell-block is inactive in the simulation.
+constexpr int V_REF_ID_INDETERMINATE         = 11;   ///< Indicates cell-block is an indeterminate state.
+
+// Mesh communication.
+constexpr int V_INTERP_INTERFACE             = 0;    ///< Interpolate to interface cells only.
+constexpr int V_INTERP_ADDED                 = 1;    ///< Interpolate to newly-added cells.
+constexpr int V_AVERAGE_INTERFACE            = 0;    ///< Average involves interface cells only.
+constexpr int V_AVERAGE_BLOCK                = 1;    ///< Average involves whole masked block.
+constexpr int V_AVERAGE_GRID                 = 2;    ///< Average involves whole grid.
+
+// Mesh refinements types.
+constexpr int V_MESH_REF_NW_CASES            = 0;    ///< Near-wall refinement for the benchmark cases.
+constexpr int V_MESH_REF_NW_GEOMETRY         = 1;    ///< Near-wall refinement for a general geometry.
+constexpr int V_MESH_REF_UNIFORM             = 2;    ///< Uniform refinement of the mesh at a specified level.
+constexpr int V_MESH_REF_SOLUTION            = 3;    ///< Refinement based on the numerical solution (depends on solver).
+
+// Mesh restart.
+constexpr int V_MESH_RESTART_SAVE            = 0;    ///< Save the mesh to restart later.
+constexpr int V_MESH_RESTART_LOAD            = 1;    ///< Load mesh data from previous save.
+
+// Mesh solvers.
+constexpr int V_SOLVER_LBM_BGK               = 0;
+constexpr int V_SOLVER_LBM_TRT               = 1;
+constexpr int V_SOLVER_LBM_MRT               = 2;
+
+#include "structs.h"
+#include "util.h"
+
+
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Mesh
 {
+	public:
+	
+	const int       N_DEV = AP->N_DEV;
+	
 	struct TextOutput
 	{
 		int init = 0;
@@ -59,91 +69,91 @@ class Mesh
 	// o====================================================================================
 	
 	//! Temporary integer array for debugging (retrieves data from GPU for printing).
-	int		*tmp_1[N_DEV];
+	int		**tmp_1 = new int*[N_DEV];
 	
 	//! Temporary floating-point array for debugging (retrieves data from GPU for printing).
-	ufloat_t	*tmp_2[N_DEV];
+	ufloat_t	**tmp_2 = new ufloat_t*[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_1.
-	thrust::device_ptr<int> c_tmp_1_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_1_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_2.
-	thrust::device_ptr<int> c_tmp_2_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_2_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_3.
-	thrust::device_ptr<int> c_tmp_3_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_3_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_4.
-	thrust::device_ptr<int> c_tmp_4_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_4_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_5.
-	thrust::device_ptr<int> c_tmp_5_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_5_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_6.
-	thrust::device_ptr<int> c_tmp_6_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_6_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_7.
-	thrust::device_ptr<int> c_tmp_7_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_7_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_8.
-	thrust::device_ptr<int> c_tmp_8_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_8_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_ones.
-	thrust::device_ptr<int> c_tmp_ones_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_ones_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_tmp_counting_iter.
-	thrust::device_ptr<int> c_tmp_counting_iter_dptr[N_DEV];
+	thrust::device_ptr<int> *c_tmp_counting_iter_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store indices of cell-blocks marked for refinement.
 	*/
-	int		*c_tmp_1[N_DEV];
+	int		**c_tmp_1 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store the scattered map for constructing new cell-blocks and updating child connectivity.
 	*/	
-	int		*c_tmp_2[N_DEV];
+	int		**c_tmp_2 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store gap indices to be used for generating new cell-blocks.
 	*/
-	int		*c_tmp_3[N_DEV];
+	int		**c_tmp_3 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store levels of cell-blocks to be removed for coarsening.
 	*/
-	int		*c_tmp_4[N_DEV];
+	int		**c_tmp_4 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store indices of cell-blocks to be removed for coarsening.
 	*/
-	int		*c_tmp_5[N_DEV];
+	int		**c_tmp_5 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
-	int		*c_tmp_6[N_DEV];
+	int		**c_tmp_6 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
-	int		*c_tmp_7[N_DEV];
+	int		**c_tmp_7 = new int*[N_DEV];
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store 'efficient' map of IDs involved in the connectivity update.
 	*/
-	int		*c_tmp_8[N_DEV];
+	int		**c_tmp_8 = new int*[N_DEV];
 	
 	//! Counting iterator used for copying down indices of cell-blocks satisfying certain conditions.
-	int		*c_tmp_counting_iter[N_DEV];
+	int		**c_tmp_counting_iter = new int*[N_DEV];
 	
 	
 	// o====================================================================================
@@ -162,8 +172,8 @@ class Mesh
 	int mesh_init = 0;
 	int geometry_init = 0;
 	int solver_init = 0;
-	Geometry *geometry;
-	Solver *solver;
+	Geometry<ufloat_t,ufloat_g_t,AP> *geometry;
+	Solver<ufloat_t,ufloat_g_t,AP> *solver;
 	TextOutput to;
 	
 	
@@ -172,6 +182,20 @@ class Mesh
 	// o====================================================================================
 	// | Mesh parameters.
 	// o====================================================================================
+	
+	// Constants.
+	const int       N_DIM                   = AP->N_DIM;
+	const int       N_Q_max                 = AP->N_Q_max;
+	const int       Nqx                     = AP->Nqx;
+	const int       N_CHILDREN              = AP->N_CHILDREN;
+	const int       N_QUADS                 = AP->N_QUADS;
+	const int       M_TBLOCK                = AP->M_TBLOCK;
+	const int       M_HBLOCK                = AP->M_HBLOCK;
+	const int       M_CBLOCK                = AP->M_CBLOCK;
+	const int       M_LBLOCK                = AP->M_LBLOCK;
+	const int       M_BLOCK                 = AP->M_BLOCK;
+	const int       M_RNDOFF                = AP->M_RNDOFF;
+	const int       N_Q;
 	
 	// Domain size.
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
@@ -191,7 +215,9 @@ class Mesh
 	// - Debug.
 	int             use_cpu                 = 0;            ///< Indicates to use the CPU version of the routines.
 	// - Grid and hierarchy.
+	int             N_PRECISION             = 0;            ///< Floating-point precision to be used for storing the solution field.
 	int             MAX_LEVELS              = 1;            ///< Maximum number of grids for the domain interior and boundary.
+	int             MAX_LEVELS_WALL         = 1;            ///< Maximum number of grids for the domain boundary alone.
 	int             MAX_LEVELS_INTERIOR     = 1;            ///< Maximum number of grids for the domain interior alone.
 	int             N_ITER_TOTAL            = Nx;           ///< Total number of iterations to employ for advancement.
 	int             N_LEVEL_START           = 0;            ///< Grid level to employ as the root grid for advancement.
@@ -233,57 +259,59 @@ class Mesh
 	int             VOL_K_MIN               = 0;            ///< Lower bounding z-index for output subdomain.
 	int             VOL_K_MAX               = Nx;           ///< Upper bounding z-index for output subdomain.
 	
+	
+	
 	// o====================================================================================
 	// | CPU parameters.
 	// o====================================================================================
 	
 	//! Array of cell masks used for correcting fine-coarse data transfers.
 	///< Takes on values (0 - interior, 1 - interface, 2 - invalid / exterior).
-	int		*cells_ID_mask[N_DEV];
+	int		**cells_ID_mask = new int*[N_DEV];
 	
 	//! Array of cell-centered density distribution functions (DDFs).
 	///< Stores the @ref N_Q density distribution functions in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
-	ufloat_t 	*cells_f_F[N_DEV];
+	ufloat_t 	**cells_f_F = new ufloat_t*[N_DEV];
 	
 	//! Probed solution field at tn.
 	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
-	ufloat_t	*cells_f_U_probed_tn[N_DEV];
+	ufloat_t	**cells_f_U_probed_tn = new ufloat_t*[N_DEV];
 	
 	//! Probed solution field at tn-dt.
 	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
-	ufloat_t	*cells_f_U_mean[N_DEV];
+	ufloat_t	**cells_f_U_mean = new ufloat_t*[N_DEV];
 	
 	//! Array of cell-block spatial coordinates.
 	//! Stores the coordinate of the lower bottom-left corner of the cell-block in a structure of arrays format (i.e. x: cb0, cb1, cb2,..., y: cb0, cb1, cb2,... and so on).
-	ufloat_t 	*cblock_f_X[N_DEV];
+	ufloat_t 	**cblock_f_X = new ufloat_t*[N_DEV];
 	
 	//! Array of IDs indicating whether index block participates in inteperpolation or averaging.
 	//! Stores an indicator integer (0 - inactive, 1 - active) indicating whether or not the current cell-block is active in interpolation / averaging.
-	int		*cblock_ID_mask[N_DEV];
+	int		**cblock_ID_mask = new int*[N_DEV];
 	
 	//! Array of cell-block neighbor IDs.
 	//! Stores the IDs of neighbor cell-blocks in a structure of arrays format (i.e. ID of neighbor 0: cb0, cb1, cb2,..., ID of neighbor 1: cb0, cb1, cb2,... and so on). Directions of the neighbors are designed to match the discrete particle velocity set selected at compile time. IDs can take non-negative values (indicating valid neighbor cell-blocks) and negative values (indicating a boundary where the neighbor would normally be if not equal to @ref N_SKIPID, otherwise indicating that a neighbor does not exist but points to the interior).
-	int 		*cblock_ID_nbr[N_DEV];
+	int 		**cblock_ID_nbr = new int*[N_DEV];
 	
 	//! Array of cell-block neighbor's child IDs.
 	//! Stores the IDs of the first child (of zero-child-index) of neighboring cell-blocks in a structure of arrays format (i.e. ID of child 0: cb0, cb1, cb2,..., ID of child 1: cb0, cb1, cb2,... and so on). Non-negative values indicate a valid child cell-block. Values equal to @ref N_SKIPID indicate that a process involving this (non-existant) child should be skipped.
-	int 		*cblock_ID_nbr_child[N_DEV];
+	int 		**cblock_ID_nbr_child = new int*[N_DEV];
 	
 	//! Array of cell-block Ids indicating near-boundary status (0 - not on a boundary, 1 - on a boundary).
-	int		*cblock_ID_onb[N_DEV];
+	int		**cblock_ID_onb = new int*[N_DEV];
 	
 	//! Array of cell-block refinement IDs.
 	//! Stores the refinement ID for cell-blocks which indicate status during mesh updates. Values are defined by macros V_REF_ID_....
-	int 		*cblock_ID_ref[N_DEV];
+	int 		**cblock_ID_ref = new int*[N_DEV];
 	
 	//! Array of cell-block levels.
-	int 		*cblock_level[N_DEV];
+	int 		**cblock_level = new int*[N_DEV];
 	
 	//! Array of cell-block edge/face counts.
-	int		*cblock_ID_face_count[N_DEV];
+	int		**cblock_ID_face_count = new int*[N_DEV];
 	
 	//! Array of cell-block edge/face IDs.
-	int		*cblock_ID_face[N_DEV];
+	int		**cblock_ID_face = new int*[N_DEV];
 	
 	//! Array of geometry node locations. [DEPRECATED]
 	//double		*geom_f_node_X[N_DEV];
@@ -296,23 +324,23 @@ class Mesh
 	
 	//! Arrays of active cell-block IDs.
 	//! Stores the IDs of active cell-blocks, classified among the possible grid hierarchy levels with an array for each level.
-	int		*id_set[N_DEV];
+	int		**id_set = new int*[N_DEV];
 	
 	//! Arrays of I indices for the coarsest grid.
-	int		*coarse_I[N_DEV];
+	int		**coarse_I = new int*[N_DEV];
 	
 	//! Arrays of J indices for the coarsest grid.
-	int		*coarse_J[N_DEV];
+	int		**coarse_J = new int*[N_DEV];
 	
 	//! Arrays of K indices for the coarsest grid.
-	int		*coarse_K[N_DEV];
+	int		**coarse_K = new int*[N_DEV];
 	
 	//! Array of coarse cell-block Ids marked for probing.
 	//! Stores the Ids for coarse cell-blocks that are to be probed and still valid (i.e. in interior of domain).
-	int		*id_set_probed[N_DEV];
+	int		**id_set_probed = new int*[N_DEV];
 	
 	//! Array of active cell-block counts.
-	int		*n_ids[N_DEV];
+	int		**n_ids = new int*[N_DEV];
 	
 	//! Number of nodes. [DEPRECATED]
 	//int		n_nodes[N_DEV];
@@ -321,18 +349,18 @@ class Mesh
 	//int		n_faces[N_DEV];
 	
 	//! Probed cell-block counter.
-	int		n_ids_probed[N_DEV];
+	int		*n_ids_probed = new int[N_DEV];
 	
 	//! Array of largest cell-block IDs per grid level.
 	//! Stores the maximum cell-block ID on a grid level. The element with index @ref MAX_LEVELS represents the largest ID in the array and is used to identify the limit of access in the data arrays (saves time when I don't need to go through all possible cell-cblocks).
-	int		*id_max[N_DEV];
+	int		**id_max = new int*[N_DEV];
 	
 	//! Array of gap cell-block IDs in data arrays.
 	//! Stores the cell-block IDs of gaps that are formed in the data arrays when cell-blocks are coarsened as a simulation is processed. Stored in reverse order for convenience during the refinement and coarsening routine.
-	int		*gap_set[N_DEV];
+	int		**gap_set = new int*[N_DEV];
 	
 	//! Number of available gaps.
-	int		n_gaps[N_DEV];
+	int		*n_gaps = new int[N_DEV];
 	
 	//! Vector of spatial steps for all grid levels.
 	ufloat_t	*dxf_vec;
@@ -352,40 +380,40 @@ class Mesh
 	size_t          total_t = 0;                            ///< Number of total bytes in GPU memory.
 	long int        N_bytes_pc;                             ///< Number of bytes required per cell.
 	double          M_FRAC                  = 0.75;         ///< Fraction of free memory to use.
-	cudaStream_t    streams[N_DEV];                         ///< CUDA streams employed by mesh.
+	cudaStream_t    *streams = new cudaStream_t[N_DEV];     ///< CUDA streams employed by mesh.
 
 	//! GPU counterpart of @ref cells_ID_mask.
-	int		*c_cells_ID_mask[N_DEV];
+	int		**c_cells_ID_mask = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cells_f_F.
-	ufloat_t 	*c_cells_f_F[N_DEV];
+	ufloat_t 	**c_cells_f_F = new ufloat_t*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_f_X.
-	ufloat_t 	*c_cblock_f_X[N_DEV];
+	ufloat_t 	**c_cblock_f_X = new ufloat_t*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_mask.
-	int		*c_cblock_ID_mask[N_DEV];
+	int		**c_cblock_ID_mask = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_nbr.
-	int 		*c_cblock_ID_nbr[N_DEV];
+	int 		**c_cblock_ID_nbr = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_nbr_child.
-	int 		*c_cblock_ID_nbr_child[N_DEV];
+	int 		**c_cblock_ID_nbr_child = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_onb.
-	int		*c_cblock_ID_onb[N_DEV];
+	int		**c_cblock_ID_onb = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_ref.
-	int 		*c_cblock_ID_ref[N_DEV];
+	int 		**c_cblock_ID_ref = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_level.
-	int 		*c_cblock_level[N_DEV];
+	int 		**c_cblock_level = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_face_count.
-	int		*c_cblock_ID_face_count[N_DEV];
+	int		**c_cblock_ID_face_count = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_face.
-	int		*c_cblock_ID_face[N_DEV];
+	int		**c_cblock_ID_face = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref geom_f_node_X. [DEPRECATED]
 	//double	*c_geom_f_node_X[N_DEV];
@@ -397,25 +425,25 @@ class Mesh
 	//double	*c_geom_ID_face_attr[N_DEV];
 	
 	//! GPU counterpart of @ref id_set.
-	int		*c_id_set[N_DEV];
+	int		**c_id_set = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref gap_set.
-	int		*c_gap_set[N_DEV];
+	int		**c_gap_set = new int*[N_DEV];
 
 	//! A Thrust pointer-cast of the device array @ref c_id_set.
-	thrust::device_ptr<int> c_id_set_dptr[N_DEV];
+	thrust::device_ptr<int> *c_id_set_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_gap_set.
-	thrust::device_ptr<int> c_gap_set_dptr[N_DEV];
+	thrust::device_ptr<int> *c_gap_set_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_cells_f_W.
-	thrust::device_ptr<ufloat_t> c_cells_f_W_dptr[N_DEV];
+	thrust::device_ptr<ufloat_t> *c_cells_f_W_dptr = new thrust::device_ptr<ufloat_t>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_cblock_ID_ref.
-	thrust::device_ptr<int> c_cblock_ID_ref_dptr[N_DEV];
+	thrust::device_ptr<int> *c_cblock_ID_ref_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	//! A Thrust pointer-cast of the device array @ref c_cblock_level.
-	thrust::device_ptr<int> c_cblock_level_dptr[N_DEV];
+	thrust::device_ptr<int> *c_cblock_level_dptr = new thrust::device_ptr<int>[N_DEV];
 	
 	// o====================================================================================
 	// | Routines.
@@ -553,6 +581,7 @@ class Mesh
 	int             M_ComputeRefCriteria(int i_dev, int L, int var);
 	int             M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L);
 	int             M_ComputeRefCriteria_Geometry_Binned(int i_dev, int L);
+	int             M_Geometry_FillBinned(int i_dev, int L);
 	int             M_Advance_InitTextOutput();
 	int             M_Advance_RefineNearWall();
 	int             M_Advance_LoadRestartFile(int &iter_s);
@@ -593,7 +622,12 @@ class Mesh
 	
 	
 	// NOTE: This will be redone to incorporate proper intialization.
-	Mesh(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
+	Mesh(
+		std::map<std::string, int> params_int,
+		std::map<std::string, double> params_dbl,
+		std::map<std::string, std::string> params_str,
+		int N_Q_
+	) : N_Q(N_Q_)
 	{
 		M_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making mesh object." << std::endl << std::endl;

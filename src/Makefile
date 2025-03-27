@@ -23,7 +23,7 @@ EIG_VER = 3.4.0
 VTK_INC ?= ../../AGAL-latest/lib/vtk/include/vtk-$(VTK_VER)/
 VTK_LIB ?= ../../AGAL-latest/lib/vtk/lib/
 EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
-LIBS = -lcuda \
+LIBS = -lcuda\
        -lgomp\
        -lvtkCommonCore-$(VTK_VER) \
        -lvtkCommonDataModel-$(VTK_VER) \
@@ -49,29 +49,23 @@ LIBS = -lcuda \
 
 
 # Fixed solver parameters (defaults specified).
-N_PRECISION?=0
-N_PRECISION_G?=0
-N_DIM?=2
-N_Q?=9
-Nqx?=1
-M_LBLOCK?=16
-S_LES?=0
 N_CASE?=0
 P_SHOW_REFINE?=0
 P_SHOW_ADVANCE?=0
 N_REGEN?=0
-OPTS = -DINPUT_CONFMAKE\
-       -DN_PRECISION=$(N_PRECISION)\
-       -DN_PRECISION_G=$(N_PRECISION_G)\
-       -DN_DIM=$(N_DIM)\
-       -DN_Q=$(N_Q)\
-       -DNqx=$(Nqx)\
-       -DM_LBLOCK=$(M_LBLOCK)\
-       -DS_LES=$(S_LES)\
-       -DN_CASE=$(N_CASE)\
+# OPTS = -DINPUT_CONFMAKE\
+#        -DN_PRECISION=$(N_PRECISION)\
+#        -DN_PRECISION_G=$(N_PRECISION_G)\
+#        -DN_DIM=$(N_DIM)\
+#        -DN_Q=$(N_Q)\
+#        -DNqx=$(Nqx)\
+#        -DM_LBLOCK=$(M_LBLOCK)\
+#        -DN_CASE=$(N_CASE)\
+#        -DP_SHOW_REFINE=$(P_SHOW_REFINE)\
+#        -DP_SHOW_ADVANCE=$(P_SHOW_ADVANCE)
+OPTS = -DN_CASE=$(N_CASE)\
        -DP_SHOW_REFINE=$(P_SHOW_REFINE)\
        -DP_SHOW_ADVANCE=$(P_SHOW_ADVANCE)
-       
        
 
 # Compilation parameters.
@@ -79,19 +73,21 @@ CXX = g++
 NVCC = nvcc
 #|
 CPPFLAGS = 
-CXXFLAGS = -g
-NVCCFLAGS = -lineinfo
+CXXFLAGS = -g -Wno-unused-variable
+#NVCCFLAGS = -lineinfo -Xptxas -v -O3 -arch=sm_70 -Xcompiler=\"-Wno-unused-variable\"
+NVCCFLAGS = -lineinfo -O3 -Xcompiler=\"-Wno-unused-variable\"
 LDFLAGS = 
 #|
-INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC)
-LIB = -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
-VPATH = ../inc/
+INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC) -I./geometry -I./mesh -I./solver_lbm
+LIB = -L. -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
+VPATH = ../inc/:./geometry:./mesh:./solver_lbm
 #|
-MQ = 
-ifeq ($(shell expr $(Nqx) \> 1), 1)
-   MQ = _mq
-endif
+# MQ = 
+# ifeq ($(shell expr $(Nqx) \> 1), 1)
+#    MQ = _mq
+# endif
 
+all: a.out
 
 
 # Building the geometry object.
@@ -100,11 +96,14 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_add.cu\
       geometry_import.cu\
       geometry_convert.cu\
-      geometry_bin.cu\
-      geometry_print.cu
+      geometry_bin_alt.cu\
+      geometry_print.cu\
+      geometry_inst.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 geometry_%.o: geometry_%.cu geometry.h cppspec.h
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+libgeom.a: geometry_inst.o
+	ar rcs libgeom.a geometry_inst.o
 
 
 
@@ -113,8 +112,8 @@ SRC_MESH = mesh_init.cu\
       mesh_dest.cu\
       mesh_comm.cu\
       mesh_criterion.cu\
-      mesh_criterion_geometry_naive.cu\
       mesh_criterion_geometry_binned.cu\
+      mesh_fill_binned.cu\
       mesh_amr.cu\
       mesh_solvers.cu\
       mesh_advance.cu\
@@ -125,6 +124,7 @@ SRC_MESH = mesh_init.cu\
 OBJ_MESH = $(SRC_MESH:.cu=.o)
 mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+
 
 
 
@@ -145,62 +145,87 @@ mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
 # solver_lbm_interp_cubic_mrt_d3q19.cu
 # solver_lbm_average_mrt_d2q9.cu
 # solver_lbm_average_mrt_d3q19.cu
-SRC_SOLVER = solver_lbm_init.cu\
-      solver_lbm_advance.cu\
-      solver_lbm_criterion.cu\
-      solver_lbm_compute.cu\
-      solver_lbm_set_ic_d2q9.cu\
-      solver_lbm_set_ic_d3q19.cu\
-      solver_lbm_set_ic_d3q27.cu\
-      solver_lbm_collide_bgk_d2q9.cu\
-      solver_lbm_collide_bgk_d3q19.cu\
-      solver_lbm_collide_bgk_d3q27.cu\
-      solver_lbm_collide_bgk_interp_linear_d2q9.cu\
-      solver_lbm_collide_bgk_interp_linear_d3q19.cu\
-      solver_lbm_collide_bgk_interp_linear_d3q27.cu\
-      solver_lbm_collide_bgk_interp_cubic_d2q9.cu\
-      solver_lbm_collide_bgk_interp_cubic_d3q19.cu\
-      solver_lbm_collide_bgk_interp_cubic_d3q27.cu\
-      solver_lbm_enforce_symmetry_d2q9.cu\
-      solver_lbm_enforce_symmetry_d3q19.cu\
-      solver_lbm_enforce_symmetry_d3q27.cu\
-      solver_lbm_stream_inpl_d2q9.cu\
-      solver_lbm_stream_inpl_d3q19.cu\
-      solver_lbm_stream_inpl_d3q27.cu\
-      solver_lbm_interp_linear$(MQ)_d2q9.cu\
-      solver_lbm_interp_linear$(MQ)_d3q19.cu\
-      solver_lbm_interp_linear$(MQ)_d3q27.cu\
-      solver_lbm_interp_cubic$(MQ)_d2q9.cu\
-      solver_lbm_interp_cubic$(MQ)_d3q19.cu\
-      solver_lbm_interp_cubic$(MQ)_d3q27.cu\
-      solver_lbm_average$(MQ)_d2q9.cu\
-      solver_lbm_average$(MQ)_d3q19.cu\
-      solver_lbm_average$(MQ)_d3q27.cu\
-      solver_lbm_average_cubic_d2q9.cu
-OBJ_SOLVER = $(SRC_SOLVER:.cu=.o)
-solver_%.o: solver_%.cu solver.h cppspec.h
+# SRC_SOLVER = solver_lbm_init.cu\
+#       solver_lbm_advance.cu\
+#       solver_lbm_criterion.cu\
+#       solver_lbm_compute.cu\
+#       solver_lbm_set_ic_d2q9.cu\
+#       solver_lbm_set_ic_d3q19.cu\
+#       solver_lbm_set_ic_d3q27.cu\
+#       solver_lbm_collide_bgk_d2q9.cu\
+#       solver_lbm_collide_bgk_d3q19.cu\
+#       solver_lbm_collide_bgk_d3q27.cu\
+#       solver_lbm_collide_bgk_interp_linear_d2q9.cu\
+#       solver_lbm_collide_bgk_interp_linear_d3q19.cu\
+#       solver_lbm_collide_bgk_interp_linear_d3q27.cu\
+#       solver_lbm_collide_bgk_interp_cubic_d2q9.cu\
+#       solver_lbm_collide_bgk_interp_cubic_d3q19.cu\
+#       solver_lbm_collide_bgk_interp_cubic_d3q27.cu\
+#       solver_lbm_enforce_symmetry_d2q9.cu\
+#       solver_lbm_enforce_symmetry_d3q19.cu\
+#       solver_lbm_enforce_symmetry_d3q27.cu\
+#       solver_lbm_stream_inpl_d2q9.cu\
+#       solver_lbm_stream_inpl_d3q19.cu\
+#       solver_lbm_stream_inpl_d3q27.cu\
+#       solver_lbm_interp_linear$(MQ)_d2q9.cu\
+#       solver_lbm_interp_linear$(MQ)_d3q19.cu\
+#       solver_lbm_interp_linear$(MQ)_d3q27.cu\
+#       solver_lbm_interp_cubic$(MQ)_d2q9.cu\
+#       solver_lbm_interp_cubic$(MQ)_d3q19.cu\
+#       solver_lbm_interp_cubic$(MQ)_d3q27.cu\
+#       solver_lbm_average$(MQ)_d2q9.cu\
+#       solver_lbm_average$(MQ)_d3q19.cu\
+#       solver_lbm_average$(MQ)_d3q27.cu\
+#       solver_lbm_average_cubic_d2q9.cu\
+#       solver_lbm_impl.cu
+# OBJ_SOLVER = $(SRC_SOLVER:.cu=.o)
+# solver_%.o: solver_%.cu solver.h cppspec.h
+# 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+
+
+SRC_SOLVER_LBM = solver_lbm_init.cu\
+	solver_lbm_impl.cu\
+	solver_lbm_advance.cu\
+	solver_lbm_compute.cu\
+	solver_lbm_compute_macro.cu\
+	solver_lbm_criterion.cu\
+	solver_lbm_setic_D2Q9.cu\
+	solver_lbm_setic_D3Q19.cu\
+	solver_lbm_setic_D3Q27.cu\
+	solver_lbm_collision_original_D2Q9.cu\
+	solver_lbm_collision_original_D3Q19.cu\
+	solver_lbm_collision_original_D3Q27.cu\
+	solver_lbm_stream_original_D2Q9.cu\
+	solver_lbm_stream_original_D3Q19.cu\
+	solver_lbm_stream_original_D3Q27.cu\
+	solver_lbm_interp_linear_original_D2Q9.cu\
+	solver_lbm_interp_linear_original_D3Q19.cu\
+	solver_lbm_interp_linear_original_D3Q27.cu
+OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
+solver_lbm_%.o: solver_lbm_%.cu solver_lbm.h solver.h cppspec.h
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
 
-
 # Building the application objects.
+INC_MAIN = cppspec.h geometry.h mesh.h solver_lbm.h solver.h structs.h util.h custom.h
 SRC_MAIN = main_read_input.cu
 OBJ_MAIN = $(SRC_MAIN:.cu=.o)
-main_%.o: main_%.cu geometry.h mesh.h solver.h cppspec.h
+main_%.o: main_%.cu
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
 
 
 # Application.
-OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER) $(OBJ_MAIN)
-a.out: main.cu $(OBJ)
-	$(NVCC) $(OBJ) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@ $(NVCCFLAGS)
-all: a.out
+OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER_LBM) $(OBJ_MAIN)
+SRC = $(SRC_GEOMETRY) $(SRC_MESH) $(SRC_SOLVER_LBM) $(SRC_MAIN)
+a.out: main.cu $(OBJ_MAIN) $(SRC) $(INC_MAIN)
+	#$(NVCC) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@ $(NVCCFLAGS)
+	$(NVCC) $(NVCCFLAGS) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 
 geometry: $(OBJ_GEOMETRY)
 mesh: $(OBJ_MESH)
-solver: $(OBJ_SOLVER)
+solver_lbm: $(OBJ_SOLVER_LBM)
 clean:
 	$(RM) $(OBJ)
 
-.PHONY: clean all geometry mesh solver
+.PHONY: clean all geometry mesh solver_lbm

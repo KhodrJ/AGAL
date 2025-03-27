@@ -30,12 +30,14 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 	std::ifstream input = std::ifstream(input_file_directory + "input.txt");
 	input_map_int = std::map<std::string, int> // Define map of integer parameters with default values.
 	{
-		{"MAX_LEVELS",              5},
+		{"MAX_LEVELS_WALL",         5},
 		{"MAX_LEVELS_INTERIOR",     4},
 		{"N_ITER_TOTAL",            10*64},
 		{"N_LEVEL_START",           0},
 		{"Nx",                      64},
 		{"N_RESTART",               1},
+		{"G_LOADTYPE",              0},
+		{"G_PRINT",                 1},
 		{"G_BIN_DENSITY",           1},
 		{"G_BIN_FRAC",              1},
 		{"PERIODIC_X",              0},
@@ -92,6 +94,7 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 	{
 		{"I_DIR_NAME",              input_file_directory},
 		{"P_DIR_NAME",              "../out/TEST_UPLOAD/"},
+		{"G_FILENAME",              "bunny_ascii.stl"}
 	};
 // 	*output_dir = "../out/TEST_UPLOAD/";
 	

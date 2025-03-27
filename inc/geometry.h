@@ -3,8 +3,15 @@
 
 #include "cppspec.h"
 
+constexpr int V_GEOMETRY_LOADTYPE_STL               = 0;
+constexpr int V_GEOMETRY_LOADTYPE_TXT               = 1;
+
+
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Mesh;
 
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Geometry
 {
 	private:
@@ -29,7 +36,21 @@ class Geometry
 	
 	public:
 	
-	Mesh *mesh;
+	Mesh<ufloat_t,ufloat_g_t,AP> *mesh;
+	
+	// Constants.
+	const int       N_DIM                   = AP->N_DIM;
+	const int       N_Q_max                 = AP->N_Q_max;
+	const int       Nqx                     = AP->Nqx;
+	const int       N_CHILDREN              = AP->N_CHILDREN;
+	const int       N_QUADS                 = AP->N_QUADS;
+	const int       M_TBLOCK                = AP->M_TBLOCK;
+	const int       M_HBLOCK                = AP->M_HBLOCK;
+	const int       M_CBLOCK                = AP->M_CBLOCK;
+	const int       M_LBLOCK                = AP->M_LBLOCK;
+	const int       M_BLOCK                 = AP->M_BLOCK;
+	const int       M_RNDOFF                = AP->M_RNDOFF;
+	const int       N_DEV                   = AP->N_DEV;
 	
 	// o====================================================================================
 	// | Geometry parameters.
@@ -40,47 +61,51 @@ class Geometry
 	float           Lz                      = 1.0F;         ///< Length of domain in z-axis as a fraction of @ref Lx.
 	ufloat_g_t      G_NEAR_WALL_DISTANCE    = 1;            ///< The near-wall distance for refinement.
 	int             n_bins                  = 1;            ///< Number of bins to use.
+	int             G_LOADTYPE              = 0;            ///< The type of load to perform [0: from and STL file, 1: from the txt file].
+	int             G_PRINT                 = 0;            ///< Indicates if the geometry should be printed in STL format after processing.
 	int             G_BIN_DENSITY           = 1;            ///< The number of bins to divide the geometry surface.
 	int             G_BIN_FRAC              = 1;            ///< Fraction of bin arrays to consider at a time.
 	std::string     input_dir;                              ///< Input directory.
 	std::string     output_dir;                             ///< Output directory.
+	std::string     G_FILENAME;
 	
 	// o====================================================================================
 	// | CPU parameters.
 	// o====================================================================================
 	
 	//! Number of nodes.
-	int             n_nodes[N_DEV];
+	//int             n_nodes[N_DEV];
+	int             *n_nodes = new int[N_DEV];
 	
 	//! Number of vertices rounded to 32 for alignment.
-	int             n_nodes_a[N_DEV];
+	int             *n_nodes_a = new int[N_DEV];
 	
 	//! Number of faces.
-	int             n_faces[N_DEV];
+	int             *n_faces = new int[N_DEV];
 	
 	//! Number of faces rounded to 32 for alignment.
-	int             n_faces_a[N_DEV];
+	int             *n_faces_a = new int[N_DEV];
 	
 	//! Array of geometry node locations.
-	ufloat_g_t      *geom_f_node_X[N_DEV];
+	ufloat_g_t      **geom_f_node_X = new ufloat_g_t*[N_DEV];
 	
 	//! Array of face indices.
-	int             *geom_ID_face[N_DEV];
+	int             **geom_ID_face = new int*[N_DEV];
 	
 	//! Array of face vertices.
-	ufloat_g_t      *geom_f_face_X[N_DEV];
+	ufloat_g_t      **geom_f_face_X = new ufloat_g_t*[N_DEV];
 	
 	//! Array of geometry face attributes attributes.
-	ufloat_g_t      *geom_ID_face_attr[N_DEV];
+	ufloat_g_t      **geom_ID_face_attr = new ufloat_g_t*[N_DEV];
 	
-	int *bin_indicators[N_DEV];
-	int *c_bin_indicators[N_DEV];
-	int *binned_face_ids[N_DEV];
-	int *binned_face_ids_n[N_DEV];
-	int *binned_face_ids_N[N_DEV];
-	int *c_binned_face_ids[N_DEV];
-	int *c_binned_face_ids_n[N_DEV];
-	int *c_binned_face_ids_N[N_DEV];
+	int **bin_indicators = new int*[N_DEV];
+	int **c_bin_indicators = new int*[N_DEV];
+	int **binned_face_ids = new int*[N_DEV];
+	int **binned_face_ids_n = new int*[N_DEV];
+	int **binned_face_ids_N = new int*[N_DEV];
+	int **c_binned_face_ids = new int*[N_DEV];
+	int **c_binned_face_ids_n = new int*[N_DEV];
+	int **c_binned_face_ids_N = new int*[N_DEV];
 	
 	std::vector<ufloat_g_t>     v_geom_f_node_X;
 	std::vector<ufloat_g_t>     v_geom_f_node_Y;
@@ -103,16 +128,16 @@ class Geometry
 	// o====================================================================================
 	
 	//! GPU counterpart of @ref geom_f_node_X.
-	ufloat_g_t      *c_geom_f_node_X[N_DEV];
+	ufloat_g_t      **c_geom_f_node_X = new ufloat_g_t*[N_DEV];
 	
 	//! GPU counterpart of @ref geom_ID_face.
-	int             *c_geom_ID_face[N_DEV];
+	int             **c_geom_ID_face = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref geom_f_face_X.
-	ufloat_g_t      *c_geom_f_face_X[N_DEV];
+	ufloat_g_t      **c_geom_f_face_X = new ufloat_g_t*[N_DEV];
 	
 	//! GPU counterpart of @ref geom_ID_face_attr.
-	ufloat_g_t      *c_geom_ID_face_attr[N_DEV];
+	ufloat_g_t      **c_geom_ID_face_attr = new ufloat_g_t*[N_DEV];
 	
 	// o====================================================================================
 	// | Routines.
@@ -146,9 +171,14 @@ class Geometry
 	
 	
 	
-	Geometry(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
+	Geometry(
+		std::map<std::string, int> params_int,
+		std::map<std::string, double> params_dbl,
+		std::map<std::string, std::string> params_str
+	)
 	{
 		G_Init(params_int, params_dbl, params_str);
+		std::cout << "[-] Finished making geometry object." << std::endl << std::endl;
 	}
 	
 	~Geometry()
@@ -156,5 +186,13 @@ class Geometry
 		G_Dest();
 	}
 };
+
+// #include "geometry_add.cu"
+// #include "geometry_bin.cu"
+// #include "geometry_convert.cu"
+// #include "geometry_dest.cu"
+// #include "geometry_import.cu"
+// #include "geometry_init.cu"
+// #include "geometry_print.cu"
 
 #endif

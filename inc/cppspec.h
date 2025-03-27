@@ -59,61 +59,122 @@
 #include "vtkWindowToImageFilter.h"
 
 // Input parameters from 'confmake.sh'.
-#ifndef INPUT_CONFMAKE
-	#define N_PRECISION 0
-	#define N_PRECISION_G 0
-	#define N_DIM 2
-	#define N_Q 9
-	#define Nqx 1
-	#define M_LBLOCK 16
-	#define N_Q_max 9
-#endif
+//#ifndef INPUT_CONFMAKE
+	//#define N_PRECISION 0
+	//#define N_PRECISION_G 0
+	//#define N_DIM 2
+// 	#define N_Q 9
+// 	#define Nqx 1
+// 	#define M_LBLOCK 16
+	//#define N_Q_max 9
+//#endif
+
+// #ifndef Nqx
+// #define Nqx 1
+// #endif
+// #ifndef M_LBLOCK
+// #define M_LBLOCK
+// #endif
 
 
 // Derived parameters.
-#define APPEND(x, y) x ## y
-#if (N_PRECISION==0)
-	typedef float ufloat_t;
-	#define N_Pf(x) (APPEND(x,F))
-#else
-	typedef double ufloat_t;
-	#define N_Pf(x) (x)
-#endif
-#if (N_PRECISION_G==0)
-	typedef float ufloat_g_t;
-	#define N_Pf_g(x) (APPEND(x,F))
-#else
-	typedef double ufloat_g_t;
-	#define N_Pf_g(x) (x)
-#endif
-#if (N_DIM==2)
-	#define N_QUADS (Nqx*Nqx)
-	#define N_Q_max 9
-	#define N_CHILDREN 4
-	#define M_TBLOCK 16
-	#define M_CBLOCK (Nqx*Nqx*16)
-#else
-	#define N_QUADS (Nqx*Nqx*Nqx)
-	#define N_Q_max 27
-	#define N_CHILDREN 8
-	#define M_TBLOCK 64
-	#define M_CBLOCK (Nqx*Nqx*Nqx*64)
-#endif
+// #define N_Q_max(N) (N==2?9:27)
+// #define N_QUADS(N) (N==2?(Nqx*Nqx):(Nqx*Nqx*Nqx))
+// #define N_CHILDREN(N) (N==2?4:8)
+// #define M_TBLOCK(N) (N==2?16:64)
+// #define M_CBLOCK(N) (N==2?(Nqx*Nqx*16):(Nqx*Nqx*Nqx*64))
+// #define APPEND(x, y) x ## y
+//#define N_Pf(N,x) (N==ufloat_t
+// #if (N_PRECISION==0)
+// 	typedef float ufloat_t;
+// 	#define N_Pf(x) (APPEND(x,F))
+// #else
+// 	typedef double ufloat_t;
+// 	#define N_Pf(x) (x)
+// #endif
+// #if (N_PRECISION_G==0)
+// 	typedef float ufloat_g_t;
+// 	#define N_Pf_g(x) (APPEND(x,F))
+// #else
+// 	typedef double ufloat_g_t;
+// 	#define N_Pf_g(x) (x)
+// #endif
+// #if (N_DIM==2)
+// 	#define N_QUADS (Nqx*Nqx)
+	//#define N_Q_max 9
+	//#define N_CHILDREN 4
+	//#define M_TBLOCK 16
+// 	#define M_CBLOCK (Nqx*Nqx*16)
+// #else
+// 	#define N_QUADS (Nqx*Nqx*Nqx)
+	//#define N_Q_max 27
+	//#define N_CHILDREN 8
+	//#define M_TBLOCK 64
+// 	#define M_CBLOCK (Nqx*Nqx*Nqx*64)
+// #endif
 
 
 // Other fixed paramters.
-#define Nbx 4             ///< Number of cells along one cell-block axis, fixed at four.
-#define N_DEV 1           ///< Number of GPU devices (only one for now, will extend soon).
-#define M_BLOCK 128       ///< Number of threads per block.
-#define M_RNDFF 2048      ///< Round-off parameter for computation of n_maxcells.
-#define N_SYMMETRY -998   ///< Indicator than an Id represents a symmetry boundary condition.
-#define N_SKIPID -999     ///< Indicator that an Id is invalid.
-#define CONV_B2GB 9.313225746154785e-10
-#define T_S 0
-#define T_MS 1
-#define T_US 2
+// #define Nbx 4             ///< Number of cells along one cell-block axis, fixed at four.
+// #define N_DEV 1           ///< Number of GPU devices (only one for now, will extend soon).
+// #define M_BLOCK 128       ///< Number of threads per block.
+// #define M_RNDFF 2048      ///< Round-off parameter for computation of n_maxcells.
+// #define N_SYMMETRY -998   ///< Indicator than an Id represents a symmetry boundary condition.
+// #define N_SKIPID -999     ///< Indicator that an Id is invalid.
+// #define CONV_B2GB 9.313225746154785e-10
+// #define T_S 0
+// #define T_MS 1
+// #define T_US 2
+// 
 
 
+
+struct ArgsPack
+{
+	// Base.
+	const int N_DIM;
+	const int N_DEV;
+	const int Nqx;
+	const int M_LBLOCK;
+	const int M_BLOCK;
+	const int M_RNDOFF;
+	
+	// Derived.
+	const int N_CHILDREN             = N_DIM==2? 4:8;
+	const int N_Q_max                = N_DIM==2? 9:27;
+	const int N_QUADS                = N_DIM==2? Nqx*Nqx:Nqx*Nqx*Nqx;
+	const int M_TBLOCK               = N_DIM==2? 16:64;
+	const int M_HBLOCK               = N_DIM==2? 36:216;
+	const int M_CBLOCK               = N_QUADS*M_TBLOCK;
+	
+	constexpr ArgsPack(
+		int N_DIM_=3,
+		int M_BLOCK_=128,
+		int N_DEV_=1,
+		int Nqx_=1,
+		int M_LBLOCK_=1,
+		int M_RNDOFF_=2048
+	) : 
+		N_DIM(N_DIM_),
+		M_BLOCK(M_BLOCK_),
+		N_DEV(N_DEV_),
+		Nqx(Nqx_),
+		M_LBLOCK(M_LBLOCK_),
+		M_RNDOFF(M_RNDOFF_)
+	{
+	}
+};
+
+constexpr ArgsPack AP2D_DEF = ArgsPack(2); /// Default 2D argument pack.
+constexpr ArgsPack AP3D_DEF = ArgsPack(3); /// Default 3D argument pack.
+
+// constexpr int Nbx = 4;
+constexpr int N_SYMMETRY = -998;
+constexpr int N_SKIPID = -999;
+constexpr double CONV_B2GB = 9.313225746154785e-10;
+constexpr int T_S = 0;
+constexpr int T_MS = 1;
+constexpr int T_US = 2;
 
 /*
          8888888888                         888    d8b                                     
@@ -236,10 +297,11 @@ void Cu_ResetToValue(int N, T *arr, T val)
     @param frac is the integer inverse of the fraction (i.e. to skip every N entries, frac should be set to N for a fraction of 1/N).
     @param arr2 is the destination array.
 */
-template <class T>
+template <class T, const ArgsPack *AP>
 __global__
 void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
 {
+	constexpr int M_BLOCK = AP->M_BLOCK;
 	__shared__ int s_arr[M_BLOCK];
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	int new_start = blockIdx.x*blockDim.x/frac;
@@ -272,5 +334,22 @@ void Cu_FillLinear(int N, T *arr)
 		arr[kap] = kap;
 	}
 }
+
+template <class T> __device__ __forceinline__ T Tabs(T a);
+template <> __device__ __forceinline__ int Tabs(int a) { return abs(a); }
+template <> __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }
+template <> __device__ __forceinline__  double Tabs(double a) { return fabs(a); }
+
+template <class T> __device__ __forceinline__ T Tpow(T a, T b);
+template <> __device__ __forceinline__  float Tpow(float a, float b) { return powf(a,b); }
+template <> __device__ __forceinline__  double Tpow(double a, double b) { return pow(a,b); }
+
+template <class T> __device__ __forceinline__ T Tsqrt(T a);
+template <> __device__ __forceinline__  float Tsqrt(float a) { return sqrtf(a); }
+template <> __device__ __forceinline__  double Tsqrt(double a) { return sqrt(a); }
+
+template <class T> __device__ __forceinline__ T Tacos(T a);
+template <> __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
+template <> __device__ __forceinline__  double Tacos(double a) { return acos(a); }
 
 #endif
