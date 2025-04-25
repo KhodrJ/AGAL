@@ -202,3 +202,47 @@ else
 	std::cout << "Residue: " << sum << std::endl; 
 	return sum;
 }
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_ReportForces(int i_dev, int L, int iter, double t)
+{
+	if (L == MAX_LEVELS_WALL-1)
+	{
+		double factor = 1;
+		for (int i = 0; i < AP->N_DIM-1; i++)
+			factor *= (double)dxf_vec[L];
+		
+		double Fpx = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][0*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][0*n_solidb] + n_solidb, 0.0
+		);
+		double Fmx = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][1*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][1*n_solidb] + n_solidb, 0.0
+		);
+		double Fpy = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][2*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][2*n_solidb] + n_solidb, 0.0
+		);
+		double Fmy = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][3*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][3*n_solidb] + n_solidb, 0.0
+		);
+		double Fpz = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][4*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][4*n_solidb] + n_solidb, 0.0
+		);
+		double Fmz = thrust::reduce(
+			thrust::device, &c_cblock_f_Ff_solid_dptr[i_dev][5*n_solidb], &c_cblock_f_Ff_solid_dptr[i_dev][5*n_solidb] + n_solidb, 0.0
+		);
+		double Fx = factor*(Fpx - Fmx);
+		double Fy = factor*(Fpy - Fmy);
+		double Fz = factor*(Fpz - Fmz);
+		double Dp = 1.0/64.0;
+		double uin = 0.1;
+		std::cout << "Fx: " << Fx << std::endl;
+		std::cout << "Fy: " << Fy << std::endl;
+		std::cout << "Fz: " << Fz << std::endl;
+		std::cout << "Report:" << std::endl;
+		std::cout << "CD: " << 2.0*Fx / (uin*uin*(Dp)) << std::endl;
+		std::cout << "CL: " << 2.0*Fy / (uin*uin*(Dp)) << std::endl;
+		to.force_printer << iter << " " << t << " " << 2.0*Fx / (uin*uin*(Dp)) << " " << 2.0*Fy / (uin*uin*(Dp)) << std::endl;
+	}
+	
+	return 0;
+}

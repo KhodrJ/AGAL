@@ -104,22 +104,24 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	ufloat_t   *dxf_vec;
 	ufloat_t   *tau_vec;
 	ufloat_t   *tau_ratio_vec;
+	bool       compute_forces = true;
 	
 	// LBM: General routines.
-	int S_Collide(int i_dev, int L);
-	int S_Stream(int i_dev, int L);
+	//int S_Collide(int i_dev, int L);
+	//int S_Stream(int i_dev, int L);
 	int S_Vel2Mom(int i_dev, int L);
 	int S_Mom2Vel(int i_dev, int L);
 	int S_ComputeMacroProperties(int i_dev, int i_kap, int i_Q, int kap_i, ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w);
+	int S_IdentifyFaces(int i_dev, int L);
 	
 	// o====================================================================================
 	// | Routines required from base class.
 	// o====================================================================================
 	
 	// Required.
-	int S_SetIC(int i_dev, int L);
-	int S_Interpolate(int i_dev, int L, int var);
-	int S_Average(int i_dev, int L, int var);
+	//int S_SetIC(int i_dev, int L);
+	//int S_Interpolate(int i_dev, int L, int var);
+	//int S_Average(int i_dev, int L, int var);
 	int S_Advance(int i_dev, int L, double *tmp);
 	int S_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out);
 	int S_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out);
@@ -135,6 +137,10 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_SetInitialConditions_D2Q9(int i_dev, int L);
 	int S_SetInitialConditions_D3Q19(int i_dev, int L);
 	int S_SetInitialConditions_D3Q27(int i_dev, int L);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q27(i_dev, L); return 0; }
+	int S_SetIC(int i_dev, int L) { S_SetICW(i_dev, L); return 0; }
 	
 	// Collision.
 	int S_Collide_BGK_D2Q9(int i_dev, int L);
@@ -149,6 +155,22 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collision_Original_D2Q9(int i_dev, int L);
 	int S_Collision_Original_D3Q19(int i_dev, int L);
 	int S_Collision_Original_D3Q27(int i_dev, int L);
+	int S_Collision_New_S1_D2Q9(int i_dev, int L);
+	int S_Collision_New_S2_D2Q9(int i_dev, int L);
+	int S_Collision_New_S1_D3Q19(int i_dev, int L);
+	int S_Collision_New_S2_D3Q19(int i_dev, int L);
+	int S_Collision_New_S1_D3Q27(int i_dev, int L);
+	int S_Collision_New_S2_D3Q27(int i_dev, int L);
+	int S_ImposeBC_D2Q9(int i_dev, int L);
+	int S_ImposeBC_D3Q19(int i_dev, int L);
+	int S_ImposeBC_D3Q27(int i_dev, int L);
+	int S_ReportForces(int i_dev, int L) { mesh->M_ReportForces(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D2Q9(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q19(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q27(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D2Q9(i_dev, L); S_Collision_New_S2_D2Q9(i_dev, L); S_ImposeBC_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D3Q19(i_dev, L); S_Collision_New_S2_D3Q19(i_dev, L); S_ImposeBC_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D3Q27(i_dev, L); S_Collision_New_S2_D3Q27(i_dev, L); S_ImposeBC_D3Q27(i_dev, L); return 0; }
 	
 	// Streaming.
 	int S_Stream_D2Q9(int i_dev, int L);
@@ -157,6 +179,9 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Stream_Original_D2Q9(int i_dev, int L);
 	int S_Stream_Original_D3Q19(int i_dev, int L);
 	int S_Stream_Original_D3Q27(int i_dev, int L);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q27(i_dev, L); return 0; }
 	
 	// Interpolation.
 	int S_Interpolate_Linear_D2Q9(int i_dev, int L, int var);
@@ -171,6 +196,16 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Interpolate_Linear_Original_D2Q9(int i_dev, int L, int var);
 	int S_Interpolate_Linear_Original_D3Q19(int i_dev, int L, int var);
 	int S_Interpolate_Linear_Original_D3Q27(int i_dev, int L, int var);
+	int S_Interpolate_Cubic_Original_D2Q9(int i_dev, int L, int var);
+	int S_Interpolate_Cubic_Original_D3Q19(int i_dev, int L, int var);
+	int S_Interpolate_Cubic_Original_D3Q27(int i_dev, int L, int var);
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D2Q9 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q19 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q27 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D3Q27(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D2Q9 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q19 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q27 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D3Q27(i_dev, L, var); return 0; }
+	int S_Interpolate(int i_dev, int L, int var) { S_InterpolateW(i_dev, L, var); return 0; }
 	
 	// Averaging.
 	int S_Average_D2Q9(int i_dev, int L, int var);
@@ -179,6 +214,10 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Average_Original_D2Q9(int i_dev, int L, int var);
 	int S_Average_Original_D3Q19(int i_dev, int L, int var);
 	int S_Average_Original_D3Q27(int i_dev, int L, int var);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D3Q27(i_dev, L, var); return 0; }
+	int S_Average(int i_dev, int L, int var) { S_AverageW(i_dev, L, var); return 0; }
 	
 	// Optimized combos.
 	int S_Collide_BGK_Interpolate_Linear_D2Q9(int i_dev, int L); // TODO

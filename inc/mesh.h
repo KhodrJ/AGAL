@@ -25,6 +25,14 @@ constexpr int V_INTERP_ADDED                 = 1;    ///< Interpolate to newly-a
 constexpr int V_AVERAGE_INTERFACE            = 0;    ///< Average involves interface cells only.
 constexpr int V_AVERAGE_BLOCK                = 1;    ///< Average involves whole masked block.
 constexpr int V_AVERAGE_GRID                 = 2;    ///< Average involves whole grid.
+constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
+constexpr int V_CELLMASK_SOLIDA              = -2;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
+constexpr int V_BLOCKMASK_REGULAR            = 0;    ///< Default state of a cell-block.
+constexpr int V_BLOCKMASK_INTERFACE          = 1;    ///< This cell-block participates in the grid communication routines.
+constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies entirely within a solid object.
+constexpr int V_BLOCKMASK_SOLIDB             = -1;   ///< This cell-block lies on the boundary of a solid object.
+constexpr int V_BLOCKMASK_SOLIDA             = -2;   ///< This cell-block is adjacent to the boundary of a solid object.
+constexpr int V_BLOCKMASK_INDETERMINATE      = -4;   ///< This cell-block is in an indeterminate state.
 
 // Mesh refinements types.
 constexpr int V_MESH_REF_NW_CASES            = 0;    ///< Near-wall refinement for the benchmark cases.
@@ -104,6 +112,10 @@ class Mesh
 	//! A Thrust pointer-cast of the device array @ref c_tmp_counting_iter.
 	thrust::device_ptr<int> *c_tmp_counting_iter_dptr = new thrust::device_ptr<int>[N_DEV];
 	
+	//! A Thrust pointer-cast of the device array @ref c_cblock_f_Ff_solid.
+	thrust::device_ptr<double> *c_cblock_f_Ff_solid_dptr = new thrust::device_ptr<double>[N_DEV];
+	
+	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
 	    @ref M_RefineAndCoarsenBlocks to temporarily store indices of cell-blocks marked for refinement.
@@ -172,6 +184,8 @@ class Mesh
 	int mesh_init = 0;
 	int geometry_init = 0;
 	int solver_init = 0;
+	int enable_aux_data = 0;
+	int bdata_init = 0;
 	Geometry<ufloat_t,ufloat_g_t,AP> *geometry;
 	Solver<ufloat_t,ufloat_g_t,AP> *solver;
 	TextOutput to;
@@ -196,6 +210,7 @@ class Mesh
 	const int       M_BLOCK                 = AP->M_BLOCK;
 	const int       M_RNDOFF                = AP->M_RNDOFF;
 	const int       N_Q;
+	const int       N_U;
 	
 	// Domain size.
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
@@ -210,6 +225,10 @@ class Mesh
 	int             n_coarsecblocks         = 1;            ///< Total number of coarse blocks in the domain.
 	long int        n_maxcells              = 1;            ///< Maximum number of cells that can be stored in GPU memory.
 	int             n_maxcblocks            = 1;            ///< Maximum number of cell-blocks corresponding to @ref n_maxcells.
+	long int        n_solida                = 0;            ///< Number of cells adjacent to a solid cell.
+	int             n_solidb                = 0;            ///< Number of cell-blocks containing at least one cell adjacent to a solid cell.
+	int             n_solidb_a              = 0;            ///< The value @ref n_solidb adjusted for alignment in device memory.
+	long int        n_maxcells_b            = 0;            ///< Number of cells corresponding to @ref n_solidb.
 	
 	// Other parameters.
 	// - Debug.
@@ -269,9 +288,21 @@ class Mesh
 	///< Takes on values (0 - interior, 1 - interface, 2 - invalid / exterior).
 	int		**cells_ID_mask = new int*[N_DEV];
 	
-	//! Array of cell-centered density distribution functions (DDFs).
-	///< Stores the @ref N_Q density distribution functions in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
+	//! Auxillary array of cell masks indicating boundary Ids for complex geometries.
+	///< The stored values (one for each direction) indicate the index of the boundary condition to be imposed on each cell.
+	int		**cells_ID_mask_b = new int*[N_DEV];
+	
+	//! Auxillary array of cell-center-boundary distances.
+	///< Stores the distances of cell-centers to the nearest boundary along each possible direction.
+	ufloat_g_t	**cells_f_X_b = new ufloat_g_t*[N_DEV];
+	
+	//! Solution array.
+	///< Stores the numerical solution in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
 	ufloat_t 	**cells_f_F = new ufloat_t*[N_DEV];
+	
+	//! Optional auxilliary solution array.
+	///< Stores auxilliary data.
+	ufloat_t 	**cells_f_F_aux = new ufloat_t*[N_DEV];
 	
 	//! Probed solution field at tn.
 	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
@@ -299,6 +330,12 @@ class Mesh
 	
 	//! Array of cell-block Ids indicating near-boundary status (0 - not on a boundary, 1 - on a boundary).
 	int		**cblock_ID_onb = new int*[N_DEV];
+	
+	//! Array of cell-block Ids indicating the location of solid-cell linkage data for the cell-blocks.
+	int		**cblock_ID_onb_solid = new int*[N_DEV];
+	
+	//! Stores the force contributions of the various cell-blocks.
+	double		**cblock_f_Ff_solid = new double*[N_DEV];
 	
 	//! Array of cell-block refinement IDs.
 	//! Stores the refinement ID for cell-blocks which indicate status during mesh updates. Values are defined by macros V_REF_ID_....
@@ -385,8 +422,17 @@ class Mesh
 	//! GPU counterpart of @ref cells_ID_mask.
 	int		**c_cells_ID_mask = new int*[N_DEV];
 	
+	//! GPU counterpart of @ref cells_ID_mask_b.
+	int		**c_cells_ID_mask_b = new int*[N_DEV];
+	
+	//! GPU counterpart of @ref cells_f_X_b.
+	ufloat_g_t	**c_cells_f_X_b = new ufloat_g_t*[N_DEV];
+	
 	//! GPU counterpart of @ref cells_f_F.
 	ufloat_t 	**c_cells_f_F = new ufloat_t*[N_DEV];
+	
+	//! GPU counterpart of @ref cells_f_F_aux.
+	ufloat_t 	**c_cells_f_F_aux = new ufloat_t*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_f_X.
 	ufloat_t 	**c_cblock_f_X = new ufloat_t*[N_DEV];
@@ -402,6 +448,12 @@ class Mesh
 	
 	//! GPU counterpart of @ref cblock_ID_onb.
 	int		**c_cblock_ID_onb = new int*[N_DEV];
+	
+	//! GPU counterpart of @ref cblock_ID_onb_solid.
+	int		**c_cblock_ID_onb_solid = new int*[N_DEV];
+	
+	//! GPU counterpart of @ref cblock_f_Ff_solid.
+	double		**c_cblock_f_Ff_solid = new double*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_ref.
 	int 		**c_cblock_ID_ref = new int*[N_DEV];
@@ -516,6 +568,12 @@ class Mesh
 	*/
 	int             M_RenderAndPrint_Uniform(int i_dev, int iter);
 	
+	//! Add a geometry.
+	/*! Add a pointer to the geometry object.
+	    @param geometry is the geometry object.
+	*/
+	int             M_AddGeometry(Geometry<ufloat_t,ufloat_g_t,AP> *geometry);
+	
 	//! Recursively traverses the hierarchy for printing..
 	/*! Starting from a block on the root grid, the hierarchy is traversed. Cells of leaf blocks are printed while branches are traversed further.
 	    @param i_dev is the ID of the device to be processed.
@@ -581,7 +639,10 @@ class Mesh
 	int             M_ComputeRefCriteria(int i_dev, int L, int var);
 	int             M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L);
 	int             M_ComputeRefCriteria_Geometry_Binned(int i_dev, int L);
-	int             M_Geometry_FillBinned(int i_dev, int L);
+	int             M_Geometry_FillBinned_S1(int i_dev, int L);
+	int             M_Geometry_FillBinned_S2(int i_dev, int L);
+	int             M_Geometry_FillBinned_S2A(int i_dev);
+	int             M_IdentifyFaces(int i_dev, int L);
 	int             M_Advance_InitTextOutput();
 	int             M_Advance_RefineNearWall();
 	int             M_Advance_LoadRestartFile(int &iter_s);
@@ -593,6 +654,7 @@ class Mesh
 	int             M_Advance_PrintData(int i, int iter_s);
 	int             M_Advance_PrintForces(int i, int iter_s);
 	int             M_ComplexGeom();
+	int             M_ReportForces(int i_dev, int L, int i, double t);
 	
 	int             M_NewSolver_LBM_BGK(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str);
 	
@@ -626,8 +688,10 @@ class Mesh
 		std::map<std::string, int> params_int,
 		std::map<std::string, double> params_dbl,
 		std::map<std::string, std::string> params_str,
-		int N_Q_
-	) : N_Q(N_Q_)
+		int N_Q_,
+		int enable_aux_data_=0,
+		int N_U_=0
+	) : N_Q(N_Q_), enable_aux_data(enable_aux_data_), N_U(N_U_)
 	{
 		M_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making mesh object." << std::endl << std::endl;
@@ -635,16 +699,16 @@ class Mesh
 
 	~Mesh()
 	{
-		if (geometry_init)
-		{
-			delete geometry;
-			std::cout << "[-] Finished deleting geometry object." << std::endl;
-		}
-		if (solver_init)
-		{
-			delete solver;
-			std::cout << "[-] Finished deleting solver object." << std::endl;
-		}
+// 		if (geometry_init)
+// 		{
+// 			delete geometry;
+// 			std::cout << "[-] Finished deleting geometry object." << std::endl;
+// 		}
+// 		if (solver_init)
+// 		{
+// 			delete solver;
+// 			std::cout << "[-] Finished deleting solver object." << std::endl;
+// 		}
 		
 		M_Dest();
 		std::cout << "[-] Finished deleting mesh object." << std::endl << std::endl;

@@ -66,7 +66,7 @@ TEMPLATE NAME PRIMARY_ORIGINAL
 INFOR p 1   0 Lsize 1
 	REG f_<p> = (ufloat_t)(-1.0);
 END_INFOR
-OUTIF ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] > -1 )
+OUTIF ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 )
     REG x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
     REG y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
     INIF Ldim==2

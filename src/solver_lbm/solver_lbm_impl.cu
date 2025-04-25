@@ -14,6 +14,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetIC(int i_dev, int L)
 	return 0;
 }
 
+/*
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 {
@@ -54,6 +55,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 	
 	return 0;
 }
+*/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream(int i_dev, int L)

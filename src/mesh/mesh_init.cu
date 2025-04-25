@@ -140,8 +140,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	gpuErrchk( cudaMemGetInfo(&free_t, &total_t) );
 	cudaDeviceSynchronize();
 	N_bytes_pc = std::ceil( 
-		sizeof(int)*(1) + sizeof(ufloat_t)*(N_Q + 1) + 
+		sizeof(int)*(1) + sizeof(ufloat_t)*(N_Q + N_U + 1) + 
 		(sizeof(float)* + sizeof(int)*(2*N_Q_max + 1+1+1) + 
+		sizeof(int)*(1) + sizeof(int)*N_Q_max +
 		sizeof(int)*(2*N_Q_max + 10)
 	)/(double)(M_CBLOCK));
 	n_maxcells = (long int)free_t*M_FRAC / N_bytes_pc;
@@ -160,6 +161,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		// Allocate memory for pointers.
 		cells_ID_mask[i_dev] = new int[n_maxcells]{1};
 		cells_f_F[i_dev] = new ufloat_t[n_maxcells*N_Q]{0};
+		if (enable_aux_data)
+			cells_f_F_aux[i_dev] = new ufloat_t[n_maxcells*N_U]{0};
 		cblock_f_X[i_dev] = new ufloat_t[n_maxcblocks*N_DIM]{0};
 		cblock_ID_mask[i_dev] = new int[n_maxcblocks]{0};
 		cblock_ID_nbr[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
@@ -167,12 +170,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		cblock_ID_onb[i_dev] = new int[n_maxcblocks]{0};
 		cblock_ID_ref[i_dev] = new int[n_maxcblocks]{0};
 		cblock_level[i_dev] = new int[n_maxcblocks]{0};
-#if (N_CASE==2)
 		cblock_ID_face_count[i_dev] = new int[n_maxcblocks]{0};
-		cblock_ID_face[i_dev] = new int[n_maxcblocks]{0};
-#endif
-		// cblock_ID_face_attr[i_dev];
-		// cblock_f_X_face[i_dev];
+		cblock_ID_face[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
 		
 		tmp_1[i_dev] = new int[n_maxcblocks]{0};
 		tmp_2[i_dev] = new ufloat_t[n_maxcblocks]{0};
@@ -229,6 +228,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		// Cell data.
 		gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cells_f_F[i_dev], n_maxcells*N_Q*sizeof(ufloat_t)) );
+		if (enable_aux_data)
+			gpuErrchk( cudaMalloc((void **)&c_cells_f_F_aux[i_dev], n_maxcells*N_U*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
@@ -236,10 +237,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_ref[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_level[i_dev], n_maxcblocks*sizeof(int)) );
-#if (N_CASE==2)
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face_count[i_dev], n_maxcblocks*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_maxcblocks*sizeof(int)) );
-#endif
+		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
 		
 		// ID sets.
 		gpuErrchk( cudaMalloc((void **)&c_id_set[i_dev], MAX_LEVELS*n_maxcblocks*sizeof(int)) );
@@ -544,6 +543,16 @@ if (N_DIM==3)
 		delete[] init_grid_cblock_ID_onb;
 		delete[] init_grid_cblock_f_X;
 	}
+	
+	return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_AddGeometry(Geometry<ufloat_t,ufloat_g_t,AP> *geometry_)
+{
+	geometry = geometry_;
+	geometry->mesh = this;
+	geometry_init = 1;
 	
 	return 0;
 }

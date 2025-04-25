@@ -97,6 +97,7 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_import.cu\
       geometry_convert.cu\
       geometry_bin_alt.cu\
+      geometry_bin_alt_3D.cu\
       geometry_print.cu\
       geometry_inst.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
@@ -189,18 +190,34 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_compute.cu\
 	solver_lbm_compute_macro.cu\
 	solver_lbm_criterion.cu\
+	solver_lbm_identify_faces.cu\
 	solver_lbm_setic_D2Q9.cu\
 	solver_lbm_setic_D3Q19.cu\
 	solver_lbm_setic_D3Q27.cu\
 	solver_lbm_collision_original_D2Q9.cu\
 	solver_lbm_collision_original_D3Q19.cu\
 	solver_lbm_collision_original_D3Q27.cu\
+	solver_lbm_collision_new_s1_D2Q9.cu\
+	solver_lbm_collision_new_s1_D3Q19.cu\
+	solver_lbm_collision_new_s1_D3Q27.cu\
+	solver_lbm_collision_new_s2_D2Q9.cu\
+	solver_lbm_collision_new_s2_D3Q19.cu\
+	solver_lbm_collision_new_s2_D3Q27.cu\
+	solver_lbm_imposebc_D2Q9.cu\
+	solver_lbm_imposebc_D3Q19.cu\
+	solver_lbm_imposebc_D3Q27.cu\
 	solver_lbm_stream_original_D2Q9.cu\
 	solver_lbm_stream_original_D3Q19.cu\
 	solver_lbm_stream_original_D3Q27.cu\
+	solver_lbm_stream_new_D2Q9.cu\
+	solver_lbm_stream_new_D3Q19.cu\
+	solver_lbm_stream_new_D3Q27.cu\
 	solver_lbm_interp_linear_original_D2Q9.cu\
 	solver_lbm_interp_linear_original_D3Q19.cu\
-	solver_lbm_interp_linear_original_D3Q27.cu
+	solver_lbm_interp_linear_original_D3Q27.cu\
+	solver_lbm_interp_cubic_original_D2Q9.cu\
+	solver_lbm_interp_cubic_original_D3Q19.cu\
+	solver_lbm_interp_cubic_original_D3Q27.cu
 OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
 solver_lbm_%.o: solver_lbm_%.cu solver_lbm.h solver.h cppspec.h
 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<

@@ -67,4 +67,12 @@ struct is_nonnegative
 	}
 };
 
+struct is_positive
+{
+	__device__ bool operator()(const int ID)
+	{
+		return ID>0;
+	}
+};
+
 #endif

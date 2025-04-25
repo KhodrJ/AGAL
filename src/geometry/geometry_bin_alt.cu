@@ -268,26 +268,26 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 {
 	// Assumes that coords list has already been initialized, make sure you do that first.
-	n_bins = 1;
+	n_bins_v = 1;
 	for (int d = 0; d < N_DIM-1; d++)
-		n_bins *= G_BIN_DENSITY;
-	int G_BIN_NUM = n_bins / G_BIN_FRAC;
+		n_bins_v *= G_BIN_DENSITY;
+	int G_BIN_NUM = n_bins_v / G_BIN_FRAC;
 	ufloat_g_t Lx0g = Lx/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t Ly0g = Ly/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t Lz0g = Lz/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t minL0g = std::min({Lx0g,Ly0g,N_DIM==2?Lx0g:Lz0g});
 	
 	// Initialize the intermediate device array to store the bin indicators. Set values to -1 as default.
-	gpuErrchk( cudaMalloc((void **)&c_bin_indicators[i_dev], G_BIN_NUM*n_faces_a[i_dev]*sizeof(int)) );
-	Cu_ResetToValue<<<(M_BLOCK+G_BIN_NUM*n_faces_a[i_dev]-1)/M_BLOCK, M_BLOCK>>>(G_BIN_NUM*n_faces_a[i_dev], c_bin_indicators[i_dev], -1);
+	gpuErrchk( cudaMalloc((void **)&c_bin_indicators_v[i_dev], G_BIN_NUM*n_faces_a[i_dev]*sizeof(int)) );
+	Cu_ResetToValue<<<(M_BLOCK+G_BIN_NUM*n_faces_a[i_dev]-1)/M_BLOCK, M_BLOCK>>>(G_BIN_NUM*n_faces_a[i_dev], c_bin_indicators_v[i_dev], -1);
 	
-	// Just assuming max. of 2*n_faces_a, need to make this more robust. I don't want to store n_bins*n_faces of data.
-	binned_face_ids_N[i_dev] = new int[n_bins];
-	binned_face_ids_n[i_dev] = new int[n_bins];
-	binned_face_ids[i_dev] = new int[10*n_faces_a[i_dev]];
-	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids[i_dev], 10*n_faces_a[i_dev]*sizeof(int)) );
-	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n[i_dev], n_bins*sizeof(int)) );
-	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N[i_dev], n_bins*sizeof(int)) );
+	// Just assuming max. of 2*n_faces_a, need to make this more robust. I don't want to store n_bins_v*n_faces of data.
+	binned_face_ids_N_v[i_dev] = new int[n_bins_v];
+	binned_face_ids_n_v[i_dev] = new int[n_bins_v];
+	binned_face_ids_v[i_dev] = new int[10*n_faces_a[i_dev]];
+	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_v[i_dev], 10*n_faces_a[i_dev]*sizeof(int)) );
+	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int)) );
+	gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int)) );
 	
 	// Fill the bins, and then do stream compaction to get contiguous binned data.
 	int n_pm1 = 0;
@@ -301,7 +301,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 		int j0 = j*G_BIN_NUM;
 		//std::cout << "Iter " << j << ", filling bins " << j0 << "-" << (j0+G_BIN_NUM) << std::endl;
 		Cu_FillBins<ufloat_g_t,AP> <<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
-			j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators[i_dev],
+			j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators_v[i_dev],
 			(ufloat_g_t)(0.0/32.0), Lx, Lx0g, Ly0g, Lz0g, minL0g, G_BIN_DENSITY
 		);
 		
@@ -311,30 +311,30 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 			// Get the number of faces in this traversal.
 			int j_p = j0 + p;
 			n_p =  thrust::count_if(
-				thrust::device, &c_bin_indicators[i_dev][p*n_faces_a[i_dev]], &c_bin_indicators[i_dev][p*n_faces_a[i_dev]] + n_faces[i_dev], is_nonnegative()
+				thrust::device, &c_bin_indicators_v[i_dev][p*n_faces_a[i_dev]], &c_bin_indicators_v[i_dev][p*n_faces_a[i_dev]] + n_faces[i_dev], is_nonnegative()
 			);
-			binned_face_ids_N[i_dev][j_p] = n_pm1;
-			binned_face_ids_n[i_dev][j_p] = n_p;
+			binned_face_ids_N_v[i_dev][j_p] = n_pm1;
+			binned_face_ids_n_v[i_dev][j_p] = n_p;
 			//std::cout << n_p << " faces found in bin " << j_p << std::endl;
 			
 			// Copy the faces into the stored binned ID set.
 			if (n_pm1 >= 10*n_faces_a[i_dev]-1)
-				std::cout << "[-] WARNING: Insufficient memoery to store binned faces..." << std::endl;
+				std::cout << "[-] WARNING: Insufficient memory to store binned faces..." << std::endl;
 			if (n_p > 0)
 			{
 				thrust::copy_if(
-					thrust::device, &c_bin_indicators[i_dev][p*n_faces_a[i_dev]], &c_bin_indicators[i_dev][p*n_faces_a[i_dev]] + n_faces[i_dev], &c_binned_face_ids[i_dev][n_pm1], is_nonnegative()
+					thrust::device, &c_bin_indicators_v[i_dev][p*n_faces_a[i_dev]], &c_bin_indicators_v[i_dev][p*n_faces_a[i_dev]] + n_faces[i_dev], &c_binned_face_ids_v[i_dev][n_pm1], is_nonnegative()
 				);
 			}
 			
 			// Update trackers.
-			n_pm1 = binned_face_ids_N[i_dev][j_p] + n_p;
+			n_pm1 = binned_face_ids_N_v[i_dev][j_p] + n_p;
 			//std::cout << "Cumulative count: " << n_pm1 << std::endl;
 		}
 		
 		// Reset intermediate arrays before next run.
 		Cu_ResetBins<<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
-			n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_bin_indicators[i_dev]
+			n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_bin_indicators_v[i_dev]
 		);
 	}
 	cudaDeviceSynchronize();
@@ -342,24 +342,24 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 	std::cout << "[-] Finished binning process (" << n_pm1 << " faces/" << 10*n_faces_a[i_dev] << ")..." << std::endl;
 	
 	// Copy the face id counts to the GPU.
-	gpuErrchk( cudaMemcpy(c_binned_face_ids_n[i_dev], binned_face_ids_n[i_dev], n_bins*sizeof(int), cudaMemcpyHostToDevice) );
-	gpuErrchk( cudaMemcpy(c_binned_face_ids_N[i_dev], binned_face_ids_N[i_dev], n_bins*sizeof(int), cudaMemcpyHostToDevice) );
-	gpuErrchk( cudaMemcpy(binned_face_ids[i_dev], c_binned_face_ids[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
+	gpuErrchk( cudaMemcpy(c_binned_face_ids_n_v[i_dev], binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyHostToDevice) );
+	gpuErrchk( cudaMemcpy(c_binned_face_ids_N_v[i_dev], binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyHostToDevice) );
+	gpuErrchk( cudaMemcpy(binned_face_ids_v[i_dev], c_binned_face_ids_v[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
 	
 	// DEBUG
-// 	gpuErrchk( cudaMemcpy(binned_face_ids, c_binned_face_ids[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
+// 	gpuErrchk( cudaMemcpy(binned_face_ids_v, c_binned_face_ids_v[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
 // 	for (int p = 0; p < n_pm1; p++)
-// 		std::cout << binned_face_ids[p] << " ";
+// 		std::cout << binned_face_ids_v[p] << " ";
 // 	std::cout << std::endl;
 // 	for (int p = 0; p < n_bins; p++)
-// 		std::cout << binned_face_ids_N[p] << " ";
+// 		std::cout << binned_face_ids_N_v[p] << " ";
 // 	std::cout << std::endl;
 // 	for (int p = 0; p < n_bins; p++)
-// 		std::cout << binned_face_ids_n[p] << " ";
+// 		std::cout << binned_face_ids_n_v[p] << " ";
 // 	std::cout << std::endl;
 	
 	// Free memory in intermediate device arrays.
-	gpuErrchk( cudaFree(c_bin_indicators[i_dev]) );
+	gpuErrchk( cudaFree(c_bin_indicators_v[i_dev]) );
 	
 	return 0;
 }

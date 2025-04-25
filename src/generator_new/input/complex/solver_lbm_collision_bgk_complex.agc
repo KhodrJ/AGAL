@@ -148,38 +148,6 @@ OUTFOR i_qj_q 3   0 Nqx 1   0 Nqx 1
                             #
                             # FPC (2D)
                             #
-                            #OUTIF (nbr_kap_b == -1)
-                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            #END_OUTIF
-                            #OUTIF (nbr_kap_b == -2)
-                                #REG-vz cdotu = gNz(Lc0(<q>)*u + Lc1(<q>)*v + Lc2(<q>)*w);
-                                #REG-vm f_<q> = -f_<q> + (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*((ufloat_t)(1.0) + cdotu*cdotu*(ufloat_t)(4.5) - udotu*(ufloat_t)(1.5));
-                            #END_OUTIF
-                            #OUTIF (nbr_kap_b == -3)
-                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            #END_OUTIF
-                            #OUTIF (nbr_kap_b == -4)
-                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            #END_OUTIF
-                            
-                            
-                            
-                            #
-                            # LDC (2D)
-                            #
-                            #OUTIF (nbr_kap_b == -4)
-                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            #END_OUTIF
-                            
-                            
-                            
-                            #
-                            # FPC (3D)
-                            #
                             OUTIF (nbr_kap_b == -1)
                                 REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
                                 REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
@@ -196,14 +164,46 @@ OUTFOR i_qj_q 3   0 Nqx 1   0 Nqx 1
                                 REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
                                 REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
                             END_OUTIF
-                            OUTIF (nbr_kap_b == -5)
-                                REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            END_OUTIF
-                            OUTIF (nbr_kap_b == -6)
-                                REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
-                                REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
-                            END_OUTIF
+                            
+                            
+                            
+                            #
+                            # LDC (2D)
+                            #
+                            #OUTIF (nbr_kap_b == -4)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
+                            
+                            
+                            
+                            #
+                            # FPC (3D)
+                            #
+                            #OUTIF (nbr_kap_b == -1)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
+                            #OUTIF (nbr_kap_b == -2)
+                                #REG-vz cdotu = gNz(Lc0(<q>)*u + Lc1(<q>)*v + Lc2(<q>)*w);
+                                #REG-vm f_<q> = -f_<q> + (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*((ufloat_t)(1.0) + cdotu*cdotu*(ufloat_t)(4.5) - udotu*(ufloat_t)(1.5));
+                            #END_OUTIF
+                            #OUTIF (nbr_kap_b == -3)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
+                            #OUTIF (nbr_kap_b == -4)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
+                            #OUTIF (nbr_kap_b == -5)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
+                            #OUTIF (nbr_kap_b == -6)
+                                #REG-vm cdotu = (ufloat_t)(gD(Lc0(<q>)*(0.05) + Lc1(<q>)*(0.00) + Lc2(<q>)*(0.00)));
+                                #REG-vm f_<q> = f_<q> - (ufloat_t)(2.0)*(ufloat_t)(gD(Lw(<q>)))*(ufloat_t)(3.0)*cdotu;
+                            #END_OUTIF
                             
                             
                             

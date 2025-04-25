@@ -10,17 +10,24 @@
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
 {
+	// From input.
 	Lx                      = params_dbl["L_c"];
 	Ly                      = params_dbl["L_fy"]*Lx;
 	Lz                      = params_dbl["L_fz"]*Lx;
+	Nx                      = params_int["Nx"];
 	input_dir               = params_str["I_DIR_NAME"];
 	output_dir              = params_str["P_DIR_NAME"];
+	MAX_LEVELS_WALL         = params_int["MAX_LEVELS_WALL"];
 	G_NEAR_WALL_DISTANCE    = params_dbl["G_NEAR_WALL_DISTANCE"];
 	G_FILENAME              = params_str["G_FILENAME"];
 	G_LOADTYPE              = params_int["G_LOADTYPE"];
 	G_PRINT                 = params_int["G_PRINT"];
 	G_BIN_DENSITY           = params_int["G_BIN_DENSITY"];
 	G_BIN_FRAC              = params_int["G_BIN_FRAC"];
+	
+	// Derived.
+	dx = Lx/Nx;
+	dx = (ufloat_t)(dx / pow(2.0, (ufloat_t)MAX_LEVELS_WALL));
 	
 	return 0;
 }

@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Tue Mar 25 05:44:12 2025                                            */
+/*  Last Updated: Thu Apr 24 00:19:00 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -159,16 +159,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_1 = f_1 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_1 = f_1 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_1 = f_1 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q==4*Nqx-1)and(J+4*j_q<4*Nqx-1))
                             {
@@ -192,16 +182,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q==4*Nqx-1)and(J+4*j_q>0))
                             {
@@ -221,16 +201,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
@@ -264,16 +234,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.000000000000000);
                                     f_2 = f_2 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.000000000000000);
-                                    f_2 = f_2 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.000000000000000);
-                                    f_2 = f_2 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q<4*Nqx-1)and(J+4*j_q==4*Nqx-1))
                             {
@@ -297,16 +257,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q>0)and(J+4*j_q==4*Nqx-1))
                             {
@@ -326,16 +276,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
@@ -369,16 +309,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_3 = f_3 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_3 = f_3 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_3 = f_3 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q==0)and(J+4*j_q<4*Nqx-1))
                             {
@@ -402,16 +332,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q==0)and(J+4*j_q>0))
                             {
@@ -431,16 +351,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
@@ -474,16 +384,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.000000000000000);
                                     f_4 = f_4 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.000000000000000);
-                                    f_4 = f_4 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.000000000000000);
-                                    f_4 = f_4 - (ufloat_t)(2.0)*(ufloat_t)(0.111111111111111)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q>0)and(J+4*j_q==0))
                             {
@@ -507,16 +407,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                             if ((I+4*i_q<4*Nqx-1)and(J+4*j_q==0))
                             {
@@ -536,16 +426,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
@@ -579,16 +459,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_5 = f_5 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                         }
                         
@@ -614,16 +484,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_6 = f_6 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
@@ -657,16 +517,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     cdotu = (ufloat_t)(-0.050000000000000);
                                     f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
-                                {
-                                    cdotu = (ufloat_t)(-0.050000000000000);
-                                    f_7 = f_7 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
                             }
                         }
                         
@@ -692,16 +542,6 @@ void Cu_Collision_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
                                 }
                                 if (nbr_kap_b == -4)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -5)
-                                {
-                                    cdotu = (ufloat_t)(0.050000000000000);
-                                    f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;
-                                }
-                                if (nbr_kap_b == -6)
                                 {
                                     cdotu = (ufloat_t)(0.050000000000000);
                                     f_8 = f_8 - (ufloat_t)(2.0)*(ufloat_t)(0.027777777777778)*(ufloat_t)(3.0)*cdotu;

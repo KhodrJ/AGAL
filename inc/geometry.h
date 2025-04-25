@@ -59,8 +59,12 @@ class Geometry
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
 	float           Ly                      = 1.0F;         ///< Length of domain in y-axis as a fraction of @ref Lx.
 	float           Lz                      = 1.0F;         ///< Length of domain in z-axis as a fraction of @ref Lx.
+	int             Nx                      = 1;            ///< Number of cells along x-axis of domain.
+	ufloat_g_t      dx                      = 1.0;          ///< Spatial step.
+	int             MAX_LEVELS_WALL         = 1;            ///< Maximum number of grids for the domain boundary alone.          
 	ufloat_g_t      G_NEAR_WALL_DISTANCE    = 1;            ///< The near-wall distance for refinement.
-	int             n_bins                  = 1;            ///< Number of bins to use.
+	int             n_bins_v                = 1;            ///< Number of bins to use for voxelization.
+	int             n_bins_b                = 1;            ///< Number of bins to use for enforcing boundary conditions.
 	int             G_LOADTYPE              = 0;            ///< The type of load to perform [0: from and STL file, 1: from the txt file].
 	int             G_PRINT                 = 0;            ///< Indicates if the geometry should be printed in STL format after processing.
 	int             G_BIN_DENSITY           = 1;            ///< The number of bins to divide the geometry surface.
@@ -74,7 +78,6 @@ class Geometry
 	// o====================================================================================
 	
 	//! Number of nodes.
-	//int             n_nodes[N_DEV];
 	int             *n_nodes = new int[N_DEV];
 	
 	//! Number of vertices rounded to 32 for alignment.
@@ -98,14 +101,23 @@ class Geometry
 	//! Array of geometry face attributes attributes.
 	ufloat_g_t      **geom_ID_face_attr = new ufloat_g_t*[N_DEV];
 	
-	int **bin_indicators = new int*[N_DEV];
-	int **c_bin_indicators = new int*[N_DEV];
-	int **binned_face_ids = new int*[N_DEV];
-	int **binned_face_ids_n = new int*[N_DEV];
-	int **binned_face_ids_N = new int*[N_DEV];
-	int **c_binned_face_ids = new int*[N_DEV];
-	int **c_binned_face_ids_n = new int*[N_DEV];
-	int **c_binned_face_ids_N = new int*[N_DEV];
+	int **bin_indicators_v = new int*[N_DEV];
+	int **binned_face_ids_v = new int*[N_DEV];
+	int **binned_face_ids_n_v = new int*[N_DEV];
+	int **binned_face_ids_N_v = new int*[N_DEV];
+	int **c_bin_indicators_v = new int*[N_DEV];
+	int **c_binned_face_ids_v = new int*[N_DEV];
+	int **c_binned_face_ids_n_v = new int*[N_DEV];
+	int **c_binned_face_ids_N_v = new int*[N_DEV];
+	
+	int **bin_indicators_b = new int*[N_DEV];
+	int **binned_face_ids_b = new int*[N_DEV];
+	int **binned_face_ids_n_b = new int*[N_DEV];
+	int **binned_face_ids_N_b = new int*[N_DEV];
+	int **c_bin_indicators_b = new int*[N_DEV];
+	int **c_binned_face_ids_b = new int*[N_DEV];
+	int **c_binned_face_ids_n_b = new int*[N_DEV];
+	int **c_binned_face_ids_N_b = new int*[N_DEV];
 	
 	std::vector<ufloat_g_t>     v_geom_f_node_X;
 	std::vector<ufloat_g_t>     v_geom_f_node_Y;
@@ -158,6 +170,7 @@ class Geometry
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
 	int G_MakeBins(int i_dev);
+	int G_MakeBins3D(int i_dev);
 	
 	int G_AddBoundingBox(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz);
 	int G_AddRectangle(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by);

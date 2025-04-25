@@ -106,7 +106,7 @@ __global__
 void Cu_UpdateBoundaries
 (
 	int id_max_curr, int n_maxcblocks,
-	int *cblock_ID_nbr, int *cblock_ID_nbr_child, int *cblock_ID_onb
+	int *cblock_ID_nbr, int *cblock_ID_nbr_child, int *cblock_ID_mask, int *cblock_ID_onb
 )
 {
 	constexpr int N_Q_max = AP->N_Q_max;
@@ -116,7 +116,9 @@ void Cu_UpdateBoundaries
 	{
 		int nbr_kap_p = 0;
 		int block_on_boundary = 0;
-
+		int block_mask = cblock_ID_mask[kap];
+		//int i_kap_bc = cblock_ID_nbr_child[kap];
+		
 		for (int p = 1; p < N_Q_max; p++)
 		{
 			nbr_kap_p = cblock_ID_nbr[kap + p*n_maxcblocks];
@@ -127,6 +129,8 @@ void Cu_UpdateBoundaries
 					block_on_boundary = 1;
 			}
 		}
+		if (block_mask == V_BLOCKMASK_SOLIDA)
+			block_on_boundary = 1;
 		
 		cblock_ID_onb[kap] = block_on_boundary;
 	}
@@ -931,7 +935,7 @@ void Cu_UpdateMasks_1
 {
 	constexpr int N_Q_max = AP->N_Q_max;
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	int mask_ID = 0;
+	int mask_ID = V_BLOCKMASK_REGULAR;
 	
 	if (kap < id_max_curr && cblock_ID_ref[kap] != V_REF_ID_INACTIVE)
 	{
@@ -944,11 +948,11 @@ void Cu_UpdateMasks_1
 			{
 				// Focus only on N_SKIPID, other negative values represent domain boundaries which don't require masks.
 				if (cblock_ID_nbr_child[kap + p*n_maxcblocks] == N_SKIPID)
-					mask_ID = 1;
+					mask_ID = V_BLOCKMASK_INTERFACE;
 			}
 		}
 		
-		if (cblock_ID_mask[kap] > -2)
+		if (cblock_ID_mask[kap] > -1)
 			cblock_ID_mask[kap] = mask_ID;
 	}
 }
@@ -2309,7 +2313,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
 			Cu_ConcatReverse<<<(M_BLOCK+n_rem_levels_L_prev-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
 				n_gaps[i_dev] - N_CHILDREN*n_ids_marked_refine, c_gap_set[i_dev], n_rem_levels_L_prev, c_tmp_5[i_dev]
 			);
+			//std::cout << "Ngaps updated from " << n_gaps[i_dev] << " to ";
 			n_gaps[i_dev] += n_rem_levels_L_prev;
+			//std::cout << n_gaps[i_dev] << " after removals." << std::endl;
 			
 			gpuErrchk( cudaPeekAtLastError() );
 			Cu_CoarsenCells_S2<AP> <<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
@@ -2369,7 +2375,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
 				}
 				n_new_levels_L_prev += n_new_levels_L;
 			}
+			//std::cout << "Ngaps updated from " << n_gaps[i_dev] << " to ";
 			n_gaps[i_dev] -= N_CHILDREN*n_ids_marked_refine;
+			//std::cout << n_gaps[i_dev] << " after insertions." << std::endl;
 		}
 #if (P_SHOW_REFINE==1)
 		cudaDeviceSynchronize();
@@ -2438,7 +2446,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
 			// Update boundary information.
 			Cu_UpdateBoundaries<AP> <<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
 				id_max[i_dev][MAX_LEVELS], n_maxcblocks,
-				c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev]
+				c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_onb[i_dev]
 			);
 			gpuErrchk( cudaPeekAtLastError() );
 			
@@ -2449,7 +2457,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
 			);
 			gpuErrchk( cudaPeekAtLastError() );
 		}
-		n_gaps[i_dev] -= N_CHILDREN*n_ids_marked_refine;
 #if (P_SHOW_REFINE==1)
 		cudaDeviceSynchronize();
 		tmp_time = toc_simple("[S8]",T_US);

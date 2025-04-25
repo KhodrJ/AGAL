@@ -335,6 +335,23 @@ void Cu_FillLinear(int N, T *arr)
 	}
 }
 
+template <class T>
+int DebugPrintDeviceArray(int N, T *d_arr)
+{
+	// Allocate memory for host array, copy device array data to it.
+	T *h_arr = new T[N];
+	gpuErrchk( cudaMemcpy(h_arr, d_arr, N*sizeof(T), cudaMemcpyDeviceToHost) );
+	
+	// Print data to console.
+	std::cout << "DEBUG: ";
+	for (int k = 0; k < N; k++)
+		std::cout << h_arr[k] << " ";
+	std::cout << std::endl;
+	
+	// Free memory of temporary host array.
+	delete[] h_arr;
+}
+
 template <class T> __device__ __forceinline__ T Tabs(T a);
 template <> __device__ __forceinline__ int Tabs(int a) { return abs(a); }
 template <> __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }

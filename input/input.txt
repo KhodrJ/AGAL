@@ -9,19 +9,19 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              128
-N_ITER_TOTAL                    32
+Nx                              512
+N_ITER_TOTAL                    151*Nx
 
 # GEOMETRY
-G_FILENAME                      monkey.stl
+G_FILENAME                      bunny.stl
 G_LOADTYPE                      1
 G_PRINT                         1
-G_NEAR_WALL_DISTANCE            0.05
-G_BIN_DENSITY                   8
+G_NEAR_WALL_DISTANCE            0.1
+G_BIN_DENSITY                   16
 G_BIN_FRAC                      1
 
 # SOLVER
-v0                              0.1e-4
+v0                              1.5625e-5
 s1                              1
 s2                              1
 s3                              1.7
@@ -35,8 +35,8 @@ S_AVERAGE                       0
 S_CRITERION                     0
 
 # REFINEMENT
-P_REFINE                        32000*Nx
-N_REFINE_START                  -3
+P_REFINE                        32
+N_REFINE_START                  -2
 N_REFINE_INC                    1
 N_REFINE_MAX                    1
 
@@ -45,9 +45,9 @@ N_PROBE                         0
 N_PROBE_DENSITY                 4
 N_PROBE_FREQUENCY               32
 V_PROBE_TOL                     1e-4
-N_PROBE_FORCE                   0
-N_PROBE_F_FREQUENCY             16
-N_PROBE_F_START                 140*Nx
+N_PROBE_FORCE                   1
+N_PROBE_F_FREQUENCY             32
+N_PROBE_F_START                 0
 N_PROBE_AVE                     0
 N_PROBE_AVE_FREQUENCY           1
 N_PROBE_AVE_START               200*Nx
@@ -56,9 +56,9 @@ N_PROBE_AVE_START               200*Nx
 I_DIR_NAME                      ../input/
 P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  1
-N_PRINT_LEVELS_LEGACY           2
+N_PRINT_LEVELS_LEGACY           3
 N_OUTPUT_START                  0*Nx
-P_OUTPUT                        32
+P_OUTPUT                        151*Nx
 
 # RENDERING
 VOL_I_MIN                       0

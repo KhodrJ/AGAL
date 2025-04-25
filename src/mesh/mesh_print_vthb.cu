@@ -85,10 +85,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 			
 			// Define VTK arrays.
 				// Debug.
-			vtkNew<vtkDoubleArray> data_kap_dbg;
-			data_kap_dbg->SetName("debug - ref ID");
-			data_kap_dbg->SetNumberOfComponents(1);
-			data_kap_dbg->SetNumberOfTuples(M_CBLOCK);
+			vtkNew<vtkDoubleArray> data_kap_ref;
+			data_kap_ref->SetName("Ref ID");
+			data_kap_ref->SetNumberOfComponents(1);
+			data_kap_ref->SetNumberOfTuples(M_CBLOCK);
+				// Debug.
+			vtkNew<vtkDoubleArray> data_kap_onb;
+			data_kap_onb->SetName("On Boundary?");
+			data_kap_onb->SetNumberOfComponents(1);
+			data_kap_onb->SetNumberOfTuples(M_CBLOCK);
 				// Cell mask.
 			vtkNew<vtkDoubleArray> data_kap_mask_cell;
 			data_kap_mask_cell->SetName("Cell Mask");
@@ -149,12 +154,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 					int i_global = (I_kap+4*Q_I_kap) + (4*Nqx)*(J_kap+4*Q_J_kap) + (4*Nqx)*(4*Nqx)*(K_kap+4*Q_K_kap);
 					
 					// Debug.
-					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_ref[i_dev][i_kap]);
+					data_kap_ref->SetTuple1(i_global, (double)cblock_ID_ref[i_dev][i_kap]);
 					//data_kap_dbg->SetTuple1(i_global, (double)cells_ID_mask[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i]);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_onb[i_dev][i_kap]);
-					data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_mask[i_dev][i_kap]);
+					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_ID_mask[i_dev][i_kap]);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)min_nbr_id);
 					//data_kap_dbg->SetTuple1(kap_i+i_Q*M_TBLOCK, (double)cblock_f_X[i_dev][i_kap + 0*n_maxcblocks] + (kap_i + 0.5)*dx);
+					
+					// On boundary?
+					data_kap_onb->SetTuple1(i_global, (double)cblock_ID_onb[i_dev][i_kap]);
 					
 					// Cell mask.
 					data_kap_mask_cell->SetTuple1(i_global, (double)cells_ID_mask[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i]);
@@ -194,7 +202,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 					);
 				}
 			}
-			grid_kap->GetCellData()->AddArray(data_kap_dbg);
+			grid_kap->GetCellData()->AddArray(data_kap_ref);
+			grid_kap->GetCellData()->AddArray(data_kap_onb);
 			grid_kap->GetCellData()->AddArray(data_kap_mask_cell);
 			grid_kap->GetCellData()->AddArray(data_kap_mask_cblock);
 			grid_kap->GetCellData()->AddArray(data_kap_sc);

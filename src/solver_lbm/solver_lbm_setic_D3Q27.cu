@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Sat Mar 22 10:30:00 2025                                            */
+/*  Last Updated: Wed Apr 23 23:34:00 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -10,7 +10,7 @@
 #include "solver_lbm.h"
 #include "mesh.h"
 
-template <typename ufloat_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_SetInitialConditions_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int *id_set_idev_L,int *cells_ID_mask,ufloat_t *cells_f_F,ufloat_t *cblock_f_X,int *cblock_ID_mask,int *cblock_ID_onb,ufloat_t dx_L)
 {
@@ -103,7 +103,7 @@ void Cu_SetInitialConditions_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_ma
             f_24 = (ufloat_t)(-1.0);
             f_25 = (ufloat_t)(-1.0);
             f_26 = (ufloat_t)(-1.0);
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] > -1 )
+            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 )
             {
                 x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
                 y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
@@ -203,7 +203,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetInitialConditions_D3Q27(int i_de
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_SetInitialConditions_D3Q27<ufloat_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->dxf_vec[L]);
+		Cu_SetInitialConditions_D3Q27<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->dxf_vec[L]);
 	}
 
 	return 0;

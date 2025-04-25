@@ -68,7 +68,7 @@ else
 			// Evaluate criterion based on dist_min.
 			//    + '(cblock_ID_onb[i_kap] == 1)' only refines near boundary.
 			//    + 'dist_min <= (ufloat_t)(d_spec)/( (ufloat_t)(1<<L) )' refined by specified distance d_spec.
-			if (cblock_ID_nbr[i_kap + 1*n_maxcblocks] == -2) 
+			if (cblock_ID_nbr[i_kap + 1*n_maxcblocks] == -2)
 			//if (cblock_ID_onb[i_kap] == 1)
 			//if ( dist_min <= (ufloat_t)(0.2)/( (ufloat_t)(1<<L) ) )
 			//if (dist_min < dxb_L)

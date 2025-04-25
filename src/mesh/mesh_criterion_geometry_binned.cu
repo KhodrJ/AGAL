@@ -402,7 +402,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeRefCriteria_Geometry_Binned(int i_dev
 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L, MAX_LEVELS_WALL,
 				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
 				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2,
-				geometry->c_binned_face_ids_n[i_dev], geometry->c_binned_face_ids_N[i_dev], geometry->c_binned_face_ids[i_dev], geometry->G_BIN_DENSITY, geometry->n_bins
+				geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY, geometry->n_bins_v
 			);
 			for (int j = 0; j < N_prop; j++)
 			{

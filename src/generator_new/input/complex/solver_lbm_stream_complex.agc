@@ -33,6 +33,7 @@ KERNEL_REQUIRE int *cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
 # Kernel definition.
 #
 
+# Declarations.
 REG constexpr int Nqx = AP->Nqx;
 REG constexpr int M_TBLOCK = AP->M_TBLOCK;
 REG constexpr int M_CBLOCK = AP->M_CBLOCK;
