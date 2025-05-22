@@ -74,6 +74,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	if (N_DIM == 2) Nz = 1;
 	if (N_DIM == 2) Nxi[2] = 1;
 	MAX_LEVELS = std::max({MAX_LEVELS_WALL,MAX_LEVELS_INTERIOR});
+	if (MAX_LEVELS == 1)
+		N_LEVEL_START = 0;
 	if (N_LEVEL_START > MAX_LEVELS-1)
 		N_LEVEL_START = MAX_LEVELS-1;
 	if (N_PRINT_LEVELS > MAX_LEVELS)
@@ -148,10 +150,17 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	n_maxcells = (long int)free_t*M_FRAC / N_bytes_pc;
 	n_maxcells = ((n_maxcells + M_RNDOFF/2) / M_RNDOFF) * M_RNDOFF;
 	n_maxcblocks = n_maxcells / M_CBLOCK;
+	double cell_usage = 100.0*(double)(Nxi[0]*Nxi[1]*Nxi[2])/(double)n_maxcells;
+	if (cell_usage >= 100.00)
+	{
+		std::cout << "ERROR: Root grid size exceeds limits..." << std::endl;
+		exit(1);
+	}
 	std::cout << "[-] Before allocations:\n";
 	std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
 	std::cout << "    Free bytes: " << free_t << ", Maximum number of cells: " << n_maxcells << ", Maximum number of cell blocks: " << n_maxcblocks << std::endl;
-	std::cout << "    Calculated bytes required per cell: " << N_bytes_pc << std::endl << std::endl;
+	std::cout << "    Calculated bytes required per cell: " << N_bytes_pc << std::endl;
+	std::cout << "    Root grid usage: " << cell_usage << " %" << std::endl << std::endl;
 	
 	
 	// Allocate CPU memory.
@@ -553,6 +562,16 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AddGeometry(Geometry<ufloat_t,ufloat_g_t,AP>
 	geometry = geometry_;
 	geometry->mesh = this;
 	geometry_init = 1;
+	
+	return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_AddSolver(Solver<ufloat_t,ufloat_g_t,AP> *solver_)
+{
+	solver = solver_;
+	solver->mesh = this;
+	solver_init = 1;
 	
 	return 0;
 }

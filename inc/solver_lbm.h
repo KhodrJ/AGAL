@@ -94,6 +94,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	// Input parameters.
 	int        S_INTERP;                ///< Indicates type of interpolation (0 for linear, 1 for cubic).
 	int        S_LES;                   ///< Indicates the turbulence model to employ during collision.
+	int        S_FORCE_TYPE;            ///< Indicates the order of accuracy for the momentum exchange algorithm.
 	int        S_CRITERION;             ///< Indicates refinement criterion (0 for |w|, 1 for Q).
 	int        V_INTERP_ADVANCE;        ///< Controls interpolation parameters.
 	int        V_AVERAGE_ADVANCE;       ///< Controls averaging parameters.
@@ -226,6 +227,16 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collide_TRT_Interpolate_Cubic_D2Q9(int i_dev, int L); // TODO
 	int S_Collide_MRT_Interpolate_Linear_D2Q9(int i_dev, int L); // TODO
 	int S_Collide_MRT_Interpolate_Cubic_D2Q9(int i_dev, int L); // TODO
+	
+	// DEBUG: Draw geometry.
+	int S_Debug_DrawGeometry_D2Q9(int i_dev, int L);
+	int S_Debug_DrawGeometry_D3Q19(int i_dev, int L);
+	int S_Debug_DrawGeometry_D3Q27(int i_dev, int L);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D3Q27(i_dev, L); return 0; }
+	
+	
 	
 	Solver_LBM(Mesh<ufloat_t,ufloat_g_t,AP> *mesh_, std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str) : Solver<ufloat_t,ufloat_g_t,AP>(mesh_, params_int, params_dbl, params_str)
 	{

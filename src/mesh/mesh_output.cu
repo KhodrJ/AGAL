@@ -233,13 +233,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ReportForces(int i_dev, int L, int iter, dou
 		double Fx = factor*(Fpx - Fmx);
 		double Fy = factor*(Fpy - Fmy);
 		double Fz = factor*(Fpz - Fmz);
-		double Dp = 1.0/64.0;
-		double uin = 0.1;
-		std::cout << "Fx: " << Fx << std::endl;
-		std::cout << "Fy: " << Fy << std::endl;
-		std::cout << "Fz: " << Fz << std::endl;
+		double Dp = 1.0/32.0;
+		double uin = 0.05;
+		//std::cout << "Fx: " << Fx << std::endl;
+		//std::cout << "Fy: " << Fy << std::endl;
+		//std::cout << "Fz: " << Fz << std::endl;
 		std::cout << "Report:" << std::endl;
-		std::cout << "CD: " << 2.0*Fx / (uin*uin*(Dp)) << std::endl;
+		std::cout << "CD: " << 2.0*Fx / (uin*uin*(Dp)) << "   " << 8.0*Fx / (uin*uin*(M_PI*Dp*Dp)) << std::endl;
 		std::cout << "CL: " << 2.0*Fy / (uin*uin*(Dp)) << std::endl;
 		to.force_printer << iter << " " << t << " " << 2.0*Fx / (uin*uin*(Dp)) << " " << 2.0*Fy / (uin*uin*(Dp)) << std::endl;
 	}

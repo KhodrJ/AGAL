@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Thu Apr 24 00:18:57 2025                                            */
+/*  Last Updated: Wed May 21 21:47:54 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask)
+void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb_solid,bool geometry_init)
 {
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
@@ -47,8 +47,10 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
     int nbr_17 __attribute__((unused)) = -1;
     int nbr_18 __attribute__((unused)) = -1;
     int valid_block = 0;
+    int valid_mask = 0;
     ufloat_t F_p = (ufloat_t)0.0;
     ufloat_t F_pb = (ufloat_t)0.0;
+    ufloat_g_t dQ = (ufloat_g_t)(-1.0);
     s_ID_cblock[threadIdx.x] = -1;
     if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
     {
@@ -90,12 +92,17 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             nbr_16 = cblock_ID_nbr[i_kap_b + 16*n_maxcblocks];
             nbr_17 = cblock_ID_nbr[i_kap_b + 17*n_maxcblocks];
             nbr_18 = cblock_ID_nbr[i_kap_b + 18*n_maxcblocks];
+            valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+            if (geometry_init && valid_mask == -2)
+                valid_block = cblock_ID_onb_solid[i_kap_b];
             
             //
             // DDF 1
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 1*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 1;
@@ -118,7 +125,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells] = F_pb;
@@ -129,6 +136,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 3*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 0;
@@ -151,7 +160,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells] = F_pb;
@@ -162,6 +171,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 5*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 0;
@@ -184,7 +195,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells] = F_pb;
@@ -195,6 +206,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 7*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 1;
@@ -224,7 +237,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells] = F_pb;
@@ -235,6 +248,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 9*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 1;
@@ -264,7 +279,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells] = F_pb;
@@ -275,6 +290,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 11*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 0;
@@ -304,7 +321,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells] = F_pb;
@@ -315,6 +332,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 13*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 1;
@@ -344,7 +363,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells] = F_pb;
@@ -355,6 +374,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 15*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 1;
@@ -384,7 +405,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells] = F_pb;
@@ -395,6 +416,8 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
             //
             // Load DDFs in current cells.
             F_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells];
+            if (valid_mask == -2)
+                dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + 17*n_maxcells_b];
             
             // Compute neighbor cell indices.
             Ip = I + 0;
@@ -424,7 +447,7 @@ void Cu_Stream_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblo
                 F_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
             
             // Exchange, if applicable.
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 && F_pb>=0 )
+            if ( valid_mask != -1 && F_pb>=0 && dQ < 0)
             {
                 cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells] = F_p;
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells] = F_pb;
@@ -439,7 +462,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream_Original_D3Q19(int i_dev, in
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_Stream_Original_D3Q19<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
+		Cu_Stream_Original_D3Q19<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->geometry_init);
 	}
 
 	return 0;

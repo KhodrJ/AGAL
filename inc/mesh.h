@@ -50,6 +50,7 @@ constexpr int V_SOLVER_LBM_TRT               = 1;
 constexpr int V_SOLVER_LBM_MRT               = 2;
 
 #include "structs.h"
+#include "custom.h"
 #include "util.h"
 
 
@@ -573,6 +574,12 @@ class Mesh
 	    @param geometry is the geometry object.
 	*/
 	int             M_AddGeometry(Geometry<ufloat_t,ufloat_g_t,AP> *geometry);
+	
+	//! Add a solver.
+	/*! Add a pointer to the solver object.
+	    @param solver is the solver object.
+	*/
+	int             M_AddSolver(Solver<ufloat_t,ufloat_g_t,AP> *solver);
 	
 	//! Recursively traverses the hierarchy for printing..
 	/*! Starting from a block on the root grid, the hierarchy is traversed. Cells of leaf blocks are printed while branches are traversed further.

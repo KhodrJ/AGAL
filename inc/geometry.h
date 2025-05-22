@@ -169,6 +169,7 @@ class Geometry
 	int G_Dest_Arrays_CoordsList(int i_dev);
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
+	int G_CoordList_MachineEps(int i_dev);
 	int G_MakeBins(int i_dev);
 	int G_MakeBins3D(int i_dev);
 	

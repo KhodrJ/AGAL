@@ -656,8 +656,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -690,8 +690,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -724,8 +724,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -758,8 +758,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -792,8 +792,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -826,8 +826,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -860,8 +860,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -894,8 +894,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -928,8 +928,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -962,8 +962,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -996,8 +996,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1030,8 +1030,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1064,8 +1064,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1098,8 +1098,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1132,8 +1132,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1166,8 +1166,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1200,8 +1200,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1234,8 +1234,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1268,8 +1268,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1302,8 +1302,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1336,8 +1336,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1370,8 +1370,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1404,8 +1404,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1438,8 +1438,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1472,8 +1472,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
-						tmp = (vxp)-(tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp)-(tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;
@@ -1506,8 +1506,8 @@ void Cu_IdentifyFaces
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);
-						tmp = (vxp+tmp);
-						if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+						tmpx = (vxp+tmp);
+						if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 						{
 							if (tmp < dist_p || dist_p < 0)
 							dist_p = tmp;

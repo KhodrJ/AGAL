@@ -27,6 +27,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Convert_IndexListsToCoordList(int i_dev)
 	// Now fill it with the index list data.
 	for (int j = 0; j < v_geom_ID_face_1.size(); j++)
 	{
+		// Load the current face and its vertices.
 		int f1 = v_geom_ID_face_1[j];
 		int f2 = v_geom_ID_face_2[j];
 		int f3 = v_geom_ID_face_3[j];

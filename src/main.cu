@@ -33,8 +33,8 @@
 #include "solver_lbm_init.cu"
 #include "solver_lbm_identify_faces.cu"
 //
-#define USED2Q9
-// #define USED3Q19
+// #define USED2Q9
+#define USED3Q19
 // #define USED3Q27
 //
 #ifdef USED2Q9
@@ -46,6 +46,7 @@
 	#include "solver_lbm_interp_linear_original_D2Q9.cu"
 	#include "solver_lbm_interp_cubic_original_D2Q9.cu"
 	#include "solver_lbm_average_original_D2Q9.cu"
+	#include "solver_lbm_debug_drawgeom_D2Q9.cu"
 #endif
 #ifdef USED3Q19
 	#include "solver_lbm_setic_D3Q19.cu"
@@ -56,6 +57,7 @@
 	#include "solver_lbm_interp_linear_original_D3Q19.cu"
 	#include "solver_lbm_interp_cubic_original_D3Q19.cu"
 	#include "solver_lbm_average_original_D3Q19.cu"
+	#include "solver_lbm_debug_drawgeom_D3Q19.cu"
 #endif
 #ifdef USED3Q27
 	#include "solver_lbm_setic_D3Q27.cu"
@@ -66,6 +68,7 @@
 	#include "solver_lbm_interp_linear_original_D3Q27.cu"
 	#include "solver_lbm_interp_cubic_original_D3Q27.cu"
 	#include "solver_lbm_average_original_D3Q27.cu"
+	#include "solver_lbm_debug_drawgeom_D3Q27.cu"
 #endif
 
 int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);
@@ -78,15 +81,16 @@ constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D_DEF, VS_D3Q27, 
 // Typedefs and chosen packs.
 typedef float REAL_s;
 typedef float REAL_g;
-constexpr ArgsPack APc = AP2D_DEF;
-constexpr LBMPack LPc = LP2D;
+constexpr ArgsPack APc = AP3D_DEF;
+constexpr LBMPack LPc = LP3D_1;
 
 
 int main(int argc, char *argv[])
 {
 	// Debug.
-	//size_t size = 5 * 1024 * 1024;
-	//cudaDeviceSetLimit(cudaLimitPrintfFifoSize, size);
+	// [-]   This block increases printf limit.
+	size_t size = 5 * 1024 * 1024;
+	cudaDeviceSetLimit(cudaLimitPrintfFifoSize, size);
 	
 	// Read input file and use map to make solver input.
 	std::string input_file_directory = "../input/";
@@ -121,7 +125,9 @@ int main(int argc, char *argv[])
 	
 	// Create a solver.
 	Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);
-	mesh.solver = &solver;
+	mesh.M_AddSolver(&solver);
+	//
+	//mesh.solver = &solver;
 	
 	// Solver loop (includes rendering and printing).
 	mesh.M_AdvanceLoop();

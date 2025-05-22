@@ -1712,21 +1712,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev],
 			geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY
 		);
-// 		Cu_MarkBlocks<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
-// 			id_max[i_dev][L], n_maxcblocks,
-// 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
-// 		);
-// 		for (int j = 0; j < 2; j++)
-// 		{
-// 			Cu_PropagateMarks_Alt_S1<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
-// 				id_max[i_dev][L], n_maxcblocks,
-// 				c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev]
-// 			);
-// 			Cu_PropagateMarks_Alt_S2<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
-// 				id_max[i_dev][L], n_maxcblocks,
-// 				c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev]
-// 			);
-// 		}
 		
 		Cu_MarkBlocks_Alt_S1<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
@@ -1736,10 +1721,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 		);
-// 		Cu_MarkBlocks_GetMasks<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
-// 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-// 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev]
-// 		);
 		for (int j = 0; j < Nprop; j++)
 		{
 			Cu_MarkBlocks_Alt_S3<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
@@ -1758,13 +1739,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 {
-	if (L == 0)
-	{
-		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
-	}
-	
 	if (n_ids[i_dev][L] > 0)
 	{
+		// Reset one of the intermediate arrays in preparation for copying.
+		if (L == 0)
+			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
+		
+		// Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
 		Cu_MarkBlocks_GetMasks<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],

@@ -78,21 +78,19 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 {
 	if (v_geom_f_face_1_X.size() > 0)
 	{
+		// Constants/
+		constexpr int N_DIM = AP->N_DIM;
+		ufloat_g_t odenom = (ufloat_g_t)1.0 / (ufloat_g_t)N_DIM;
+		ufloat_g_t eps;
+		if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
+		if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
+		
+		// Update tracker variable and face count.
 		init_coords_list = 1;
 		G_UpdateCounts(i_dev);
 		
 		std::cout << "[-] Initializing the CPU coords list array..." << std::endl;
 		geom_f_face_X[i_dev] = new ufloat_g_t[9*n_faces_a[i_dev]];
-// 		std::fill_n(geom_f_face_X[i_dev], 9*n_faces_a[i_dev], (ufloat_g_t)0.0);
-// 		std::copy(v_geom_f_face_1_X.begin(), v_geom_f_face_1_X.end(), &geom_f_face_X[i_dev][0*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_1_Y.begin(), v_geom_f_face_1_Y.end(), &geom_f_face_X[i_dev][1*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_1_Z.begin(), v_geom_f_face_1_Z.end(), &geom_f_face_X[i_dev][2*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_2_X.begin(), v_geom_f_face_2_X.end(), &geom_f_face_X[i_dev][3*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_2_Y.begin(), v_geom_f_face_2_Y.end(), &geom_f_face_X[i_dev][4*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_2_Z.begin(), v_geom_f_face_2_X.end(), &geom_f_face_X[i_dev][5*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_3_X.begin(), v_geom_f_face_3_X.end(), &geom_f_face_X[i_dev][6*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_3_Y.begin(), v_geom_f_face_3_Y.end(), &geom_f_face_X[i_dev][7*n_faces_a[i_dev]]);
-// 		std::copy(v_geom_f_face_3_Z.begin(), v_geom_f_face_3_Z.end(), &geom_f_face_X[i_dev][8*n_faces_a[i_dev]]);
 		
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
 		{
@@ -107,15 +105,73 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 			geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = 0.0;
 			if (j < n_faces[i_dev])
 			{
-				geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]] = v_geom_f_face_1_X[j];
-				geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]] = v_geom_f_face_1_Y[j];
-				geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]] = v_geom_f_face_1_Z[j];
-				geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]] = v_geom_f_face_2_X[j];
-				geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]] = v_geom_f_face_2_Y[j];
-				geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]] = v_geom_f_face_2_Z[j];
-				geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]] = v_geom_f_face_3_X[j];
-				geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]] = v_geom_f_face_3_Y[j];
-				geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = v_geom_f_face_3_Z[j];
+// 				geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]] = v_geom_f_face_1_X[j];
+// 				geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]] = v_geom_f_face_1_Y[j];
+// 				geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]] = v_geom_f_face_1_Z[j];
+// 				geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]] = v_geom_f_face_2_X[j];
+// 				geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]] = v_geom_f_face_2_Y[j];
+// 				geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]] = v_geom_f_face_2_Z[j];
+// 				geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]] = v_geom_f_face_3_X[j];
+// 				geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]] = v_geom_f_face_3_Y[j];
+// 				geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = v_geom_f_face_3_Z[j];
+				
+				ufloat_g_t vx1 = v_geom_f_face_1_X[j];
+				ufloat_g_t vy1 = v_geom_f_face_1_Y[j];
+				ufloat_g_t vz1 = v_geom_f_face_1_Z[j];
+				ufloat_g_t vx2 = v_geom_f_face_2_X[j];
+				ufloat_g_t vy2 = v_geom_f_face_2_Y[j];
+				ufloat_g_t vz2 = v_geom_f_face_2_Z[j];
+				ufloat_g_t vx3 = v_geom_f_face_3_X[j];
+				ufloat_g_t vy3 = v_geom_f_face_3_Y[j];
+				ufloat_g_t vz3 = v_geom_f_face_3_Z[j];
+				
+				ufloat_g_t vxc = odenom*(vx1 + vx2 + vx3);
+				ufloat_g_t vyc = odenom*(vy1 + vy2 + vy3);
+				ufloat_g_t vzc = odenom*(vz1 + vz2 + vz3);
+				ufloat_g_t vxe;
+				ufloat_g_t vye;
+				ufloat_g_t vze;
+				ufloat_g_t norm;
+				
+				// Vertex 1.
+				vxe = vx1 - vxc;
+				vye = vy1 - vyc;
+				vze = vz1 - vzc;
+				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
+				vxe /= norm; vye /= norm; vze /= norm;
+				vx1 = vx1 + eps*vxe;
+				vy1 = vy1 + eps*vye;
+				vz1 = vz1 + eps*vze;
+				
+				// Vertex 2.
+				vxe = vx2 - vxc;
+				vye = vy2 - vyc;
+				vze = vz2 - vzc;
+				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
+				vxe /= norm; vye /= norm; vze /= norm;
+				vx2 = vx2 + eps*vxe;
+				vy2 = vy2 + eps*vye;
+				vz2 = vz2 + eps*vze;
+				
+				// Vertex 3.
+				vxe = vx3 - vxc;
+				vye = vy3 - vyc;
+				vze = vz3 - vzc;
+				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
+				vxe /= norm; vye /= norm; vze /= norm;
+				vx3 = vx3 + eps*vxe;
+				vy3 = vy3 + eps*vye;
+				vz3 = vz3 + eps*vze;
+				
+				geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]] = vx1;
+				geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]] = vy1;
+				geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]] = vz1;
+				geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]] = vx2;
+				geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]] = vy2;
+				geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]] = vz2;
+				geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]] = vx3;
+				geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]] = vy3;
+				geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = vz3;
 			}
 		}
 		

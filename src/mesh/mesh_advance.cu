@@ -60,7 +60,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 	// If starting on a deeper level, but not uniform:
 	// - Refine the root grid to the deeper level.
 	// - Then, perform additional near-wall refinement starting on the deeper level.
-	if (MAX_LEVELS>1 && (MAX_LEVELS!=N_LEVEL_START+1))
+	//if (MAX_LEVELS>1 && (MAX_LEVELS!=N_LEVEL_START+1))
 	{
 		// Initial uniform refinement up to N_LEVEL_START. Initialize only this level.
 		for (int L = 0; L < N_LEVEL_START; L++)
@@ -69,7 +69,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 			M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
 			M_RefineAndCoarsenBlocks(0);
 		}
-		solver->S_SetIC(0,N_LEVEL_START);
+		//solver->S_SetIC(0,N_LEVEL_START);
 		
 		// Near-wall refinement, starting from N_LEVEL_START.
 		for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
@@ -95,12 +95,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 			}
 
 			// Invoke refinement and coarsening routine.
-			tic_simple("");
-			M_RefineAndCoarsenBlocks(0);
-			cudaDeviceSynchronize();
-			toc_simple("TIME (Refine)",T_US);
+			if (MAX_LEVELS > 1)
+			{
+				tic_simple("");
+				M_RefineAndCoarsenBlocks(0);
+				cudaDeviceSynchronize();
+				toc_simple("TIME (Refine)",T_US);
+			}
 			
-			std::cout << "(Refine and coarsen time: " << toc_simple("",T_US,0) << std::endl;;
+			//std::cout << "(Refine and coarsen time: " << toc_simple("",T_US,0) << std::endl;;
 			solver->S_SetIC(0,L);
 			cudaDeviceSynchronize();
 		}
@@ -136,23 +139,25 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 		}
 		
 		// Freeze mesh: these new near-wall cells are not eligible for coarsening.
-		M_FreezeRefinedCells(0);
+		if (MAX_LEVELS > 1)
+			M_FreezeRefinedCells(0);
+		//solver->S_Debug(0,0,0);
 	}
 	
 	// If starting on a deeper level, but uniform:
 	// - Refine only to the deeper level.
 	// - Do not refine further.
-	if (MAX_LEVELS>1 && (MAX_LEVELS==N_LEVEL_START+1))
-	{
-		// Uniform refinement up to N_LEVEL_START. Initialize only this level.
-		for (int L = 0; L < MAX_LEVELS-1; L++)
-		{
-			std::cout << "Refining to get to starting level [L=" << L << "]..." << std::endl;
-			M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
-			M_RefineAndCoarsenBlocks(0);
-		}
-		solver->S_SetIC(0,N_LEVEL_START);
-	}
+// 	if (MAX_LEVELS==N_LEVEL_START+1)
+// 	{
+// 		// Uniform refinement up to N_LEVEL_START. Initialize only this level.
+// 		for (int L = 0; L < MAX_LEVELS-1; L++)
+// 		{
+// 			std::cout << "Refining to get to starting level [L=" << L << "]..." << std::endl;
+// 			M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
+// 			M_RefineAndCoarsenBlocks(0);
+// 		}
+// 		solver->S_SetIC(0,N_LEVEL_START);
+// 	}
 	
 	return 0;
 }

@@ -12,6 +12,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 	v0                                     = params_dbl["v0"];
 	S_CRITERION                            = params_int["S_CRITERION"];
 	S_LES                                  = params_int["S_LES"];
+	S_FORCE_TYPE                           = params_int["S_FORCE_TYPE"];
 // 	S_LES_P1                               = params_dbl["S_LES_P1"]; // TODO
 // 	S_LES_P2                               = params_dbl["S_LES_P2"]; // TODO
 // 	S_LES_P3                               = params_dbl["S_LES_P3"]; // TODO

@@ -49,6 +49,7 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 		{"S_AVERAGE",               0},
 		{"S_CRITERION",             0},
 		{"S_LES",                   0},
+		{"S_FORCE_TYPE",            0},
 		{"P_REFINE",                32},
 		{"N_PROBE",                 0},
 		{"N_PROBE_DENSITY",         4},

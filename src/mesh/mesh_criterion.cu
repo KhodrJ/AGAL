@@ -34,86 +34,41 @@ void Cu_ComputeRefCriteria_NearWall_Cases
 		// Evaluate only if current cell-block is not refined already.
 		if (cblock_ID_ref[i_kap] == V_REF_ID_UNREFINED)
 		{
-			// Get the coordinates of the block.
-			ufloat_t x_k_plus __attribute__((unused)) = cblock_f_X[i_kap + 0*n_maxcblocks] + (ufloat_t)(0.5)*dxb_L;
-			ufloat_t y_k_plus __attribute__((unused)) = cblock_f_X[i_kap + 1*n_maxcblocks] + (ufloat_t)(0.5)*dxb_L;
-			ufloat_t z_k_plus __attribute__((unused)) = cblock_f_X[i_kap + 2*n_maxcblocks] + (ufloat_t)(0.5)*dxb_L;
+			// Get the bounding box of the block.
+			ufloat_t x_k __attribute__((unused)) = cblock_f_X[i_kap + 0*n_maxcblocks] + (ufloat_t)1e-5;
+			ufloat_t y_k __attribute__((unused)) = cblock_f_X[i_kap + 1*n_maxcblocks] + (ufloat_t)1e-5;
+			ufloat_t z_k __attribute__((unused)) = cblock_f_X[i_kap + 2*n_maxcblocks] + (ufloat_t)1e-5;
+			ufloat_t x_kp __attribute__((unused)) = cblock_f_X[i_kap + 0*n_maxcblocks] + dxb_L - (ufloat_t)1e-5;
+			ufloat_t y_kp __attribute__((unused)) = cblock_f_X[i_kap + 1*n_maxcblocks] + dxb_L - (ufloat_t)1e-5;
+			ufloat_t z_kp __attribute__((unused)) = cblock_f_X[i_kap + 2*n_maxcblocks] + dxb_L - (ufloat_t)1e-5;
 			
 			
+			// Identify if in custom region, if it is specified.
+			int onb = cblock_ID_onb[i_kap];
+			int nbr_1 = cblock_ID_nbr[i_kap + 1*n_maxcblocks];
+			int nbr_2 = cblock_ID_nbr[i_kap + 2*n_maxcblocks];
+			int nbr_3 = cblock_ID_nbr[i_kap + 3*n_maxcblocks];
+			int nbr_4 = cblock_ID_nbr[i_kap + 4*n_maxcblocks];
+			int nbr_5 = N_SKIPID;
+			int nbr_6 = N_SKIPID;
+			if (N_DIM==3)
+			{
+				nbr_5 = cblock_ID_nbr[i_kap + 5*n_maxcblocks];
+				nbr_6 = cblock_ID_nbr[i_kap + 6*n_maxcblocks];
+			}
+			bool C = Cu_RefineRegion<ufloat_t>(L,x_k,y_k,z_k,x_kp,y_kp,z_kp,onb,nbr_1,nbr_2,nbr_3,nbr_4,nbr_5,nbr_6);
 			
-// #if (N_CASE==0 || N_CASE==2)
-			// Loop over cavity walls and identify the closest one.
-			// If this closest wall is within a certain threshhold, mark for refinement.
-			ufloat_t dist_min __attribute__((unused)) = (ufloat_t)(1.0);
-			ufloat_t dist_tmp __attribute__((unused)) = (ufloat_t)(1.0);
-				// xM
-			//dist_min = x_k_plus - (ufloat_t)(0.0);
-				// xP
-			//dist_tmp = (ufloat_t)(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-if (N_DIM==2)
-{
-				// yM
-			//dist_tmp = y_k_plus - (ufloat_t)(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yP
-			//dist_tmp = (ufloat_t)(1.0) - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-}
-else
-{
-				// zM
-			//dist_tmp = z_k_plus - (ufloat_t)(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// zP
-			//dist_tmp = (ufloat_t)(1.0) - z_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-}
 			
 			// Evaluate criterion based on dist_min.
 			//    + '(cblock_ID_onb[i_kap] == 1)' only refines near boundary.
 			//    + 'dist_min <= (ufloat_t)(d_spec)/( (ufloat_t)(1<<L) )' refined by specified distance d_spec.
-			if (cblock_ID_nbr[i_kap + 1*n_maxcblocks] == -2)
+			//if (cblock_ID_nbr[i_kap + 1*n_maxcblocks] == -2 || C)
 			//if (cblock_ID_onb[i_kap] == 1)
 			//if ( dist_min <= (ufloat_t)(0.2)/( (ufloat_t)(1<<L) ) )
 			//if (dist_min < dxb_L)
+			
+			if (C)
 				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-// #endif
-			
-			
-			
-#if (N_CASE==1)	
-if (N_DIM==2)
-{
-			ufloat_t D = (ufloat_t)(1.0)/(ufloat_t)(32.0);
-			ufloat_t rad = (ufloat_t)(2.5)*D/( (ufloat_t)(1<<L) ); // Old value was 1.5
-			//if (x_k_plus >= (ufloat_t)(0.3125)-(ufloat_t)(0.5)*D - rad   &&   x_k_plus <= (ufloat_t)(0.3125)+(ufloat_t)(0.5)*D + rad   &&   y_k_plus >= (ufloat_t)(0.5)*(ufloat_t)(1.0)-(ufloat_t)(0.5)*D - rad   &&   y_k_plus <= (ufloat_t)(0.5)*(ufloat_t)(1.0)+(ufloat_t)(0.5)*D + rad)
-			if (x_k_plus >= (ufloat_t)(0.3125)-(ufloat_t)(0.5)*D - rad  &&   y_k_plus >= (ufloat_t)(0.5)*(ufloat_t)(1.0)-(ufloat_t)(0.5)*D - rad   &&   y_k_plus <= (ufloat_t)(0.5)*(ufloat_t)(1.0)+(ufloat_t)(0.5)*D + rad)
-				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-			
-			
-			
-			ufloat_t dist_min = (ufloat_t)(1.0);
-			ufloat_t dist_tmp = (ufloat_t)(1.0);
-				// xM
-			//dist_min = x_k_plus - (ufloat_t)(0.0);
-				// xP
-			dist_tmp = (ufloat_t)(1.0) - x_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yM
-			//dist_tmp = y_k_plus - (ufloat_t)(0.0); if (dist_min > dist_tmp) dist_min = dist_tmp;
-				// yP
-			//dist_tmp = L_fy - y_k_plus; if (dist_min > dist_tmp) dist_min = dist_tmp;
-			
-			// Evaluate criterion based on dist_min. (old value 0.05).
-			//if ( dist_min <= (ufloat_t)(0.05)/( (ufloat_t)(1<<L) )  ||  cblock_ID_onb[i_kap]==1 )
-			if (cblock_ID_onb[i_kap] == 1)
-				cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-}
-#endif	
-			
-			
-			
-			
-			// DEBUG
-			//if (L == 0 && x_k_plus > (ufloat_t)(0.3) && x_k_plus < (ufloat_t)(0.7) && y_k_plus > (ufloat_t)(0.3) && y_k_plus < (ufloat_t)(0.7) && z_k_plus > (ufloat_t)(0.3) && z_k_plus < (ufloat_t)(0.8))
-			//	cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
-			//if (L == 0 && x_k_plus > (ufloat_t)(0.3) && x_k_plus < (ufloat_t)(0.7) && y_k_plus > (ufloat_t)(0.3) && y_k_plus <= (ufloat_t)(0.85))
-			//	cblock_ID_ref[i_kap] = V_REF_ID_MARK_REFINE;
 		}
 	}
 }

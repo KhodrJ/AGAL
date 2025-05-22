@@ -223,8 +223,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Debug(int i_dev, int L, int var)
 {
-	S_Collide(i_dev, L);
-	S_Stream(i_dev, L);
+	S_Debug_DrawGeometry(i_dev, L);
 	
 	return 0;
 }
