@@ -171,7 +171,9 @@ class Geometry
 	int G_Convert_CoordListToIndexLists(int i_dev);
 	int G_CoordList_MachineEps(int i_dev);
 	int G_MakeBins(int i_dev);
+	int G_DrawBinsAndFaces(int i_dev);
 	int G_MakeBins3D(int i_dev);
+	int G_DrawBinsAndFaces3D(int i_dev);
 	
 	int G_AddBoundingBox(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz);
 	int G_AddRectangle(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by);

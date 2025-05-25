@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Wed May 14 02:22:45 2025                                            */
+/*  Last Updated: Sat May 24 06:03:37 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -134,7 +134,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -145,7 +145,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -168,7 +168,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -179,7 +179,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -202,7 +202,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -213,7 +213,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(-1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -236,7 +236,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -247,7 +247,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(-1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(-1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -270,7 +270,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -281,7 +281,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(-1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -304,7 +304,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000),z,z+dist_p*(1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -315,7 +315,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000),z,z+dist_p*(-1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -338,7 +338,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(-1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(-1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -349,7 +349,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(1.000000000000000),z,z+dist_p*(0.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -372,7 +372,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(-1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -383,7 +383,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(-1.000000000000000),y,y+dist_p*(0.000000000000000),z,z+dist_p*(1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -406,7 +406,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(1.000000000000000),z,z+dist_p*(-1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -417,7 +417,7 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     if (dist_p > 0)
                     {
                         near_geom = true;
-                        printf("plot([%17.15f %17.15f],[%17.15f %17.15f], 'k-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000));
+                        printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f], 'b-');\n", x,x+dist_p*(0.000000000000000),y,y+dist_p*(-1.000000000000000),z,z+dist_p*(1.000000000000000));
                     }
                     if (dist_p >= dx_L)
                     {
@@ -425,13 +425,14 @@ void Cu_Debug_DrawGeometry_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
                     }
                 }
                 
-                if (near_geom)
+                if (valid_mask == -2)
                 {
-                    printf("plot(%17.15f,%17.15f,'k*');\n",x,y);
-                    printf("plot([%17.15f %17.15f %17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f %17.15f %17.15f],'k-');\n",
-                    x-dx_L/2.0,x+dx_L/2.0,x+dx_L/2.0,x-dx_L/2.0,x-dx_L/2.0,
-                    y-dx_L/2.0,y-dx_L/2.0,y+dx_L/2.0,y+dx_L/2.0,y-dx_L/2.0
-                    );
+                    printf("plot3(%17.15f,%17.15f,%17.5f,'k*');\n",x,y,z);
+                }
+                else
+                {
+                    if (valid_mask == -1)
+                        printf("plot3(%17.15f,%17.15f,%17.5f,'r*');\n",x,y,z);
                 }
             }
         }

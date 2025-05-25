@@ -141,7 +141,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 		// Freeze mesh: these new near-wall cells are not eligible for coarsening.
 		if (MAX_LEVELS > 1)
 			M_FreezeRefinedCells(0);
-		//solver->S_Debug(0,0,0);
+		solver->S_Debug(0,0,0);
 	}
 	
 	// If starting on a deeper level, but uniform:

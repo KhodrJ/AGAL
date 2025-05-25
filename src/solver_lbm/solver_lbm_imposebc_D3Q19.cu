@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Mon May 19 17:22:25 2025                                            */
+/*  Last Updated: Sat May 24 06:19:08 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -216,10 +216,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 1*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -251,10 +253,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -356,10 +360,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 3*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -391,10 +397,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -496,10 +504,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 5*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -531,10 +541,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -655,10 +667,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -699,10 +713,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -825,10 +841,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 9*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -869,10 +887,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -995,10 +1015,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 11*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1039,10 +1061,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1165,10 +1189,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 13*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1209,10 +1235,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1335,10 +1363,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 15*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1379,10 +1409,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1505,10 +1537,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 17*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)
@@ -1549,10 +1583,12 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                {
+                }
                 // DLI.
-                if (dQ >= (ufloat_g_t)(0.5) && dQ < (ufloat_g_t)(1.0))
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                if (dQ >= (ufloat_g_t)(0.5))
+                {
+                }
                 if (force_type == 1)
                 {
                     if (n_maxblocks_b > 0 && dQ > 0)

@@ -81,9 +81,11 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 		// Constants/
 		constexpr int N_DIM = AP->N_DIM;
 		ufloat_g_t odenom = (ufloat_g_t)1.0 / (ufloat_g_t)N_DIM;
-		ufloat_g_t eps;
+		ufloat_g_t eps = (ufloat_g_t)0.0;
 		if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
 		if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
+		eps = eps*(ufloat_g_t)100;
+		std::cout << "Using EPS=" << eps << std::endl;
 		
 		// Update tracker variable and face count.
 		init_coords_list = 1;
@@ -139,9 +141,12 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				vze = vz1 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx1 = vx1 + eps*vxe;
-				vy1 = vy1 + eps*vye;
-				vz1 = vz1 + eps*vze;
+// 				vx1 = vx1 + eps*vxe;
+// 				vy1 = vy1 + eps*vye;
+// 				vz1 = vz1 + eps*vze;
+				vx1 = vx1 + eps;
+				vy1 = vy1 + eps;
+				vz1 = vz1 + eps;
 				
 				// Vertex 2.
 				vxe = vx2 - vxc;
@@ -149,9 +154,12 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				vze = vz2 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx2 = vx2 + eps*vxe;
-				vy2 = vy2 + eps*vye;
-				vz2 = vz2 + eps*vze;
+// 				vx2 = vx2 + eps*vxe;
+// 				vy2 = vy2 + eps*vye;
+// 				vz2 = vz2 + eps*vze;
+				vx2 = vx2 + eps;
+				vy2 = vy2 + eps;
+				vz2 = vz2 + eps;
 				
 				// Vertex 3.
 				vxe = vx3 - vxc;
@@ -159,9 +167,12 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				vze = vz3 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx3 = vx3 + eps*vxe;
-				vy3 = vy3 + eps*vye;
-				vz3 = vz3 + eps*vze;
+// 				vx3 = vx3 + eps*vxe;
+// 				vy3 = vy3 + eps*vye;
+// 				vz3 = vz3 + eps*vze;
+				vx3 = vx3 + eps;
+				vy3 = vy3 + eps;
+				vz3 = vz3 + eps;
 				
 				geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]] = vx1;
 				geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]] = vy1;

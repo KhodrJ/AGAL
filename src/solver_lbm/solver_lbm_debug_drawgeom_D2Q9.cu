@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Wed May 14 02:22:45 2025                                            */
+/*  Last Updated: Sat May 24 06:03:37 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -234,14 +234,11 @@ void Cu_Debug_DrawGeometry_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcb
                     }
                 }
                 
-                if (near_geom)
-                {
-                    printf("plot(%17.15f,%17.15f,'k*');\n",x,y);
-                    printf("plot([%17.15f %17.15f %17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f %17.15f %17.15f],'k-');\n",
-                    x-dx_L/2.0,x+dx_L/2.0,x+dx_L/2.0,x-dx_L/2.0,x-dx_L/2.0,
-                    y-dx_L/2.0,y-dx_L/2.0,y+dx_L/2.0,y+dx_L/2.0,y-dx_L/2.0
-                    );
-                }
+                printf("plot(%17.15f,%17.15f,'k*');\n",x,y);
+                printf("plot([%17.15f %17.15f %17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f %17.15f %17.15f],'k-');\n",
+                x-dx_L/2.0,x+dx_L/2.0,x+dx_L/2.0,x-dx_L/2.0,x-dx_L/2.0,
+                y-dx_L/2.0,y-dx_L/2.0,y+dx_L/2.0,y+dx_L/2.0,y-dx_L/2.0
+                );
             }
         }
 }

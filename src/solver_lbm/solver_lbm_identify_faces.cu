@@ -138,43 +138,43 @@ void Cu_StoreFaces
 				// Loop over particle velocity vectors and check for intersections.
 				if (N_DIM == 2)
 				{
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=1
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmp = (vxp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=2
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=3
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmp = (vxp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=4
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=5
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=6
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=7
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=8
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=1
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmp = (vxp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=2
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=3
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmp = (vxp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=4
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=5
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=6
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=7
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmp = (vxp+tmp); if (CheckPointInLine(tmp, tmpy, vx1, vy1, vx2, vy2)) { add_face = true; } } // p=8
 				}
 				if (N_DIM == 3)
 				{
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 1
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 2
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 3
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 4
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 5
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 6
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 7
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 8
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 9
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 10
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 11
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 12
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 13
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 14
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 15
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 16
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 17
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 18
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 19
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 20
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 21
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 22
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 23
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 24
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 25
-					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 26
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 1
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 2
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 3
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 4
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 5
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 6
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 7
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 8
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 9
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 10
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 11
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 12
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 13
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 14
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 15
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 16
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 17
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 18
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 19
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 20
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny)-(nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 21
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx+ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 22
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz)-(ny)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp+tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 23
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp)-(tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 24
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz)-(nx)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp+tmp); tmpz = (vzp+tmp); tmp = (vxp)-(tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 25
+					tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny+nz)); if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5) { tmpy = (vyp)-(tmp); tmpz = (vzp)-(tmp); tmp = (vxp+tmp); if (CheckPointInTriangle(tmp, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2)) { add_face = true; } } // p = 26
 				}
 				
 				// Now, if at least one cell is adjacent to the current face, add it to the list of faces (for this block).
@@ -380,7 +380,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpx = (vxp+tmp);
@@ -413,7 +413,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpx = (vxp);
@@ -446,7 +446,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpx = (vxp)-(tmp);
@@ -479,7 +479,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpx = (vxp);
@@ -512,7 +512,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx+ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpx = (vxp+tmp);
@@ -545,7 +545,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ny)-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpx = (vxp)-(tmp);
@@ -578,7 +578,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / (-(nx+ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpx = (vxp)-(tmp);
@@ -611,7 +611,7 @@ void Cu_IdentifyFaces
 						vx3 = geom_f_face_X[f_p + 6*n_faces_a]; vy3 = geom_f_face_X[f_p + 7*n_faces_a]; vz3 = geom_f_face_X[f_p + 8*n_faces_a];
 						nx = vy2-vy1; ny = vx1-vx2;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((nx)-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpx = (vxp+tmp);
@@ -652,7 +652,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp);
@@ -686,7 +686,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp);
@@ -720,7 +720,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
@@ -754,7 +754,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
@@ -788,7 +788,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
@@ -822,7 +822,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
@@ -856,7 +856,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
@@ -890,7 +890,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
@@ -924,7 +924,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
@@ -958,7 +958,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
@@ -992,7 +992,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
@@ -1026,7 +1026,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(ny+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);
@@ -1060,7 +1060,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp);
@@ -1094,7 +1094,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp);
@@ -1128,7 +1128,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp)-(tmp);
@@ -1162,7 +1162,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp);
 						tmpz = (vzp+tmp);
@@ -1196,7 +1196,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
@@ -1230,7 +1230,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
@@ -1264,7 +1264,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
@@ -1298,7 +1298,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / (-(nx+ny+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);
@@ -1332,7 +1332,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+ny)-(nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
@@ -1366,7 +1366,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nz)-(nx+ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
@@ -1400,7 +1400,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx+nz)-(ny));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp+tmp);
@@ -1434,7 +1434,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny)-(nx+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp)-(tmp);
@@ -1468,7 +1468,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ny+nz)-(nx));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp+tmp);
 						tmpz = (vzp+tmp);
@@ -1502,7 +1502,7 @@ void Cu_IdentifyFaces
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
 						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((nx)-(ny+nz));
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L)
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
 						tmpy = (vyp)-(tmp);
 						tmpz = (vzp)-(tmp);

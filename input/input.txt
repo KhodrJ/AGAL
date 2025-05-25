@@ -9,7 +9,7 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              196
+Nx                              200
 N_ITER_TOTAL                    1000
 
 # GEOMETRY

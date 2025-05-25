@@ -143,14 +143,6 @@ void Cu_FillBinned
 						C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
 						if (C)
 							intersect_counter++;
-// 							if (C && Tabs(tmp) < min_d)
-// 							{
-// 								min_d = Tabs(tmp);
-// 								if (nx*tmp > 0)
-// 									D = true;
-// 								else
-// 									D = false;
-// 							}
 					}
 				}
 			}
@@ -160,7 +152,6 @@ void Cu_FillBinned
 			s_D[threadIdx.x] = 0;
 			if (intersect_counter%2 == 1)
 			{
-			//if (D)
 				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = -1;
 				s_D[threadIdx.x] = 1;
 			}
@@ -179,28 +170,9 @@ void Cu_FillBinned
 			// If at least one cell is solid, update the block mask.
 			if (threadIdx.x == 0 && s_D[threadIdx.x]>0)
 				cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
-			//if (threadIdx.x == 0 && s_D[threadIdx.x]==M_TBLOCK)
-			//	cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
-			
-			// Don't refine near invalid fine-grid boundaries. Only in the interior for quality purposes.
-			//for (int p = 0; p < N_Q_max; p++)
-			//{
-			//	if (cblock_ID_nbr[i_kap_b + p*n_maxcblocks] == N_SKIPID)
-			//		eligible = false;
-			//}
-			
-			// Mark for refinement.
-			//if (threadIdx.x == 0)
-			//{
-			//	if (eligible && !hit_max && s_D[threadIdx.x]>0 && s_D[threadIdx.x]<M_TBLOCK && cblock_ID_ref[i_kap_b] == V_REF_ID_UNREFINED)
-			//		cblock_ID_ref[i_kap_b] = V_REF_ID_MARK_REFINE;
-			//}
 			
 			// Reset.
 			intersect_counter = 0;
-			//eligible = true;
-			//min_d = (ufloat_g_t)1.0;
-			//D = false;
 		}
 	}
 }

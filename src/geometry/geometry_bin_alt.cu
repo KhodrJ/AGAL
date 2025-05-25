@@ -27,7 +27,7 @@ template <typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_FillBins(
 	int j0, int n_faces, int n_faces_a, int G_BIN_NUM, ufloat_g_t *geom_f_face_X, int *bin_indicators,
-	ufloat_g_t dx_L, ufloat_g_t Lx, ufloat_g_t LxOg, ufloat_g_t LyOg, ufloat_g_t LzOg, ufloat_g_t minL0g, int G_BIN_DENSITY
+	ufloat_g_t dx, ufloat_g_t Lx, ufloat_g_t LxOg, ufloat_g_t LyOg, ufloat_g_t LzOg, ufloat_g_t minL0g, int G_BIN_DENSITY
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
@@ -48,14 +48,14 @@ void Cu_FillBins(
 			
 			ufloat_g_t xm = (ufloat_g_t)0.0;
 			ufloat_g_t xM = Lx;
-			ufloat_g_t ym = (bi)*LyOg - dx_L;
-			ufloat_g_t yM = (bi+1)*LyOg + dx_L;
+			ufloat_g_t ym = (bi)*LyOg - dx;
+			ufloat_g_t yM = (bi+1)*LyOg + dx;
 			ufloat_g_t zm;
 			ufloat_g_t zM;
 			if (N_DIM==3)
 			{
-				zm = (bj)*LzOg - dx_L;
-				zM = (bj+1)*LzOg + dx_L;
+				zm = (bj)*LzOg - dx;
+				zM = (bj+1)*LzOg + dx;
 			}
 			
 			
@@ -276,6 +276,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 	ufloat_g_t Ly0g = Ly/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t Lz0g = Lz/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t minL0g = std::min({Lx0g,Ly0g,N_DIM==2?Lx0g:Lz0g});
+	ufloat_g_t eps = 1e-5;
+	if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
+	if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
 	
 	// Initialize the intermediate device array to store the bin indicators. Set values to -1 as default.
 	gpuErrchk( cudaMalloc((void **)&c_bin_indicators_v[i_dev], G_BIN_NUM*n_faces_a[i_dev]*sizeof(int)) );
@@ -302,7 +305,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 		//std::cout << "Iter " << j << ", filling bins " << j0 << "-" << (j0+G_BIN_NUM) << std::endl;
 		Cu_FillBins<ufloat_g_t,AP> <<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
 			j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators_v[i_dev],
-			(ufloat_g_t)(0.0/32.0), Lx, Lx0g, Ly0g, Lz0g, minL0g, G_BIN_DENSITY
+			-eps, Lx, Lx0g, Ly0g, Lz0g, minL0g, G_BIN_DENSITY
 		);
 		
 		// Perform stream compaction.
@@ -347,7 +350,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 	gpuErrchk( cudaMemcpy(binned_face_ids_v[i_dev], c_binned_face_ids_v[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
 	
 	// DEBUG
-// 	gpuErrchk( cudaMemcpy(binned_face_ids_v, c_binned_face_ids_v[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
 // 	for (int p = 0; p < n_pm1; p++)
 // 		std::cout << binned_face_ids_v[p] << " ";
 // 	std::cout << std::endl;
@@ -357,9 +359,73 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 // 	for (int p = 0; p < n_bins; p++)
 // 		std::cout << binned_face_ids_n_v[p] << " ";
 // 	std::cout << std::endl;
+	G_DrawBinsAndFaces(i_dev);
 	
 	// Free memory in intermediate device arrays.
 	gpuErrchk( cudaFree(c_bin_indicators_v[i_dev]) );
+	
+	return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Geometry<ufloat_t,ufloat_g_t,AP>::G_DrawBinsAndFaces(int i_dev)
+{
+	// Initial parameters. Open the output file.
+	int N_DIM = AP->N_DIM;
+	ufloat_g_t Lx0g = Lx/(ufloat_g_t)G_BIN_DENSITY;
+	ufloat_g_t Ly0g = Ly/(ufloat_g_t)G_BIN_DENSITY;
+	ufloat_g_t Lz0g = Lz/(ufloat_g_t)G_BIN_DENSITY;
+	ufloat_g_t minL0g = std::min({Lx0g,Ly0g,N_DIM==2?Lx0g:Lz0g});
+	double c0 = 0.0;
+	double c1 = 0.0;
+	double c2 = 0.0;
+	std::ofstream out = std::ofstream("debug_bins.txt");
+	std:cout << "Drawing 2D bins..." << std::endl;
+	
+	for (int k = 0; k < G_BIN_DENSITY; k++)
+	{
+		for (int j = 0; j < G_BIN_DENSITY; j++)
+		{
+			// Identify the bin.
+			int global_bin_id = j + G_BIN_DENSITY*k;
+			
+			// Get the number of faces in the bin.
+			int n_f = binned_face_ids_n_v[i_dev][global_bin_id];
+			int N_f = 0;
+			if (n_f > 0)
+				N_f = binned_face_ids_N_v[i_dev][global_bin_id];
+			
+			// If there are faces to draw, draw the bin too. Each bin gets its own unique color.
+			if (n_f > 0)
+			{
+				c0 = (double)(std::rand() % 256) / 256.0;
+				c1 = (double)(std::rand() % 256) / 256.0;
+				c2 = (double)(std::rand() % 256) / 256.0;
+				DebugDrawCubeInMATLAB(out, 0, Lx, j*Ly0g, (j+1)*Ly0g, k*Lz0g, (k+1)*Lz0g, c0, c1, c2);
+			}
+			
+			for (int p = 0; p < n_f; p++)
+			{
+				int f_p = binned_face_ids_v[i_dev][N_f+p];
+				ufloat_g_t vx1 = geom_f_face_X[i_dev][f_p + 0*n_faces_a[i_dev]];
+				ufloat_g_t vy1 = geom_f_face_X[i_dev][f_p + 1*n_faces_a[i_dev]];
+				ufloat_g_t vz1 = geom_f_face_X[i_dev][f_p + 2*n_faces_a[i_dev]];
+				ufloat_g_t vx2 = geom_f_face_X[i_dev][f_p + 3*n_faces_a[i_dev]];
+				ufloat_g_t vy2 = geom_f_face_X[i_dev][f_p + 4*n_faces_a[i_dev]];
+				ufloat_g_t vz2 = geom_f_face_X[i_dev][f_p + 5*n_faces_a[i_dev]];
+				ufloat_g_t vx3 = geom_f_face_X[i_dev][f_p + 6*n_faces_a[i_dev]];
+				ufloat_g_t vy3 = geom_f_face_X[i_dev][f_p + 7*n_faces_a[i_dev]];
+				ufloat_g_t vz3 = geom_f_face_X[i_dev][f_p + 8*n_faces_a[i_dev]];
+				
+				// Draw the faces in the current bin.
+				DebugDrawTriangleInMATLAB(out, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, c0, c1, c2);
+			}
+		}
+	}
+	
+	// Close the file.
+	std::cout << "Finished drawing 2D bins..." << std::endl;
+	out.close();
 	
 	return 0;
 }
