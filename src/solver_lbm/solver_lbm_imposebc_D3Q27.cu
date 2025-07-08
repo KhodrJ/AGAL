@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Sat May 24 06:19:09 2025                                            */
+/*  Last Updated: Tue Jul  8 00:01:40 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dx_L_g,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,double *__restrict__ cblock_f_Ff_solid,bool geometry_init,int force_type)
+void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dx_L_g,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,bool geometry_init,int force_type)
 {
     constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
@@ -22,12 +22,6 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
     __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
     __shared__ ufloat_t s_u[3*M_TBLOCK];
-    __shared__ double s_Fpx[M_TBLOCK];
-    __shared__ double s_Fmx[M_TBLOCK];
-    __shared__ double s_Fpy[M_TBLOCK];
-    __shared__ double s_Fmy[M_TBLOCK];
-    __shared__ double s_Fpz[M_TBLOCK];
-    __shared__ double s_Fmz[M_TBLOCK];
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int Ip = I;
@@ -72,7 +66,7 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
     {
         i_kap_b = s_ID_cblock[k];
         
-        // This part is included if n>0 only.
+        // Load data for conditions on cell-blocks.
         if (i_kap_b>-1)
         {
             valid_block=cblock_ID_onb[i_kap_b];
@@ -85,15 +79,6 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             if (geometry_init)
                 block_mask = cblock_ID_onb_solid[i_kap_b];
-            if (n_maxblocks_b > 0 && force_type > 0 && block_mask > -1)
-            {
-                s_Fpx[threadIdx.x] = 0;
-                s_Fmx[threadIdx.x] = 0;
-                s_Fpy[threadIdx.x] = 0;
-                s_Fmy[threadIdx.x] = 0;
-                s_Fpz[threadIdx.x] = 0;
-                s_Fmz[threadIdx.x] = 0;
-            }
             x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
             y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
             z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
@@ -158,13 +143,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[1];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(1), (ufloat_t)(0), (ufloat_t)(0), cdotu);
@@ -178,13 +163,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[2];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(-1), (ufloat_t)(0), (ufloat_t)(0), cdotu);
@@ -217,24 +202,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 2 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -254,24 +227,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -302,13 +263,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[3];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(0), (ufloat_t)(1), (ufloat_t)(0), cdotu);
@@ -322,13 +283,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[4];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(0), (ufloat_t)(-1), (ufloat_t)(0), cdotu);
@@ -361,24 +322,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 4 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -398,24 +347,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -446,13 +383,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[5];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(0), (ufloat_t)(0), (ufloat_t)(1), cdotu);
@@ -466,13 +403,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[6];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(2.0/27.0), (ufloat_t)(0), (ufloat_t)(0), (ufloat_t)(-1), cdotu);
@@ -505,24 +442,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 6 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -542,24 +467,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -596,13 +509,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[7];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(1), (ufloat_t)(1), (ufloat_t)(0), cdotu);
@@ -622,13 +535,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[8];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(-1), (ufloat_t)(-1), (ufloat_t)(0), cdotu);
@@ -668,26 +581,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 8 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -714,26 +613,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -770,13 +655,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[9];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(1), (ufloat_t)(0), (ufloat_t)(1), cdotu);
@@ -796,13 +681,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[10];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(-1), (ufloat_t)(0), (ufloat_t)(-1), cdotu);
@@ -842,26 +727,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 10 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -888,26 +759,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -944,13 +801,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[11];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(0), (ufloat_t)(1), (ufloat_t)(1), cdotu);
@@ -970,13 +827,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[12];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(0), (ufloat_t)(-1), (ufloat_t)(-1), cdotu);
@@ -1016,26 +873,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 12 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -1062,26 +905,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -1118,13 +947,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[13];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(1), (ufloat_t)(-1), (ufloat_t)(0), cdotu);
@@ -1144,13 +973,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
                 nbr_kap_b = s_ID_nbr[14];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(-1), (ufloat_t)(1), (ufloat_t)(0), cdotu);
@@ -1190,26 +1019,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmy[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 14 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -1236,26 +1051,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpy[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -1292,13 +1093,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[15];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(1), (ufloat_t)(0), (ufloat_t)(-1), cdotu);
@@ -1318,13 +1119,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[16];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(-1), (ufloat_t)(0), (ufloat_t)(1), cdotu);
@@ -1364,26 +1165,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 16 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -1410,26 +1197,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -1466,13 +1239,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[17];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(0), (ufloat_t)(1), (ufloat_t)(-1), cdotu);
@@ -1492,13 +1265,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[18];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/54.0), (ufloat_t)(0), (ufloat_t)(-1), (ufloat_t)(1), cdotu);
@@ -1538,26 +1311,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 18 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -1584,26 +1343,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -1652,13 +1397,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[19];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(1), (ufloat_t)(1), (ufloat_t)(1), cdotu);
@@ -1690,13 +1435,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==-1)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[20];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(-1), (ufloat_t)(-1), (ufloat_t)(-1), cdotu);
@@ -1749,28 +1494,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 20 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -1810,28 +1539,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -1880,13 +1593,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[21];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(1), (ufloat_t)(1), (ufloat_t)(-1), cdotu);
@@ -1918,13 +1631,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==-1)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[22];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(-1), (ufloat_t)(-1), (ufloat_t)(1), cdotu);
@@ -1977,28 +1690,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 22 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -2038,28 +1735,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -2108,13 +1789,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==-1)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[23];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(1), (ufloat_t)(-1), (ufloat_t)(1), cdotu);
@@ -2146,13 +1827,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==4)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[24];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(-1), (ufloat_t)(1), (ufloat_t)(-1), cdotu);
@@ -2205,28 +1886,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fpz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 24 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -2266,28 +1931,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fmz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -2336,13 +1985,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==4)and(Jp==-1)and(Kp==-1) )
                 nbr_kap_b = s_ID_nbr[26];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_p, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(1), (ufloat_t)(-1), (ufloat_t)(-1), cdotu);
@@ -2374,13 +2023,13 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             if ( (Ip==-1)and(Jp==4)and(Kp==4) )
                 nbr_kap_b = s_ID_nbr[25];
             ub = u;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 ub = u + (ufloat_t)(0.5)*(u - s_u[(I-1)+4*J+16*K+0*M_TBLOCK]);
             vb = v;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 vb = v + (ufloat_t)(0.5)*(v - s_u[(I-1)+4*J+16*K+1*M_TBLOCK]);
             wb = w;
-            if (nbr_kap_b == -2 && I > 0)
+            if (nbr_kap_b == -2 && I == 3)
                 wb = w + (ufloat_t)(0.5)*(w - s_u[(I-1)+4*J+16*K+2*M_TBLOCK]);
             if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
                 Cu_ImposeBC(nbr_kap_b, f_q, rho, ub, vb, wb, x, y, z, (ufloat_t)(1.0/216.0), (ufloat_t)(-1), (ufloat_t)(1), (ufloat_t)(1), cdotu);
@@ -2433,28 +2082,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmy[threadIdx.x] += (f_p+f_p_p);
-                        s_Fmz[threadIdx.x] += (f_p+f_p_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                        s_Fmz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
-                    }
+                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 }
                 // Check if DDF 25 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
@@ -2494,28 +2127,12 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 // ULI.
                 if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
                 {
+                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
                 }
                 // DLI.
                 if (dQ >= (ufloat_g_t)(0.5))
                 {
-                }
-                if (force_type == 1)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpy[threadIdx.x] += (f_q+f_q_p);
-                        s_Fpz[threadIdx.x] += (f_q+f_q_p);
-                    }
-                }
-                if (force_type == 2)
-                {
-                    if (n_maxblocks_b > 0 && dQ > 0)
-                    {
-                        s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                        s_Fpz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
-                    }
+                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 }
             }
             // Write fi* to global memory.
@@ -2525,34 +2142,6 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
                 cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 25*n_maxcells] = f_q;
             }
             
-            if (n_maxblocks_b > 0 && force_type > 0 && block_mask > -1)
-            {
-                // Reductions for the sums of force contributions in this cell-block.
-                __syncthreads();
-                for (int s=blockDim.x/2; s>0; s>>=1)
-                {
-                if (threadIdx.x < s)
-                {
-                    s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
-                    s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
-                    s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
-                    s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
-                    s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
-                    s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
-                }
-                __syncthreads();
-                }
-                // Store the sums of contributions in global memory; this will be reduced further later.
-                if (threadIdx.x == 0)
-                {
-                    cblock_f_Ff_solid[block_mask + 0*n_maxblocks_b] = s_Fpx[0];
-                    cblock_f_Ff_solid[block_mask + 1*n_maxblocks_b] = s_Fmx[0];
-                    cblock_f_Ff_solid[block_mask + 2*n_maxblocks_b] = s_Fpy[0];
-                    cblock_f_Ff_solid[block_mask + 3*n_maxblocks_b] = s_Fmy[0];
-                    cblock_f_Ff_solid[block_mask + 4*n_maxblocks_b] = s_Fpz[0];
-                    cblock_f_Ff_solid[block_mask + 5*n_maxblocks_b] = s_Fmz[0];
-                }
-            }
         }
     }
 }
@@ -2562,7 +2151,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC_D3Q27(int i_dev, int L)
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_ImposeBC_D3Q27<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], (ufloat_g_t)dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff_solid[i_dev], mesh->geometry_init, S_FORCE_TYPE);
+		Cu_ImposeBC_D3Q27<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], (ufloat_g_t)dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->geometry_init, S_FORCE_TYPE);
 	}
 
 	return 0;

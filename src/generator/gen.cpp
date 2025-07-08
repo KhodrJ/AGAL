@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 		std::cout << "ERROR: Could not open the requested input file." << std::endl;
 		return -1;
 	}
+	std::cout << "Generating the scripts for " << filename << "..." << std::endl;
 	std::ofstream out;
 	//std::ofstream out = std::ofstream("./output/out.txt");
 	ImportedSet iset;

@@ -50,7 +50,7 @@ std::string Template_PrimaryMode(std::vector<std::string> args, std::vector<std:
 	
 	if (args2.size() > 1)
 	{
-		t += "// This part is included if n>0 only.\n";
+		t += "// Load data for conditions on cell-blocks.\n";
 		t += "OUTIF (i_kap_b>-1)\n";
 		for (int k = 1; k < args2.size(); k++)
 			t += args2[k] + "\n";
@@ -67,6 +67,43 @@ std::string Template_PrimaryMode(std::vector<std::string> args, std::vector<std:
 	t += args[0];
 	t += "END_OUTIF\n";
 	t += "END_OUTFOR\n";
+	
+	return t;
+}
+
+std::string Template_PrimaryModeUpgraded(std::vector<std::string> args, std::vector<std::string> args2)
+{
+	std::string cond = "";
+	if (args2.size() > 0)
+		cond = args2[0];
+	if (cond != "")
+		cond = "&&(" + cond + ")";
+	
+	std::string t = "\n";
+	t += "OUTIF (threadIdx.x<M_LWBLOCK)\n";
+	t += "REG s_ID_cblock[threadIdx.x] = -1;\n";
+	t += "OUTIFL (kap<n_ids_idev_L)\n";
+	t += "REG s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];\n";
+	t += "END_OUTIFL\n";
+	t += "END_OUTIF\n";
+	t += "REG __syncthreads();\n";
+	t += "REG i_kap_b = s_ID_cblock[threadIdx.x/AP->M_WBLOCK];\n";
+	t += "<\n";
+	
+	if (args2.size() > 1)
+	{
+		t += "// Load data for conditions on cell-blocks.\n";
+		t += "OUTIF (i_kap_b>-1)\n";
+		for (int k = 1; k < args2.size(); k++)
+			t += args2[k] + "\n";
+		t += "END_OUTIF\n";
+		t += "<\n";
+	}
+	
+	t += "// Latter condition is added only if n>0.\n";
+	t += "OUTIF ((i_kap_b>-1)"+cond+")\n";
+	t += args[0];
+	t += "END_OUTIF\n";
 	
 	return t;
 }
@@ -139,6 +176,8 @@ int Template_CollectData(std::istream &in, std::string &line)
 		// Now choose the template based on the stored name (one must be provided).
 		if (name == "PRIMARY_ORIGINAL")
 			line = Template_PrimaryMode(args, args2);
+		else if (name == "PRIMARY_UPGRADED")
+			line = Template_PrimaryModeUpgraded(args, args2);
 		else // Default: just return the block(s) of text.
 			line = Commatize(args,"\n");
 	}

@@ -62,18 +62,19 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	
 	// From argument pack.
 	Mesh<ufloat_t,ufloat_g_t,AP>        *mesh;
-	const int N_DEV                     = AP->N_DEV;
-	const int N_DIM                     = AP->N_DIM;
-	const int N_Q_max                   = AP->N_Q_max;
-	const int Nqx                       = AP->Nqx;
-	const int N_CHILDREN                = AP->N_CHILDREN;
-	const int N_QUADS                   = AP->N_QUADS;
-	const int M_TBLOCK                  = AP->M_TBLOCK;
-	const int M_HBLOCK                  = AP->M_HBLOCK;
-	const int M_CBLOCK                  = AP->M_CBLOCK;
-	const int M_LBLOCK                  = AP->M_LBLOCK;
-	const int M_BLOCK                   = AP->M_BLOCK;
-	const int M_RNDOFF                  = AP->M_RNDOFF;
+	const int N_DEV                     = AP->N_DEV;            ///< Number of GPU devices.
+	const int N_DIM                     = AP->N_DIM;            ///< Number of dimensions.
+	const int N_Q_max                   = AP->N_Q_max;          ///< Neighbor-halo size (including self).
+	const int Nqx                       = AP->Nqx;              ///< Number of sub-blocks along one axis.
+	const int N_CHILDREN                = AP->N_CHILDREN;       ///< Number of children per block.
+	const int N_QUADS                   = AP->N_QUADS;          ///< Total number of sub-blocks per cell-block.
+	const int M_TBLOCK                  = AP->M_TBLOCK;         ///< Number of threads per thread-block in primary-mode.
+	const int M_CBLOCK                  = AP->M_CBLOCK;         ///< Number of cells per cell-block.
+	const int M_LBLOCK                  = AP->M_LBLOCK;         ///< Number of cell-blocks processed per thread-block in primary-mode.
+	const int M_WBLOCK                  = AP->M_WBLOCK;         ///< Number of threads working within a warp in uprimary-mode.
+	const int M_LWBLOCK                 = AP->M_LWBLOCK;        ///< Number of cell-blocks processed per thread-block in uprimary-mode.
+	const int M_BLOCK                   = AP->M_BLOCK;          ///< Number of threads per thread-block in secondary-mode.
+	const int M_RNDOFF                  = AP->M_RNDOFF;         ///< Round-off constant for memory alignment.
 	
 	// From mesh object.
 	long int   n_maxcells;              ///< Maximum number of cells that can be stored in GPU memory.
@@ -98,11 +99,18 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int        S_CRITERION;             ///< Indicates refinement criterion (0 for |w|, 1 for Q).
 	int        V_INTERP_ADVANCE;        ///< Controls interpolation parameters.
 	int        V_AVERAGE_ADVANCE;       ///< Controls averaging parameters.
+	ufloat_t   S_FORCEVOLUME_Xm;        ///< Lower x-bound on control volume for force calculation.
+	ufloat_t   S_FORCEVOLUME_XM;        ///< Upper x-bound on control volume for force calculation.
+	ufloat_t   S_FORCEVOLUME_Ym;        ///< Lower y-bound on control volume for force calculation.
+	ufloat_t   S_FORCEVOLUME_YM;        ///< Upper y-bound on control volume for force calculation.
+	ufloat_t   S_FORCEVOLUME_Zm;        ///< Lower z-bound on control volume for force calculation.
+	ufloat_t   S_FORCEVOLUME_ZM;        ///< Upper z-bound on control volume for force calculation.
 	
 	// Grid advancement parameters.
 	double     v0;
 	double     *s_vec;
 	ufloat_t   *dxf_vec;
+	ufloat_t   *dvf_vec;
 	ufloat_t   *tau_vec;
 	ufloat_t   *tau_ratio_vec;
 	bool       compute_forces = true;
@@ -126,7 +134,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Advance(int i_dev, int L, double *tmp);
 	int S_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out);
 	int S_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out);
-	int S_ComputeForces(int i_dev, int L);
+	//int S_ComputeForces(int i_dev, int L);
 	int S_ComputeRefCriteria(int i_dev, int L, int var);
 	int S_Debug(int i_dev, int L, int var);
 	
@@ -156,22 +164,24 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collision_Original_D2Q9(int i_dev, int L);
 	int S_Collision_Original_D3Q19(int i_dev, int L);
 	int S_Collision_Original_D3Q27(int i_dev, int L);
-	int S_Collision_New_S1_D2Q9(int i_dev, int L);
-	int S_Collision_New_S2_D2Q9(int i_dev, int L);
-	int S_Collision_New_S1_D3Q19(int i_dev, int L);
-	int S_Collision_New_S2_D3Q19(int i_dev, int L);
-	int S_Collision_New_S1_D3Q27(int i_dev, int L);
-	int S_Collision_New_S2_D3Q27(int i_dev, int L);
-	int S_ImposeBC_D2Q9(int i_dev, int L);
-	int S_ImposeBC_D3Q19(int i_dev, int L);
-	int S_ImposeBC_D3Q27(int i_dev, int L);
+	int S_Collision_New_D2Q9(int i_dev, int L);
+	int S_Collision_New_D3Q19(int i_dev, int L);
+	int S_Collision_New_D3Q27(int i_dev, int L);
 	int S_ReportForces(int i_dev, int L) { mesh->M_ReportForces(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D2Q9(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q19(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q27(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D2Q9(i_dev, L); S_Collision_New_S2_D2Q9(i_dev, L); S_ImposeBC_D2Q9(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D3Q19(i_dev, L); S_Collision_New_S2_D3Q19(i_dev, L); S_ImposeBC_D3Q19(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_S1_D3Q27(i_dev, L); S_Collision_New_S2_D3Q27(i_dev, L); S_ImposeBC_D3Q27(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q27(i_dev, L); return 0; }
+	
+	// Imposing boundary conditions.
+	int S_ImposeBC_D2Q9(int i_dev, int L);
+	int S_ImposeBC_D3Q19(int i_dev, int L);
+	int S_ImposeBC_D3Q27(int i_dev, int L);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D2Q9(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q19(i_dev, L); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q27(i_dev, L); return 0; }
 	
 	// Streaming.
 	int S_Stream_D2Q9(int i_dev, int L);
@@ -227,6 +237,15 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collide_TRT_Interpolate_Cubic_D2Q9(int i_dev, int L); // TODO
 	int S_Collide_MRT_Interpolate_Linear_D2Q9(int i_dev, int L); // TODO
 	int S_Collide_MRT_Interpolate_Cubic_D2Q9(int i_dev, int L); // TODO
+	
+	// Force calculation.
+	int S_ComputeForces_D2Q9(int i_dev, int L, int var);
+	int S_ComputeForces_D3Q19(int i_dev, int L, int var);
+	int S_ComputeForces_D3Q27(int i_dev, int L, int var);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D3Q27(i_dev, L, var); return 0; }
+	int S_ComputeForces(int i_dev, int L, int var) { S_ComputeForcesW(i_dev, L, var); return 0; }
 	
 	// DEBUG: Draw geometry.
 	int S_Debug_DrawGeometry_D2Q9(int i_dev, int L);

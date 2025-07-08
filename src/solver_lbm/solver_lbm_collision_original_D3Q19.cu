@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Thu Apr 24 00:19:00 2025                                            */
+/*  Last Updated: Wed Jul  2 17:36:15 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -87,7 +87,7 @@ void Cu_Collision_Original_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxc
     {
         i_kap_b = s_ID_cblock[k];
         
-        // This part is included if n>0 only.
+        // Load data for conditions on cell-blocks.
         if (i_kap_b>-1)
         {
             i_kap_bc=cblock_ID_nbr_child[i_kap_b];

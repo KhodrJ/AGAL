@@ -22,4 +22,16 @@ all: a.out
 clean:
 	$(RM) $(OBJ)
 
+SRC_COMPLEX = ./input/complex/solver_lbm_collision_bgk_complex_new.agc\
+              ./input/complex/solver_lbm_stream_complex_new.agc\
+              ./input/complex/solver_lbm_impose_bc.agc\
+              ./input/complex/solver_lbm_setic.agc\
+              ./input/complex/solver_lbm_compute_forces_mea.agc
+complex: $(SRC_COMPLEX)
+	./a.out ./input/complex/solver_lbm_collision_bgk_complex_new.agc
+	./a.out ./input/complex/solver_lbm_stream_complex_new.agc
+	./a.out ./input/complex/solver_lbm_impose_bc.agc
+	./a.out ./input/complex/solver_lbm_setic.agc
+	./a.out ./input/complex/solver_lbm_compute_forces_mea.agc
+
 .PHONY: clean

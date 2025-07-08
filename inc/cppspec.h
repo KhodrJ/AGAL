@@ -60,76 +60,6 @@
 #include "vtkRenderer.h"
 #include "vtkWindowToImageFilter.h"
 
-// Input parameters from 'confmake.sh'.
-//#ifndef INPUT_CONFMAKE
-	//#define N_PRECISION 0
-	//#define N_PRECISION_G 0
-	//#define N_DIM 2
-// 	#define N_Q 9
-// 	#define Nqx 1
-// 	#define M_LBLOCK 16
-	//#define N_Q_max 9
-//#endif
-
-// #ifndef Nqx
-// #define Nqx 1
-// #endif
-// #ifndef M_LBLOCK
-// #define M_LBLOCK
-// #endif
-
-
-// Derived parameters.
-// #define N_Q_max(N) (N==2?9:27)
-// #define N_QUADS(N) (N==2?(Nqx*Nqx):(Nqx*Nqx*Nqx))
-// #define N_CHILDREN(N) (N==2?4:8)
-// #define M_TBLOCK(N) (N==2?16:64)
-// #define M_CBLOCK(N) (N==2?(Nqx*Nqx*16):(Nqx*Nqx*Nqx*64))
-// #define APPEND(x, y) x ## y
-//#define N_Pf(N,x) (N==ufloat_t
-// #if (N_PRECISION==0)
-// 	typedef float ufloat_t;
-// 	#define N_Pf(x) (APPEND(x,F))
-// #else
-// 	typedef double ufloat_t;
-// 	#define N_Pf(x) (x)
-// #endif
-// #if (N_PRECISION_G==0)
-// 	typedef float ufloat_g_t;
-// 	#define N_Pf_g(x) (APPEND(x,F))
-// #else
-// 	typedef double ufloat_g_t;
-// 	#define N_Pf_g(x) (x)
-// #endif
-// #if (N_DIM==2)
-// 	#define N_QUADS (Nqx*Nqx)
-	//#define N_Q_max 9
-	//#define N_CHILDREN 4
-	//#define M_TBLOCK 16
-// 	#define M_CBLOCK (Nqx*Nqx*16)
-// #else
-// 	#define N_QUADS (Nqx*Nqx*Nqx)
-	//#define N_Q_max 27
-	//#define N_CHILDREN 8
-	//#define M_TBLOCK 64
-// 	#define M_CBLOCK (Nqx*Nqx*Nqx*64)
-// #endif
-
-
-// Other fixed paramters.
-// #define Nbx 4             ///< Number of cells along one cell-block axis, fixed at four.
-// #define N_DEV 1           ///< Number of GPU devices (only one for now, will extend soon).
-// #define M_BLOCK 128       ///< Number of threads per block.
-// #define M_RNDFF 2048      ///< Round-off parameter for computation of n_maxcells.
-// #define N_SYMMETRY -998   ///< Indicator than an Id represents a symmetry boundary condition.
-// #define N_SKIPID -999     ///< Indicator that an Id is invalid.
-// #define CONV_B2GB 9.313225746154785e-10
-// #define T_S 0
-// #define T_MS 1
-// #define T_US 2
-// 
-
-
 
 struct ArgsPack
 {
@@ -138,6 +68,7 @@ struct ArgsPack
 	const int N_DEV;
 	const int Nqx;
 	const int M_LBLOCK;
+	const int M_LWBLOCK;
 	const int M_BLOCK;
 	const int M_RNDOFF;
 	
@@ -146,6 +77,7 @@ struct ArgsPack
 	const int N_Q_max                = N_DIM==2? 9:27;
 	const int N_QUADS                = N_DIM==2? Nqx*Nqx:Nqx*Nqx*Nqx;
 	const int M_TBLOCK               = N_DIM==2? 16:64;
+	const int M_WBLOCK               = N_DIM==2? 16:32;
 	const int M_HBLOCK               = N_DIM==2? 36:216;
 	const int M_CBLOCK               = N_QUADS*M_TBLOCK;
 	
@@ -155,6 +87,7 @@ struct ArgsPack
 		int N_DEV_=1,
 		int Nqx_=1,
 		int M_LBLOCK_=1,
+		int M_LWBLOCK_=1,
 		int M_RNDOFF_=2048
 	) : 
 		N_DIM(N_DIM_),
@@ -162,9 +95,9 @@ struct ArgsPack
 		N_DEV(N_DEV_),
 		Nqx(Nqx_),
 		M_LBLOCK(M_LBLOCK_),
+		M_LWBLOCK(M_LWBLOCK_),
 		M_RNDOFF(M_RNDOFF_)
-	{
-	}
+	{}
 };
 
 constexpr ArgsPack AP2D_DEF = ArgsPack(2); /// Default 2D argument pack.
@@ -356,7 +289,7 @@ int DebugPrintDeviceArray(int N, T *d_arr)
 	return 0;
 }
 
-int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double z0, double z1, double c0, double c1, double c2)
+inline int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double z0, double z1, double c0, double c1, double c2)
 {
 	out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
 	out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
@@ -376,7 +309,7 @@ int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, d
 	return 0;
 }
 
-int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double vx3, double vy3, double vz3, double c0, double c1, double c2)
+inline int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double vx3, double vy3, double vz3, double c0, double c1, double c2)
 {
 	out << "fill3([" << vx1 << " " << vx2 << " " << vx3 << " " << vx1 << "],[" << vy1 << " " << vy2 << " " << vy3 << " " << vy1 << "],[" << vz1 << " " << vz2 << " " << vz3 << " " << vz1 << "],[" << c0 << " " << c1 << " " << c2 << "]);\n";
 	

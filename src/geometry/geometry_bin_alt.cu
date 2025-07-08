@@ -359,7 +359,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins(int i_dev)
 // 	for (int p = 0; p < n_bins; p++)
 // 		std::cout << binned_face_ids_n_v[p] << " ";
 // 	std::cout << std::endl;
-	G_DrawBinsAndFaces(i_dev);
+// 	G_DrawBinsAndFaces(i_dev);
 	
 	// Free memory in intermediate device arrays.
 	gpuErrchk( cudaFree(c_bin_indicators_v[i_dev]) );

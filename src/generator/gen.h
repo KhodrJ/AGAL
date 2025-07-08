@@ -227,7 +227,8 @@ int               ProcessLineGridIndex(std::string &line);
 // Templates.
 int               Template_CollectData(std::istream &in, std::string &line);
 int               Process_OutputTemplates(std::string &s_in);
-std::string       Template_PrimaryMode(std::string s_in, std::vector<std::string> args);
+std::string       Template_PrimaryMode(std::vector<std::string> args, std::vector<std::string> args2);
+std::string       Template_PrimaryModeUpgraded(std::vector<std::string> args, std::vector<std::string> args2);
 std::string       Template_ExtrapolateHalo(std::vector<std::string> args, std::vector<std::string> args2);
 
 // Output.

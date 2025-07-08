@@ -1751,16 +1751,16 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 		gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask_b[i_dev], n_maxcells_b*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cells_f_X_b[i_dev], n_maxcells_b*N_Q_max*sizeof(ufloat_g_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb_solid[i_dev], n_maxcblocks*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff_solid[i_dev], n_solidb*6*sizeof(double)) );
+// 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff_solid[i_dev], n_solidb*6*sizeof(double)) ); [DEPRECATED]
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_solidb*N_Q_max*sizeof(int)) );
 		
 		// Reset some arrays. Make a device pointer to the new cblock_ID_onb_solid array.
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb_solid[i_dev], -1);
-		Cu_ResetToValue<<<(M_BLOCK+(n_solidb*6)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*6, c_cblock_f_Ff_solid[i_dev], 0.0);
+// 		Cu_ResetToValue<<<(M_BLOCK+(n_solidb*6)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*6, c_cblock_f_Ff_solid[i_dev], 0.0); [DEPRECATED]
 		Cu_ResetToValue<<<(M_BLOCK+(n_solidb*N_Q_max)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*N_Q_max, c_cblock_ID_face[i_dev], -1);
 		thrust::device_ptr<int> *c_cblock_ID_onb_solid_dptr = new thrust::device_ptr<int>[N_DEV];
 		c_cblock_ID_onb_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_ID_onb_solid[i_dev]);
-		c_cblock_f_Ff_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_f_Ff_solid[i_dev]);
+// 		c_cblock_f_Ff_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_f_Ff_solid[i_dev]); [DEPRECATED]
 		
 		// Now create the map from block Ids in their usual order to the correct region in the linkage data arrays.
 		// NOTE: Make sure c_tmp_1 still has the number of solid-adjacent cells for each block.

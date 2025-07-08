@@ -147,4 +147,22 @@ bool CheckInRect(T &d, T &vxp, T &vyp, T &vx0, T &vy0, T &vx1, T &vy1)
 	return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1 && vyp > vy0 && vyp < vy1);
 }
 
+// Using in:
+// - Control volume force calculations [solver_lbm_compute_forces.cu].
+template <typename T>
+__device__
+bool CheckPointInRegion2D(T vxp, T vyp, T vxm, T vxM, T vym, T vyM)
+{
+	return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM);
+}
+
+// Using in:
+// - Control volume force calculations [solver_lbm_compute_forces.cu].
+template <typename T>
+__device__
+bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm, T vzM)
+{
+	return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
+}
+
 #endif

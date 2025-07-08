@@ -16,6 +16,7 @@ ROUTINE_INCLUDE "mesh.h"
 
 ROUTINE_REQUIRE int i_dev
 ROUTINE_REQUIRE int L
+ROUTINE_REQUIRE int var
 
 KERNEL_REQUIRE int n_ids_idev_L                        | mesh->n_ids[i_dev][L]
 KERNEL_REQUIRE long int n_maxcells
@@ -23,7 +24,7 @@ KERNEL_REQUIRE int n_maxcblocks
 KERNEL_REQUIRE int n_maxcells_b                        | mesh->n_maxcells_b
 KERNEL_REQUIRE int n_maxblocks_b                       | mesh->n_solidb
 KERNEL_REQUIRE ufloat_t dx_L                           | dxf_vec[L]
-KERNEL_REQUIRE ufloat_t tau_L                          | tau_vec[L]
+KERNEL_REQUIRE ufloat_t dv_L                           | dvf_vec[L]
 KERNEL_REQUIRE int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
 KERNEL_REQUIRE int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
 KERNEL_REQUIRE ufloat_t *__restrict__ cells_f_F        | mesh->c_cells_f_F[i_dev]
@@ -35,10 +36,15 @@ KERNEL_REQUIRE int *__restrict__ cblock_ID_nbr_child   | mesh->c_cblock_ID_nbr_c
 KERNEL_REQUIRE int *__restrict__ cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
-KERNEL_REQUIRE double *__restrict__ cblock_f_Ff_solid  | mesh->c_cblock_f_Ff_solid[i_dev]
+KERNEL_REQUIRE ufloat_t *__restrict__ cblock_f_Ff      | mesh->c_cblock_f_Ff[i_dev]
 KERNEL_REQUIRE bool geometry_init                      | mesh->geometry_init
-KERNEL_REQUIRE int order                               | 2
-KERNEL_REQUIRE int post_bc                             | var
+KERNEL_REQUIRE int order                               | S_FORCE_TYPE
+
+ROUTINE_TEMPLATE_PARAMS int post_step
+ROUTINE_TEMPLATE_VALS 0
+ROUTINE_TEMPLATE_VALS 1
+ROUTINE_TEMPLATE_ARGS mesh->n_ids[i_dev][L]>0 && var==0
+ROUTINE_TEMPLATE_ARGS mesh->n_ids[i_dev][L]>0 && var==1
 
 
 
@@ -55,12 +61,12 @@ REG constexpr int N_Q_max = AP->N_Q_max;
 
 REG __shared__ int s_ID_cblock[M_TBLOCK];
 REG __shared__ int s_ID_nbr[N_Q_max];
-REG __shared__ double s_Fpx[M_TBLOCK];
-REG __shared__ double s_Fmx[M_TBLOCK];
-REG __shared__ double s_Fpy[M_TBLOCK];
-REG __shared__ double s_Fmy[M_TBLOCK];
-REG __shared__ double s_Fpz[M_TBLOCK];
-REG __shared__ double s_Fmz[M_TBLOCK];
+REG __shared__ ufloat_t s_Fpx[M_TBLOCK];
+REG __shared__ ufloat_t s_Fmx[M_TBLOCK];
+REG __shared__ ufloat_t s_Fpy[M_TBLOCK];
+REG __shared__ ufloat_t s_Fmy[M_TBLOCK];
+REG __shared__ ufloat_t s_Fpz[M_TBLOCK];
+REG __shared__ ufloat_t s_Fmz[M_TBLOCK];
 REG int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
 REG int I = threadIdx.x % 4;
 REG int Ip = I;
@@ -95,7 +101,7 @@ REG valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
 OUTIFL (geometry_init)
     REG block_mask = cblock_ID_onb_solid[i_kap_b];
 END_OUTIFL
-OUTIF (n_maxblocks_b > 0 && compute_forces && block_mask > -1)
+OUTIF (n_maxblocks_b > 0 && block_mask > -1)
     REG s_Fpx[threadIdx.x] = 0;
     REG s_Fmx[threadIdx.x] = 0;
     REG s_Fpy[threadIdx.x] = 0;
@@ -128,9 +134,7 @@ INFOR p 1   1 Lsize 1
         <
         
         //
-        // Compute forces across curved boundary conditions.
-        // Do this only if adjacent to a solid cell (by checking the cell mask).
-        // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
+        // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
         //
         INIF (<p> > 0)
             OUTIF (valid_mask == -2)            
@@ -172,7 +176,7 @@ INFOR p 1   1 Lsize 1
                     INELSE
                         REG nbr_kap_c = Ip + 4*Jp + 16*Kp;
                     END_INIF
-                    REG f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + <p>*n_maxcells];
+                    REG-v f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + <p>*n_maxcells];
                     REG dist_p /= dx_L;
                     
                     // Add force contributions.
@@ -197,22 +201,22 @@ INFOR p 1   1 Lsize 1
                         END_INIF
                     OUTELSE
                         INIF (Lc0(<p>) > 0)
-                            REG s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc0(<p>) < 0)
-                            REG s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc1(<p>) > 0)
-                            REG s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc1(<p>) < 0)
-                            REG s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc2(<p>) > 0)
-                            REG s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc2(<p>) < 0)
-                            REG s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                     END_OUTIF
                 END_OUTIF
@@ -262,7 +266,7 @@ INFOR p 1   1 Lsize 1
                     REG dist_p /= dx_L;
 
                     // Add force contributions.
-                    OUTIF (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
+                    OUTIF (n_maxblocks_b > 0 && dist_p > 0)
                         INIF (Lc0(Lpb(<p>)) > 0)
                             REG s_Fpx[threadIdx.x] += f_q;
                         END_INIF
@@ -283,24 +287,25 @@ INFOR p 1   1 Lsize 1
                         END_INIF
                     OUTELSE
                         INIF (Lc0(Lpb(<p>)) > 0)
-                            REG s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc0(Lpb(<p>)) < 0)
-                            REG s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc1(Lpb(<p>)) > 0)
-                            REG s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc1(Lpb(<p>)) < 0)
-                            REG s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc2(Lpb(<p>)) > 0)
-                            REG s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                         INIF (Lc2(Lpb(<p>)) < 0)
-                            REG s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                            REG s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                         END_INIF
                     END_OUTIF
+                END_OUTIF
             END_OUTIF
         END_INIF
         
@@ -313,44 +318,43 @@ OUTIF (n_maxblocks_b > 0 && block_mask > -1)
     __syncthreads();
     REG for (int s=blockDim.x/2; s>0; s>>=1)
     REG {
-            OUTIF (threadIdx.x < s)
-                    REG s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
-                    REG s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
-                    REG s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
-                    REG s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
-                    INIF Ldim==3
-                        REG s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
-                        REG s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
-                    END_INIF
-            END_OUTIF
-            REG __syncthreads();
+        OUTIF (threadIdx.x < s)
+                REG s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
+                REG s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
+                REG s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
+                REG s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
+                INIF Ldim==3
+                    REG s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
+                    REG s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
+                END_INIF
+        END_OUTIF
+        REG __syncthreads();
     REG }
     
     // Store the sums of contributions in global memory; this will be reduced further later.
     OUTIF (threadIdx.x == 0)
-        OUTIF (post_bc == 1)
-            REG cblock_f_Ff_solid[block_mask + 0*n_maxblocks_b] = s_Fpx[0];
-            REG cblock_f_Ff_solid[block_mask + 1*n_maxblocks_b] = s_Fmx[0];
-            REG cblock_f_Ff_solid[block_mask + 2*n_maxblocks_b] = s_Fpy[0];
-            REG cblock_f_Ff_solid[block_mask + 3*n_maxblocks_b] = s_Fmy[0];
+        OUTIF (post_step == 0)
+            REG cblock_f_Ff[i_kap_b + 0*n_maxcblocks] = s_Fpx[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 1*n_maxcblocks] = s_Fmx[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 2*n_maxcblocks] = s_Fpy[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 3*n_maxcblocks] = s_Fmy[0]*dv_L;
             INIF Ldim==3
-                REG cblock_f_Ff_solid[block_mask + 4*n_maxblocks_b] = s_Fpz[0];
-                REG cblock_f_Ff_solid[block_mask + 5*n_maxblocks_b] = s_Fmz[0];
+                REG cblock_f_Ff[i_kap_b + 4*n_maxcblocks] = s_Fpz[0]*dv_L;
+                REG cblock_f_Ff[i_kap_b + 5*n_maxcblocks] = s_Fmz[0]*dv_L;
             END_INIF
         OUTELSE
-            REG cblock_f_Ff_solid[block_mask + 0*n_maxblocks_b] += s_Fpx[0];
-            REG cblock_f_Ff_solid[block_mask + 1*n_maxblocks_b] += s_Fmx[0];
-            REG cblock_f_Ff_solid[block_mask + 2*n_maxblocks_b] += s_Fpy[0];
-            REG cblock_f_Ff_solid[block_mask + 3*n_maxblocks_b] += s_Fmy[0];
+            REG cblock_f_Ff[i_kap_b + 0*n_maxcblocks] += s_Fpx[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 1*n_maxcblocks] += s_Fmx[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 2*n_maxcblocks] += s_Fpy[0]*dv_L;
+            REG cblock_f_Ff[i_kap_b + 3*n_maxcblocks] += s_Fmy[0]*dv_L;
             INIF Ldim==3
-                REG cblock_f_Ff_solid[block_mask + 4*n_maxblocks_b] += s_Fpz[0];
-                REG cblock_f_Ff_solid[block_mask + 5*n_maxblocks_b] += s_Fmz[0];
+                REG cblock_f_Ff[i_kap_b + 4*n_maxcblocks] += s_Fpz[0]*dv_L;
+                REG cblock_f_Ff[i_kap_b + 5*n_maxcblocks] += s_Fmz[0]*dv_L;
             END_INIF
         END_OUTIF
     END_OUTIF
 END_OUTIF
 
-# Post-collision DDFs (with BC imposed) are now available on this grid level.
 
 TEMPLATE NEW_BLOCK
 END_TEMPLATE

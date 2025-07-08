@@ -141,7 +141,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 		// Freeze mesh: these new near-wall cells are not eligible for coarsening.
 		if (MAX_LEVELS > 1)
 			M_FreezeRefinedCells(0);
-		solver->S_Debug(0,0,0);
+		//solver->S_Debug(0,0,0);
 	}
 	
 	// If starting on a deeper level, but uniform:
@@ -385,7 +385,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintForces(int i, int iter_s)
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintForces(int i, int iter_s, int START)
 {
 	// o====================================================================================
 	// | Perform a force calculation around the designated solid obstacles.
@@ -399,7 +399,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintForces(int i, int iter_s)
 		
 		//M_RetrieveFromGPU();
 		//M_ComputeForces(0, std::max(0,MAX_LEVELS_INTERIOR-1));
-		M_ReportForces(0,MAX_LEVELS_WALL-1,i,(double)i*dxf_vec[MAX_LEVELS_WALL-1]);
+		//for (int L = 0; L < MAX_LEVELS; L++)
+		//	M_ReportForces(0,L,i,(double)i*dxf_vec[N_LEVEL_START], START);
+		M_ReportForces(0,-1,i,(double)i*dxf_vec[N_LEVEL_START], START);
 	}
 	
 	return 0;
@@ -451,6 +453,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 		M_Advance_PrintIter(i, iter_s);
 		
 		
+		// Part A of force calculation.
+		//if (N_PROBE_FORCE==1)
+		//	M_Advance_PrintForces(i, iter_s, 0);
+		
+		
 		// Reset advancement time counters, then output the grid hierarchy sizes for computation later.
 		M_Advance_Step(i, iter_s, iter_mult);
 		
@@ -475,11 +482,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 			M_Advance_PrintData(i, iter_s);
 		
 		
-		// Print lift and drag forces to output if applicable. Temporary measure, will be refined later.
+		// Part B of force calculation.
+		// Print lift and drag forces to output if applicable.
 		if (N_PROBE_FORCE==1)
-			M_Advance_PrintForces(i, iter_s);
-		//if (N_DIM==2 && N_PROBE_FORCE==1)
-			//M_Advance_PrintForces(i, iter_s);
+			M_Advance_PrintForces(i, iter_s, 1);
 	}
 	
 	return 0;

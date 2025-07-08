@@ -2,16 +2,16 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Thu May 15 02:06:22 2025                                            */
+/*  Last Updated: Tue Jul  8 00:01:41 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
 #include "solver_lbm.h"
 #include "mesh.h"
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int post_step>
 __global__
-void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,double *__restrict__ cblock_f_Ff_solid,bool geometry_init,int order,int version)
+void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dv_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,ufloat_t *__restrict__ cblock_f_Ff,bool geometry_init,int order)
 {
     constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
@@ -21,13 +21,12 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
     constexpr int N_Q_max = AP->N_Q_max;
     __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
-    __shared__ ufloat_t s_u[3*M_TBLOCK];
-    __shared__ double s_Fpx[M_TBLOCK];
-    __shared__ double s_Fmx[M_TBLOCK];
-    __shared__ double s_Fpy[M_TBLOCK];
-    __shared__ double s_Fmy[M_TBLOCK];
-    __shared__ double s_Fpz[M_TBLOCK];
-    __shared__ double s_Fmz[M_TBLOCK];
+    __shared__ ufloat_t s_Fpx[M_TBLOCK];
+    __shared__ ufloat_t s_Fmx[M_TBLOCK];
+    __shared__ ufloat_t s_Fpy[M_TBLOCK];
+    __shared__ ufloat_t s_Fmy[M_TBLOCK];
+    __shared__ ufloat_t s_Fpz[M_TBLOCK];
+    __shared__ ufloat_t s_Fmz[M_TBLOCK];
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int Ip = I;
@@ -35,9 +34,6 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
     int Jp = J;
     int K = (threadIdx.x / 4) / 4;
     int Kp = K;
-    ufloat_t x __attribute__((unused)) = (ufloat_t)(0.0);
-    ufloat_t y __attribute__((unused)) = (ufloat_t)(0.0);
-    ufloat_t z __attribute__((unused)) = (ufloat_t)(0.0);
     int i_kap_b = -1;
     int i_kap_bc = -1;
     int nbr_kap_b = -1;
@@ -61,7 +57,7 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
     {
         i_kap_b = s_ID_cblock[k];
         
-        // This part is included if n>0 only.
+        // Load data for conditions on cell-blocks.
         if (i_kap_b>-1)
         {
             valid_block=cblock_ID_onb[i_kap_b];
@@ -74,7 +70,7 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
             valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             if (geometry_init)
                 block_mask = cblock_ID_onb_solid[i_kap_b];
-            if (n_maxblocks_b > 0 && compute_forces && block_mask > -1)
+            if (n_maxblocks_b > 0 && block_mask > -1)
             {
                 s_Fpx[threadIdx.x] = 0;
                 s_Fmx[threadIdx.x] = 0;
@@ -83,9 +79,6 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
                 s_Fpz[threadIdx.x] = 0;
                 s_Fmz[threadIdx.x] = 0;
             }
-            x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
-            y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
-            z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
             if (valid_block == 1 && threadIdx.x == 0)
             {
                 s_ID_nbr[1] = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
@@ -127,9 +120,7 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
             f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 2*n_maxcells];
             
             //
-            // Compute forces across curved boundary conditions.
-            // Do this only if adjacent to a solid cell (by checking the cell mask).
-            // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
             //
             if (valid_mask == -2)
             {
@@ -157,7 +148,7 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
                     }
                     else
                     {
-                        s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
+                        s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                     }
                 }
                 // Check if DDF 2 is directed towards the solid object.
@@ -179,730 +170,739 @@ void Cu_ComputeForces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
                     f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells];
                     dist_p /= dx_L;
                     // Add force contributions.
-                    if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
+                    if (n_maxblocks_b > 0 && dist_p > 0)
                     {
                         s_Fmx[threadIdx.x] += f_q;
                     }
                     else
                     {
-                        s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
+                        s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                     }
                 }
-                
-                //
-                // p = 3
-                //
-                
-                // Retrieve the DDF. Use correct order of access this time.
-                f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells];
-                f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells];
-                
-                //
-                // Compute forces across curved boundary conditions.
-                // Do this only if adjacent to a solid cell (by checking the cell mask).
-                // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                //
-                if (valid_mask == -2)
+            }
+            
+            //
+            // p = 3
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 3 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 3*n_maxcells_b];
+                if (dist_p > 0)
                 {
-                    // Check if DDF 3 is directed towards the solid object.
-                    dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 3*n_maxcells_b];
-                    if (dist_p > 0)
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 3*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
                     {
-                        // Pick the right neighbor block for this cell (pb).
-                        nbr_kap_b = i_kap_b;
-                        Ip = I + 0;
-                        Jp = J + -1;
-                        Kp = K + 0;
-                        // Consider nbr 4.
-                        if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                            nbr_kap_b = s_ID_nbr[4];
-                        // Get the fluid node behind this boundary node.
-                        Jp = (4 + (Jp % 4)) % 4;
-                        nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                        f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 3*n_maxcells];
-                        dist_p /= dx_L;
-                        // Add force contributions.
-                        if (order == 1)
-                        {
-                            s_Fpy[threadIdx.x] += f_p;
-                        }
-                        else
-                        {
-                            s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                        }
+                        s_Fpy[threadIdx.x] += f_p;
                     }
-                    // Check if DDF 4 is directed towards the solid object.
-                    // If computing forces, add the contributions of DDFs entering the geometry.
-                    dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 4*n_maxcells_b];
-                    if (dist_p > 0)
+                    else
                     {
-                        // Pick the right neighbor block for this cell (p).
-                        nbr_kap_b = i_kap_b;
-                        Ip = I + 0;
-                        Jp = J + 1;
-                        Kp = K + 0;
-                        // Consider nbr 3.
-                        if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                            nbr_kap_b = s_ID_nbr[3];
-                        // Get the fluid node behind this boundary node.
-                        Jp = (4 + (Jp % 4)) % 4;
-                        nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                        f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
-                        dist_p /= dx_L;
-                        // Add force contributions.
-                        if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                        {
-                            s_Fmy[threadIdx.x] += f_q;
-                        }
-                        else
-                        {
-                            s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                        }
+                        s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                     }
-                    
-                    //
-                    // p = 5
-                    //
-                    
-                    // Retrieve the DDF. Use correct order of access this time.
-                    f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells];
-                    f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells];
-                    
-                    //
-                    // Compute forces across curved boundary conditions.
-                    // Do this only if adjacent to a solid cell (by checking the cell mask).
-                    // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                    //
-                    if (valid_mask == -2)
+                }
+                // Check if DDF 4 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 4*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
                     {
-                        // Check if DDF 5 is directed towards the solid object.
-                        dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 5*n_maxcells_b];
-                        if (dist_p > 0)
-                        {
-                            // Pick the right neighbor block for this cell (pb).
-                            nbr_kap_b = i_kap_b;
-                            Ip = I + 0;
-                            Jp = J + 0;
-                            Kp = K + -1;
-                            // Consider nbr 6.
-                            if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                nbr_kap_b = s_ID_nbr[6];
-                            // Get the fluid node behind this boundary node.
-                            Kp = (4 + (Kp % 4)) % 4;
-                            nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                            f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 5*n_maxcells];
-                            dist_p /= dx_L;
-                            // Add force contributions.
-                            if (order == 1)
-                            {
-                                s_Fpz[threadIdx.x] += f_p;
-                            }
-                            else
-                            {
-                                s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                            }
-                        }
-                        // Check if DDF 6 is directed towards the solid object.
-                        // If computing forces, add the contributions of DDFs entering the geometry.
-                        dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 6*n_maxcells_b];
-                        if (dist_p > 0)
-                        {
-                            // Pick the right neighbor block for this cell (p).
-                            nbr_kap_b = i_kap_b;
-                            Ip = I + 0;
-                            Jp = J + 0;
-                            Kp = K + 1;
-                            // Consider nbr 5.
-                            if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                nbr_kap_b = s_ID_nbr[5];
-                            // Get the fluid node behind this boundary node.
-                            Kp = (4 + (Kp % 4)) % 4;
-                            nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                            f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
-                            dist_p /= dx_L;
-                            // Add force contributions.
-                            if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                            {
-                                s_Fmz[threadIdx.x] += f_q;
-                            }
-                            else
-                            {
-                                s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                            }
-                        }
-                        
-                        //
-                        // p = 7
-                        //
-                        
-                        // Retrieve the DDF. Use correct order of access this time.
-                        f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells];
-                        f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells];
-                        
-                        //
-                        // Compute forces across curved boundary conditions.
-                        // Do this only if adjacent to a solid cell (by checking the cell mask).
-                        // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                        //
-                        if (valid_mask == -2)
-                        {
-                            // Check if DDF 7 is directed towards the solid object.
-                            dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 7*n_maxcells_b];
-                            if (dist_p > 0)
-                            {
-                                // Pick the right neighbor block for this cell (pb).
-                                nbr_kap_b = i_kap_b;
-                                Ip = I + -1;
-                                Jp = J + -1;
-                                Kp = K + 0;
-                                // Consider nbr 2.
-                                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[2];
-                                // Consider nbr 4.
-                                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[4];
-                                // Consider nbr 8.
-                                if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[8];
-                                // Get the fluid node behind this boundary node.
-                                Ip = (4 + (Ip % 4)) % 4;
-                                Jp = (4 + (Jp % 4)) % 4;
-                                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
-                                dist_p /= dx_L;
-                                // Add force contributions.
-                                if (order == 1)
-                                {
-                                    s_Fpx[threadIdx.x] += f_p;
-                                    s_Fpy[threadIdx.x] += f_p;
-                                }
-                                else
-                                {
-                                    s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                    s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                }
-                            }
-                            // Check if DDF 8 is directed towards the solid object.
-                            // If computing forces, add the contributions of DDFs entering the geometry.
-                            dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 8*n_maxcells_b];
-                            if (dist_p > 0)
-                            {
-                                // Pick the right neighbor block for this cell (p).
-                                nbr_kap_b = i_kap_b;
-                                Ip = I + 1;
-                                Jp = J + 1;
-                                Kp = K + 0;
-                                // Consider nbr 1.
-                                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[1];
-                                // Consider nbr 3.
-                                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[3];
-                                // Consider nbr 7.
-                                if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                    nbr_kap_b = s_ID_nbr[7];
-                                // Get the fluid node behind this boundary node.
-                                Ip = (4 + (Ip % 4)) % 4;
-                                Jp = (4 + (Jp % 4)) % 4;
-                                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
-                                dist_p /= dx_L;
-                                // Add force contributions.
-                                if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                {
-                                    s_Fmx[threadIdx.x] += f_q;
-                                    s_Fmy[threadIdx.x] += f_q;
-                                }
-                                else
-                                {
-                                    s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                    s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                }
-                            }
-                            
-                            //
-                            // p = 9
-                            //
-                            
-                            // Retrieve the DDF. Use correct order of access this time.
-                            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells];
-                            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 10*n_maxcells];
-                            
-                            //
-                            // Compute forces across curved boundary conditions.
-                            // Do this only if adjacent to a solid cell (by checking the cell mask).
-                            // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                            //
-                            if (valid_mask == -2)
-                            {
-                                // Check if DDF 9 is directed towards the solid object.
-                                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 9*n_maxcells_b];
-                                if (dist_p > 0)
-                                {
-                                    // Pick the right neighbor block for this cell (pb).
-                                    nbr_kap_b = i_kap_b;
-                                    Ip = I + -1;
-                                    Jp = J + 0;
-                                    Kp = K + -1;
-                                    // Consider nbr 2.
-                                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                        nbr_kap_b = s_ID_nbr[2];
-                                    // Consider nbr 6.
-                                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                        nbr_kap_b = s_ID_nbr[6];
-                                    // Consider nbr 10.
-                                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                        nbr_kap_b = s_ID_nbr[10];
-                                    // Get the fluid node behind this boundary node.
-                                    Ip = (4 + (Ip % 4)) % 4;
-                                    Kp = (4 + (Kp % 4)) % 4;
-                                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 9*n_maxcells];
-                                    dist_p /= dx_L;
-                                    // Add force contributions.
-                                    if (order == 1)
-                                    {
-                                        s_Fpx[threadIdx.x] += f_p;
-                                        s_Fpz[threadIdx.x] += f_p;
-                                    }
-                                    else
-                                    {
-                                        s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                        s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                    }
-                                }
-                                // Check if DDF 10 is directed towards the solid object.
-                                // If computing forces, add the contributions of DDFs entering the geometry.
-                                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 10*n_maxcells_b];
-                                if (dist_p > 0)
-                                {
-                                    // Pick the right neighbor block for this cell (p).
-                                    nbr_kap_b = i_kap_b;
-                                    Ip = I + 1;
-                                    Jp = J + 0;
-                                    Kp = K + 1;
-                                    // Consider nbr 1.
-                                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                        nbr_kap_b = s_ID_nbr[1];
-                                    // Consider nbr 5.
-                                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                        nbr_kap_b = s_ID_nbr[5];
-                                    // Consider nbr 9.
-                                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                        nbr_kap_b = s_ID_nbr[9];
-                                    // Get the fluid node behind this boundary node.
-                                    Ip = (4 + (Ip % 4)) % 4;
-                                    Kp = (4 + (Kp % 4)) % 4;
-                                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
-                                    dist_p /= dx_L;
-                                    // Add force contributions.
-                                    if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                    {
-                                        s_Fmx[threadIdx.x] += f_q;
-                                        s_Fmz[threadIdx.x] += f_q;
-                                    }
-                                    else
-                                    {
-                                        s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                        s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                    }
-                                }
-                                
-                                //
-                                // p = 11
-                                //
-                                
-                                // Retrieve the DDF. Use correct order of access this time.
-                                f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells];
-                                f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 12*n_maxcells];
-                                
-                                //
-                                // Compute forces across curved boundary conditions.
-                                // Do this only if adjacent to a solid cell (by checking the cell mask).
-                                // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                                //
-                                if (valid_mask == -2)
-                                {
-                                    // Check if DDF 11 is directed towards the solid object.
-                                    dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 11*n_maxcells_b];
-                                    if (dist_p > 0)
-                                    {
-                                        // Pick the right neighbor block for this cell (pb).
-                                        nbr_kap_b = i_kap_b;
-                                        Ip = I + 0;
-                                        Jp = J + -1;
-                                        Kp = K + -1;
-                                        // Consider nbr 4.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                            nbr_kap_b = s_ID_nbr[4];
-                                        // Consider nbr 6.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                            nbr_kap_b = s_ID_nbr[6];
-                                        // Consider nbr 12.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
-                                            nbr_kap_b = s_ID_nbr[12];
-                                        // Get the fluid node behind this boundary node.
-                                        Jp = (4 + (Jp % 4)) % 4;
-                                        Kp = (4 + (Kp % 4)) % 4;
-                                        nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                        f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 11*n_maxcells];
-                                        dist_p /= dx_L;
-                                        // Add force contributions.
-                                        if (order == 1)
-                                        {
-                                            s_Fpy[threadIdx.x] += f_p;
-                                            s_Fpz[threadIdx.x] += f_p;
-                                        }
-                                        else
-                                        {
-                                            s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                            s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                        }
-                                    }
-                                    // Check if DDF 12 is directed towards the solid object.
-                                    // If computing forces, add the contributions of DDFs entering the geometry.
-                                    dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 12*n_maxcells_b];
-                                    if (dist_p > 0)
-                                    {
-                                        // Pick the right neighbor block for this cell (p).
-                                        nbr_kap_b = i_kap_b;
-                                        Ip = I + 0;
-                                        Jp = J + 1;
-                                        Kp = K + 1;
-                                        // Consider nbr 3.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                            nbr_kap_b = s_ID_nbr[3];
-                                        // Consider nbr 5.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                            nbr_kap_b = s_ID_nbr[5];
-                                        // Consider nbr 11.
-                                        if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
-                                            nbr_kap_b = s_ID_nbr[11];
-                                        // Get the fluid node behind this boundary node.
-                                        Jp = (4 + (Jp % 4)) % 4;
-                                        Kp = (4 + (Kp % 4)) % 4;
-                                        nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                        f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
-                                        dist_p /= dx_L;
-                                        // Add force contributions.
-                                        if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                        {
-                                            s_Fmy[threadIdx.x] += f_q;
-                                            s_Fmz[threadIdx.x] += f_q;
-                                        }
-                                        else
-                                        {
-                                            s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                            s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                        }
-                                    }
-                                    
-                                    //
-                                    // p = 13
-                                    //
-                                    
-                                    // Retrieve the DDF. Use correct order of access this time.
-                                    f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells];
-                                    f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 14*n_maxcells];
-                                    
-                                    //
-                                    // Compute forces across curved boundary conditions.
-                                    // Do this only if adjacent to a solid cell (by checking the cell mask).
-                                    // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                                    //
-                                    if (valid_mask == -2)
-                                    {
-                                        // Check if DDF 13 is directed towards the solid object.
-                                        dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 13*n_maxcells_b];
-                                        if (dist_p > 0)
-                                        {
-                                            // Pick the right neighbor block for this cell (pb).
-                                            nbr_kap_b = i_kap_b;
-                                            Ip = I + -1;
-                                            Jp = J + 1;
-                                            Kp = K + 0;
-                                            // Consider nbr 2.
-                                            if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[2];
-                                            // Consider nbr 3.
-                                            if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[3];
-                                            // Consider nbr 14.
-                                            if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[14];
-                                            // Get the fluid node behind this boundary node.
-                                            Ip = (4 + (Ip % 4)) % 4;
-                                            Jp = (4 + (Jp % 4)) % 4;
-                                            nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                            f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 13*n_maxcells];
-                                            dist_p /= dx_L;
-                                            // Add force contributions.
-                                            if (order == 1)
-                                            {
-                                                s_Fpx[threadIdx.x] += f_p;
-                                                s_Fmy[threadIdx.x] += f_p;
-                                            }
-                                            else
-                                            {
-                                                s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                                s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                            }
-                                        }
-                                        // Check if DDF 14 is directed towards the solid object.
-                                        // If computing forces, add the contributions of DDFs entering the geometry.
-                                        dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 14*n_maxcells_b];
-                                        if (dist_p > 0)
-                                        {
-                                            // Pick the right neighbor block for this cell (p).
-                                            nbr_kap_b = i_kap_b;
-                                            Ip = I + 1;
-                                            Jp = J + -1;
-                                            Kp = K + 0;
-                                            // Consider nbr 1.
-                                            if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[1];
-                                            // Consider nbr 4.
-                                            if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[4];
-                                            // Consider nbr 13.
-                                            if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                                nbr_kap_b = s_ID_nbr[13];
-                                            // Get the fluid node behind this boundary node.
-                                            Ip = (4 + (Ip % 4)) % 4;
-                                            Jp = (4 + (Jp % 4)) % 4;
-                                            nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                            f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
-                                            dist_p /= dx_L;
-                                            // Add force contributions.
-                                            if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                            {
-                                                s_Fmx[threadIdx.x] += f_q;
-                                                s_Fpy[threadIdx.x] += f_q;
-                                            }
-                                            else
-                                            {
-                                                s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                                s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                            }
-                                        }
-                                        
-                                        //
-                                        // p = 15
-                                        //
-                                        
-                                        // Retrieve the DDF. Use correct order of access this time.
-                                        f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells];
-                                        f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 16*n_maxcells];
-                                        
-                                        //
-                                        // Compute forces across curved boundary conditions.
-                                        // Do this only if adjacent to a solid cell (by checking the cell mask).
-                                        // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                                        //
-                                        if (valid_mask == -2)
-                                        {
-                                            // Check if DDF 15 is directed towards the solid object.
-                                            dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 15*n_maxcells_b];
-                                            if (dist_p > 0)
-                                            {
-                                                // Pick the right neighbor block for this cell (pb).
-                                                nbr_kap_b = i_kap_b;
-                                                Ip = I + -1;
-                                                Jp = J + 0;
-                                                Kp = K + 1;
-                                                // Consider nbr 2.
-                                                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                                    nbr_kap_b = s_ID_nbr[2];
-                                                // Consider nbr 5.
-                                                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                                    nbr_kap_b = s_ID_nbr[5];
-                                                // Consider nbr 16.
-                                                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                                    nbr_kap_b = s_ID_nbr[16];
-                                                // Get the fluid node behind this boundary node.
-                                                Ip = (4 + (Ip % 4)) % 4;
-                                                Kp = (4 + (Kp % 4)) % 4;
-                                                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 15*n_maxcells];
-                                                dist_p /= dx_L;
-                                                // Add force contributions.
-                                                if (order == 1)
-                                                {
-                                                    s_Fpx[threadIdx.x] += f_p;
-                                                    s_Fmz[threadIdx.x] += f_p;
-                                                }
-                                                else
-                                                {
-                                                    s_Fpx[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                                    s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                                }
-                                            }
-                                            // Check if DDF 16 is directed towards the solid object.
-                                            // If computing forces, add the contributions of DDFs entering the geometry.
-                                            dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 16*n_maxcells_b];
-                                            if (dist_p > 0)
-                                            {
-                                                // Pick the right neighbor block for this cell (p).
-                                                nbr_kap_b = i_kap_b;
-                                                Ip = I + 1;
-                                                Jp = J + 0;
-                                                Kp = K + -1;
-                                                // Consider nbr 1.
-                                                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                                                    nbr_kap_b = s_ID_nbr[1];
-                                                // Consider nbr 6.
-                                                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                                    nbr_kap_b = s_ID_nbr[6];
-                                                // Consider nbr 15.
-                                                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                                    nbr_kap_b = s_ID_nbr[15];
-                                                // Get the fluid node behind this boundary node.
-                                                Ip = (4 + (Ip % 4)) % 4;
-                                                Kp = (4 + (Kp % 4)) % 4;
-                                                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
-                                                dist_p /= dx_L;
-                                                // Add force contributions.
-                                                if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                                {
-                                                    s_Fmx[threadIdx.x] += f_q;
-                                                    s_Fpz[threadIdx.x] += f_q;
-                                                }
-                                                else
-                                                {
-                                                    s_Fmx[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                                    s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                                }
-                                            }
-                                            
-                                            //
-                                            // p = 17
-                                            //
-                                            
-                                            // Retrieve the DDF. Use correct order of access this time.
-                                            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells];
-                                            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 18*n_maxcells];
-                                            
-                                            //
-                                            // Compute forces across curved boundary conditions.
-                                            // Do this only if adjacent to a solid cell (by checking the cell mask).
-                                            // Current assumption: only one DDFs from the pair will be altered at a time, stationary boundaries.
-                                            //
-                                            if (valid_mask == -2)
-                                            {
-                                                // Check if DDF 17 is directed towards the solid object.
-                                                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 17*n_maxcells_b];
-                                                if (dist_p > 0)
-                                                {
-                                                    // Pick the right neighbor block for this cell (pb).
-                                                    nbr_kap_b = i_kap_b;
-                                                    Ip = I + 0;
-                                                    Jp = J + -1;
-                                                    Kp = K + 1;
-                                                    // Consider nbr 4.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                                                        nbr_kap_b = s_ID_nbr[4];
-                                                    // Consider nbr 5.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                                                        nbr_kap_b = s_ID_nbr[5];
-                                                    // Consider nbr 18.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
-                                                        nbr_kap_b = s_ID_nbr[18];
-                                                    // Get the fluid node behind this boundary node.
-                                                    Jp = (4 + (Jp % 4)) % 4;
-                                                    Kp = (4 + (Kp % 4)) % 4;
-                                                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 17*n_maxcells];
-                                                    dist_p /= dx_L;
-                                                    // Add force contributions.
-                                                    if (order == 1)
-                                                    {
-                                                        s_Fpy[threadIdx.x] += f_p;
-                                                        s_Fmz[threadIdx.x] += f_p;
-                                                    }
-                                                    else
-                                                    {
-                                                        s_Fpy[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                                        s_Fmz[threadIdx.x] += (0.5+(double)dist_p)*f_p + (0.5-(double)dist_p)*f_m;
-                                                    }
-                                                }
-                                                // Check if DDF 18 is directed towards the solid object.
-                                                // If computing forces, add the contributions of DDFs entering the geometry.
-                                                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 18*n_maxcells_b];
-                                                if (dist_p > 0)
-                                                {
-                                                    // Pick the right neighbor block for this cell (p).
-                                                    nbr_kap_b = i_kap_b;
-                                                    Ip = I + 0;
-                                                    Jp = J + 1;
-                                                    Kp = K + -1;
-                                                    // Consider nbr 3.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                                                        nbr_kap_b = s_ID_nbr[3];
-                                                    // Consider nbr 6.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                                                        nbr_kap_b = s_ID_nbr[6];
-                                                    // Consider nbr 17.
-                                                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
-                                                        nbr_kap_b = s_ID_nbr[17];
-                                                    // Get the fluid node behind this boundary node.
-                                                    Jp = (4 + (Jp % 4)) % 4;
-                                                    Kp = (4 + (Kp % 4)) % 4;
-                                                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                                                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
-                                                    dist_p /= dx_L;
-                                                    // Add force contributions.
-                                                    if (n_maxblocks_b > 0 && compute_forces && dist_p > 0)
-                                                    {
-                                                        s_Fmy[threadIdx.x] += f_q;
-                                                        s_Fpz[threadIdx.x] += f_q;
-                                                    }
-                                                    else
-                                                    {
-                                                        s_Fmy[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                                        s_Fpz[threadIdx.x] += (0.5+(double)dist_p)*f_q + (0.5-(double)dist_p)*f_m;
-                                                    }
-                                                }
-                                                
-                                                if (n_maxblocks_b > 0 && block_mask > -1)
-                                                {
-                                                    // Reductions for the sums of force contributions in this cell-block.
-                                                    __syncthreads();
-                                                    for (int s=blockDim.x/2; s>0; s>>=1)
-                                                    {
-                                                    if (threadIdx.x < s)
-                                                    {
-                                                        s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
-                                                        s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
-                                                        s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
-                                                        s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
-                                                        s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
-                                                        s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
-                                                    }
-                                                    __syncthreads();
-                                                    }
-                                                    // Store the sums of contributions in global memory; this will be reduced further later.
-                                                    if (threadIdx.x == 0)
-                                                    {
-                                                        cblock_f_Ff_solid[block_mask + 0*n_maxblocks_b] = s_Fpx[0];
-                                                        cblock_f_Ff_solid[block_mask + 1*n_maxblocks_b] = s_Fmx[0];
-                                                        cblock_f_Ff_solid[block_mask + 2*n_maxblocks_b] = s_Fpy[0];
-                                                        cblock_f_Ff_solid[block_mask + 3*n_maxblocks_b] = s_Fmy[0];
-                                                        cblock_f_Ff_solid[block_mask + 4*n_maxblocks_b] = s_Fpz[0];
-                                                        cblock_f_Ff_solid[block_mask + 5*n_maxblocks_b] = s_Fmz[0];
-                                                    }
-                                                }
-                                            }
-                                        }
+                        s_Fmy[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 5
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 5 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 5*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Get the fluid node behind this boundary node.
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 5*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpz[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 6 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 6*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Get the fluid node behind this boundary node.
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmz[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 7
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 7 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 7*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 8.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[8];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpx[threadIdx.x] += f_p;
+                        s_Fpy[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 8 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 8*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 7.
+                    if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[7];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmx[threadIdx.x] += f_q;
+                        s_Fmy[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 9
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 10*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 9 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 9*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 10.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[10];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 9*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpx[threadIdx.x] += f_p;
+                        s_Fpz[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 10 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 10*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 9.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[9];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmx[threadIdx.x] += f_q;
+                        s_Fmz[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 11
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 12*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 11 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 11*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + -1;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 12.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[12];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 11*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpy[threadIdx.x] += f_p;
+                        s_Fpz[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 12 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 12*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + 1;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 11.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[11];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmy[threadIdx.x] += f_q;
+                        s_Fmz[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 13
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 14*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 13 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 13*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 14.
+                    if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[14];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 13*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpx[threadIdx.x] += f_p;
+                        s_Fmy[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 14 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 14*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 13.
+                    if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[13];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmx[threadIdx.x] += f_q;
+                        s_Fpy[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 15
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 16*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 15 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 15*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 16.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[16];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 15*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpx[threadIdx.x] += f_p;
+                        s_Fmz[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 16 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 16*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 15.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[15];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmx[threadIdx.x] += f_q;
+                        s_Fpz[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmx[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            //
+            // p = 17
+            //
+            
+            // Retrieve the DDF. Use correct order of access this time.
+            f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells];
+            f_q = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 18*n_maxcells];
+            
+            //
+            // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+            //
+            if (valid_mask == -2)
+            {
+                // Check if DDF 17 is directed towards the solid object.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 17*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + 1;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 18.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[18];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 17*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (order == 1)
+                    {
+                        s_Fpy[threadIdx.x] += f_p;
+                        s_Fmz[threadIdx.x] += f_p;
+                    }
+                    else
+                    {
+                        s_Fpy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fmz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+                // Check if DDF 18 is directed towards the solid object.
+                // If computing forces, add the contributions of DDFs entering the geometry.
+                dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 18*n_maxcells_b];
+                if (dist_p > 0)
+                {
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + -1;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 17.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[17];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
+                    dist_p /= dx_L;
+                    // Add force contributions.
+                    if (n_maxblocks_b > 0 && dist_p > 0)
+                    {
+                        s_Fmy[threadIdx.x] += f_q;
+                        s_Fpz[threadIdx.x] += f_q;
+                    }
+                    else
+                    {
+                        s_Fmy[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                        s_Fpz[threadIdx.x] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                    }
+                }
+            }
+            
+            if (n_maxblocks_b > 0 && block_mask > -1)
+            {
+                // Reductions for the sums of force contributions in this cell-block.
+                __syncthreads();
+                for (int s=blockDim.x/2; s>0; s>>=1)
+                {
+                if (threadIdx.x < s)
+                {
+                    s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
+                    s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
+                    s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
+                    s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
+                    s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
+                    s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
+                }
+                __syncthreads();
+                }
+                // Store the sums of contributions in global memory; this will be reduced further later.
+                if (threadIdx.x == 0)
+                {
+                    if (post_step == 0)
+                    {
+                        cblock_f_Ff[i_kap_b + 0*n_maxcblocks] = s_Fpx[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 1*n_maxcblocks] = s_Fmx[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 2*n_maxcblocks] = s_Fpy[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 3*n_maxcblocks] = s_Fmy[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 4*n_maxcblocks] = s_Fpz[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 5*n_maxcblocks] = s_Fmz[0]*dv_L;
+                    }
+                    else
+                    {
+                        cblock_f_Ff[i_kap_b + 0*n_maxcblocks] += s_Fpx[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 1*n_maxcblocks] += s_Fmx[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 2*n_maxcblocks] += s_Fpy[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 3*n_maxcblocks] += s_Fmy[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 4*n_maxcblocks] += s_Fpz[0]*dv_L;
+                        cblock_f_Ff[i_kap_b + 5*n_maxcblocks] += s_Fmz[0]*dv_L;
+                    }
+                }
+            }
+        }
+    }
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForces_D3Q19(int i_dev, int L)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForces_D3Q19(int i_dev, int L, int var)
 {
-	if (mesh->n_ids[i_dev][L] > 0)
+	if (mesh->n_ids[i_dev][L]>0 && var==0)
 	{
-		Cu_ComputeForces_D3Q19<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff_solid[i_dev], mesh->geometry_init, 2, var);
+		Cu_ComputeForces_D3Q19<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE);
+	}
+	if (mesh->n_ids[i_dev][L]>0 && var==1)
+	{
+		Cu_ComputeForces_D3Q19<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE);
 	}
 
 	return 0;

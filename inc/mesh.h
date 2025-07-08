@@ -113,8 +113,8 @@ class Mesh
 	//! A Thrust pointer-cast of the device array @ref c_tmp_counting_iter.
 	thrust::device_ptr<int> *c_tmp_counting_iter_dptr = new thrust::device_ptr<int>[N_DEV];
 	
-	//! A Thrust pointer-cast of the device array @ref c_cblock_f_Ff_solid.
-	thrust::device_ptr<double> *c_cblock_f_Ff_solid_dptr = new thrust::device_ptr<double>[N_DEV];
+	//! A Thrust pointer-cast of the device array @ref c_cblock_f_Ff.
+	thrust::device_ptr<ufloat_t> *c_cblock_f_Ff_dptr = new thrust::device_ptr<ufloat_t>[N_DEV];
 	
 	
 	//! Temporary GPU storage.
@@ -199,19 +199,20 @@ class Mesh
 	// o====================================================================================
 	
 	// Constants.
-	const int       N_DIM                   = AP->N_DIM;
-	const int       N_Q_max                 = AP->N_Q_max;
-	const int       Nqx                     = AP->Nqx;
-	const int       N_CHILDREN              = AP->N_CHILDREN;
-	const int       N_QUADS                 = AP->N_QUADS;
-	const int       M_TBLOCK                = AP->M_TBLOCK;
-	const int       M_HBLOCK                = AP->M_HBLOCK;
-	const int       M_CBLOCK                = AP->M_CBLOCK;
-	const int       M_LBLOCK                = AP->M_LBLOCK;
-	const int       M_BLOCK                 = AP->M_BLOCK;
-	const int       M_RNDOFF                = AP->M_RNDOFF;
-	const int       N_Q;
-	const int       N_U;
+	const int N_DIM                     = AP->N_DIM;            ///< Number of dimensions.
+	const int N_Q_max                   = AP->N_Q_max;          ///< Neighbor-halo size (including self).
+	const int Nqx                       = AP->Nqx;              ///< Number of sub-blocks along one axis.
+	const int N_CHILDREN                = AP->N_CHILDREN;       ///< Number of children per block.
+	const int N_QUADS                   = AP->N_QUADS;          ///< Total number of sub-blocks per cell-block.
+	const int M_TBLOCK                  = AP->M_TBLOCK;         ///< Number of threads per thread-block in primary-mode.
+	const int M_CBLOCK                  = AP->M_CBLOCK;         ///< Number of cells per cell-block.
+	const int M_LBLOCK                  = AP->M_LBLOCK;         ///< Number of cell-blocks processed per thread-block in primary-mode.
+	const int M_WBLOCK                  = AP->M_WBLOCK;         ///< Number of threads working within a warp in uprimary-mode.
+	const int M_LWBLOCK                 = AP->M_LWBLOCK;        ///< Number of cell-blocks processed per thread-block in uprimary-mode.
+	const int M_BLOCK                   = AP->M_BLOCK;          ///< Number of threads per thread-block in secondary-mode.
+	const int M_RNDOFF                  = AP->M_RNDOFF;         ///< Round-off constant for memory alignment.
+	const int N_Q;
+	const int N_U;
 	
 	// Domain size.
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
@@ -336,7 +337,7 @@ class Mesh
 	int		**cblock_ID_onb_solid = new int*[N_DEV];
 	
 	//! Stores the force contributions of the various cell-blocks.
-	double		**cblock_f_Ff_solid = new double*[N_DEV];
+	ufloat_t	**cblock_f_Ff = new ufloat_t*[N_DEV];
 	
 	//! Array of cell-block refinement IDs.
 	//! Stores the refinement ID for cell-blocks which indicate status during mesh updates. Values are defined by macros V_REF_ID_....
@@ -350,15 +351,6 @@ class Mesh
 	
 	//! Array of cell-block edge/face IDs.
 	int		**cblock_ID_face = new int*[N_DEV];
-	
-	//! Array of geometry node locations. [DEPRECATED]
-	//double		*geom_f_node_X[N_DEV];
-	
-	//! Array of face indices. [DEPRECATED]
-	//int		*geom_ID_face[N_DEV];
-	
-	//! Array of geometry face attributes attributes. [DEPRECATED]
-	//double		*geom_ID_face_attr[N_DEV];
 	
 	//! Arrays of active cell-block IDs.
 	//! Stores the IDs of active cell-blocks, classified among the possible grid hierarchy levels with an array for each level.
@@ -379,12 +371,6 @@ class Mesh
 	
 	//! Array of active cell-block counts.
 	int		**n_ids = new int*[N_DEV];
-	
-	//! Number of nodes. [DEPRECATED]
-	//int		n_nodes[N_DEV];
-	
-	//! Number of faces. [DEPRECATED]
-	//int		n_faces[N_DEV];
 	
 	//! Probed cell-block counter.
 	int		*n_ids_probed = new int[N_DEV];
@@ -453,8 +439,8 @@ class Mesh
 	//! GPU counterpart of @ref cblock_ID_onb_solid.
 	int		**c_cblock_ID_onb_solid = new int*[N_DEV];
 	
-	//! GPU counterpart of @ref cblock_f_Ff_solid.
-	double		**c_cblock_f_Ff_solid = new double*[N_DEV];
+	//! GPU counterpart of @ref cblock_f_Ff.
+	ufloat_t	**c_cblock_f_Ff = new ufloat_t*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_ref.
 	int 		**c_cblock_ID_ref = new int*[N_DEV];
@@ -467,15 +453,6 @@ class Mesh
 	
 	//! GPU counterpart of @ref cblock_ID_face.
 	int		**c_cblock_ID_face = new int*[N_DEV];
-	
-	//! GPU counterpart of @ref geom_f_node_X. [DEPRECATED]
-	//double	*c_geom_f_node_X[N_DEV];
-	
-	//! GPU counterpart of @ref geom_ID_face. [DEPRECATED]
-	//int		*c_geom_ID_face[N_DEV];
-	
-	//! GPU counterpart of @ref geom_ID_face_attr. [DEPRECATED]
-	//double	*c_geom_ID_face_attr[N_DEV];
 	
 	//! GPU counterpart of @ref id_set.
 	int		**c_id_set = new int*[N_DEV];
@@ -642,7 +619,7 @@ class Mesh
 	*/
 	int             M_Advance(int i_dev, int L, double *tmp);
 	
-	
+	// TODO: Documentation.
 	int             M_ComputeRefCriteria(int i_dev, int L, int var);
 	int             M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L);
 	int             M_ComputeRefCriteria_Geometry_Binned(int i_dev, int L);
@@ -659,9 +636,9 @@ class Mesh
 	int             M_Advance_Probe(int i, int iter_s);
 	int             M_Advance_ProbeAverage(int i, int iter_s, int &N_iter_ave);
 	int             M_Advance_PrintData(int i, int iter_s);
-	int             M_Advance_PrintForces(int i, int iter_s);
+	int             M_Advance_PrintForces(int i, int iter_s, int START);
 	int             M_ComplexGeom();
-	int             M_ReportForces(int i_dev, int L, int i, double t);
+	int             M_ReportForces(int i_dev, int L, int i, double t, int START);
 	
 	int             M_NewSolver_LBM_BGK(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str);
 	
@@ -696,9 +673,9 @@ class Mesh
 		std::map<std::string, double> params_dbl,
 		std::map<std::string, std::string> params_str,
 		int N_Q_,
-		int enable_aux_data_=0,
-		int N_U_=0
-	) : N_Q(N_Q_), enable_aux_data(enable_aux_data_), N_U(N_U_)
+		int enable_aux_data_=0, int N_U_=0
+	) : N_Q(N_Q_),
+	    enable_aux_data(enable_aux_data_), N_U(N_U_)
 	{
 		M_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making mesh object." << std::endl << std::endl;

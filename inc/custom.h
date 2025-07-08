@@ -21,6 +21,24 @@ bool Cu_RefineRegion
 }
 
 // o====================================================================================
+// | Specified force control-volume region.
+// o====================================================================================
+
+template <typename ufloat_t>
+__device__
+bool Cu_ForceRegion
+(
+	ufloat_t x, ufloat_t y, ufloat_t z
+)
+{
+	// --- HERE ---
+	// Define a custom control volume for the force calculation here.
+	// --- HERE ---
+	
+	return false;
+}
+
+// o====================================================================================
 // | Initial conditions.
 // o====================================================================================
 
@@ -67,27 +85,7 @@ void Cu_ImposeBC
 // 	}
 	
 	// FPSC (2D).
-// 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
-// 	{
-// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
-// 	}
-// 	if (nbr_id == -2)
-// 	{
-// 		cdotu = cxp*u + cyp*v + czp*w;
-// 		cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
-// 		f = -f + (ufloat_t)(2.0)*wp*cdotu;
-// 	}
-	
-	// LDC (3D).
-// 	if (nbr_id == -6)
-// 	{
-// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
-// 	}
-	
-	// FPSC (3D).
-	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
+	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
 	{
 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
 		f = f - (ufloat_t)(2.0)*wp*cdotu;
@@ -98,6 +96,26 @@ void Cu_ImposeBC
 		cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
 		f = -f + (ufloat_t)(2.0)*wp*cdotu;
 	}
+	
+	// LDC (3D).
+// 	if (nbr_id == -6)
+// 	{
+// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
+// 	}
+	
+	// FPSC (3D).
+// 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
+// 	{
+// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
+// 	}
+// 	if (nbr_id == -2)
+// 	{
+// 		cdotu = cxp*u + cyp*v + czp*w;
+// 		cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
+// 		f = -f + (ufloat_t)(2.0)*wp*cdotu;
+// 	}
 }
 
 #endif

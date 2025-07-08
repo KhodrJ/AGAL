@@ -34,6 +34,8 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 			// |
 			S_Collide(i_dev, L);
+			S_ComputeForces(i_dev, L, 0);
+			S_ImposeBC(i_dev, L);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -56,6 +58,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 			// |
 			S_Average(i_dev, L, V_AVERAGE_ADVANCE);
+			S_ComputeForces(i_dev, L, 1);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -101,6 +104,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 			// |
 			S_Collide(i_dev, L);
+			S_ImposeBC(i_dev, L);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -146,6 +150,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 			// |
 			S_Collide(i_dev, L);
+			S_ImposeBC(i_dev, L);
 			// |
 #if (P_SHOW_ADVANCE==1)
 			cudaDeviceSynchronize();
@@ -184,6 +189,8 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 		// |
 		S_Collide(i_dev, L);
+		S_ComputeForces(i_dev, L, 0);
+		S_ImposeBC(i_dev, L);
 		// |
 #if (P_SHOW_ADVANCE==1)
 		cudaDeviceSynchronize();
@@ -192,6 +199,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 #endif
 		// |
 		S_Stream(i_dev, L);
+		S_ComputeForces(i_dev, L, 1);
 		// |
 #if (P_SHOW_ADVANCE==1)
 		cudaDeviceSynchronize();

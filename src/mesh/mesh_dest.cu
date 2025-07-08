@@ -71,6 +71,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 		if (enable_aux_data)
 			gpuErrchk( cudaFree(c_cells_f_F_aux[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_f_X[i_dev]) );
+		gpuErrchk( cudaFree(c_cblock_f_Ff[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_mask[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_nbr[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_nbr_child[i_dev]) );

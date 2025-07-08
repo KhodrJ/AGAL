@@ -1,6 +1,14 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*  Last Updated: Wed Jul  2 19:11:17 2025                                            */
+/*                                                                                    */
+/**************************************************************************************/
+
 #include "solver_lbm.h"
 
-
+/*
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetIC(int i_dev, int L)
 {
@@ -14,17 +22,16 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetIC(int i_dev, int L)
 	return 0;
 }
 
-/*
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 {
-	if (VS == VS_D2Q9)
- 		S_Collision_Original_D2Q9(i_dev,L);
- 	if (VS == VS_D3Q19)
- 		S_Collision_Original_D3Q19(i_dev,L);
- 	if (VS == VS_D3Q27)
- 		S_Collision_Original_D3Q27(i_dev,L);
-	
+// 	if (VS == VS_D2Q9)
+//  		S_Collision_Original_D2Q9(i_dev,L);
+//  	if (VS == VS_D3Q19)
+//  		S_Collision_Original_D3Q19(i_dev,L);
+//  	if (VS == VS_D3Q27)
+//  		S_Collision_Original_D3Q27(i_dev,L);
+
 // 	if (VS == VS_D2Q9)
 // 	{
 // 		if (CM == CM_BGK)
@@ -55,7 +62,6 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 	
 	return 0;
 }
-*/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream(int i_dev, int L)
@@ -117,3 +123,4 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Average(int i_dev, int L, int var)
 	
 	return 0;
 }
+*/

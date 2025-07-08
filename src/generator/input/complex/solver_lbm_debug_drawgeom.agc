@@ -35,7 +35,6 @@ KERNEL_REQUIRE int *__restrict__ cblock_ID_nbr_child   | mesh->c_cblock_ID_nbr_c
 KERNEL_REQUIRE int *__restrict__ cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
-KERNEL_REQUIRE double *__restrict__ cblock_f_Ff_solid  | mesh->c_cblock_f_Ff_solid[i_dev]
 KERNEL_REQUIRE bool geometry_init                      | mesh->geometry_init
 KERNEL_REQUIRE bool compute_forces                     | compute_forces
 

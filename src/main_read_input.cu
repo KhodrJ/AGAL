@@ -90,6 +90,12 @@ int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &
 		{"N_REFINE_START",          -3.0},
 		{"N_REFINE_INC",            1.0},
 		{"N_REFINE_MAX",            1.0},
+		{"S_FORCEVOLUME_Xm",        0.0},
+		{"S_FORCEVOLUME_XM",        0.0},
+		{"S_FORCEVOLUME_Ym",        0.0},
+		{"S_FORCEVOLUME_YM",        0.0},
+		{"S_FORCEVOLUME_Zm",        0.0},
+		{"S_FORCEVOLUME_ZM",        0.0},
 	};
 	input_map_str = std::map<std::string, std::string> // Define map of string parameters with default values.
 	{

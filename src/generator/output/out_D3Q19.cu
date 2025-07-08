@@ -2,16 +2,16 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Tue May 20 00:10:47 2025                                            */
+/*  Last Updated: Sun Jul  6 22:45:07 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
 #include "solver.h"
 #include "mesh.h"
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int ave_type>
 __global__
-void Cu_IdentifyFaces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,ufloat_t tau_L,ufloat_t tau_ratio,int *id_set_idev_L,int *cells_ID_mask,ufloat_t *cells_f_F,int *cblock_ID_nbr,int *cblock_ID_nbr_child,int *cblock_ID_mask,int *cblock_ID_onb)
+void Cu_Average_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,ufloat_t tau_L,ufloat_t tau_ratio,int *id_set_idev_L,int *cells_ID_mask,ufloat_t *cells_f_F,int *cblock_ID_nbr,int *cblock_ID_nbr_child,int *cblock_ID_mask,int *cblock_ID_onb)
 {
     //
     // p = 1
@@ -625,14 +625,24 @@ void Cu_IdentifyFaces_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
     if (dist_p > 0)
         check_cell_mask = true;
     
+    gIMP(1.000000000000000
+    1.000000000000000
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_IdentifyFaces_D3Q19(int i_dev, int L, int var)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Average_D3Q19(int i_dev, int L, int var, ufloat_t tau_L, ufloat_t tau_ratio_L)
 {
-	if (mesh->n_ids[i_dev][L] > 0)
+	if (mesh->n_ids[i_dev][L]>0 && var==V_AVERAGE_INTERFACE)
 	{
-		Cu_IdentifyFaces_D3Q19<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, tau_L, tau_ratio_L, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev]);
+		Cu_Average_D3Q19<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, tau_L, tau_ratio_L, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev]);
+	}
+	if (mesh->n_ids[i_dev][L]>0 && var==V_AVERAGE_BLOCK)
+	{
+		Cu_Average_D3Q19<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, tau_L, tau_ratio_L, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev]);
+	}
+	if (mesh->n_ids[i_dev][L]>0 && var==V_AVERAGE_GRID)
+	{
+		Cu_Average_D3Q19<ufloat_t,ufloat_g_t,AP,2><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, tau_L, tau_ratio_L, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev]);
 	}
 
 	return 0;

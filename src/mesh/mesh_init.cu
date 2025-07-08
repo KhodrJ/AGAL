@@ -240,6 +240,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		if (enable_aux_data)
 			gpuErrchk( cudaMalloc((void **)&c_cells_f_F_aux[i_dev], n_maxcells*N_U*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_t)) );
+		gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff[i_dev], n_maxcblocks*6*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr_child[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
@@ -269,6 +270,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		c_gap_set_dptr[i_dev] = thrust::device_pointer_cast(c_gap_set[i_dev]);
 		c_cblock_ID_ref_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_ID_ref[i_dev]);
 		c_cblock_level_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_level[i_dev]);
+		c_cblock_f_Ff_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_f_Ff[i_dev]);
 		c_tmp_1_dptr[i_dev] = thrust::device_pointer_cast(c_tmp_1[i_dev]);
 		c_tmp_2_dptr[i_dev] = thrust::device_pointer_cast(c_tmp_2[i_dev]);
 		c_tmp_3_dptr[i_dev] = thrust::device_pointer_cast(c_tmp_3[i_dev]);
@@ -296,6 +298,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb[i_dev], 0);
 			// Fill the counting iterator used in refinement/coarsening.
 		Cu_FillLinear<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(n_maxcblocks, c_tmp_counting_iter[i_dev]);
+			// Reset force values stored per-block to 0.
+		Cu_ResetToValue<<<(M_BLOCK+6*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(6*n_maxcblocks, c_cblock_f_Ff[i_dev], (ufloat_t)0);
 		
 		// Copy geometry.
 #if (N_CASE==2)

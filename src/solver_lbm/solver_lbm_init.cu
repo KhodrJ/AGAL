@@ -8,15 +8,6 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 	// | Set solver (LBM) parameters from input.
 	// o====================================================================================
 	
-	// General.
-	v0                                     = params_dbl["v0"];
-	S_CRITERION                            = params_int["S_CRITERION"];
-	S_LES                                  = params_int["S_LES"];
-	S_FORCE_TYPE                           = params_int["S_FORCE_TYPE"];
-// 	S_LES_P1                               = params_dbl["S_LES_P1"]; // TODO
-// 	S_LES_P2                               = params_dbl["S_LES_P2"]; // TODO
-// 	S_LES_P3                               = params_dbl["S_LES_P3"]; // TODO
-	
 	// Lift from the mesh class.
 	n_maxcells                             = mesh->n_maxcells;
 	n_maxcblocks                           = mesh->n_maxcblocks;
@@ -26,8 +17,29 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 	
 	// Shared.
 	dxf_vec = new ufloat_t[MAX_LEVELS];
+	dvf_vec = new ufloat_t[MAX_LEVELS];
 	for (int L = 0; L < MAX_LEVELS; L++)
+	{
 		dxf_vec[L] = (ufloat_t)mesh->dxf_vec[L];
+		dvf_vec[L] = (ufloat_t)1.0;
+		for (int d = 0; d < N_DIM; d++)
+			dvf_vec[L] *= dxf_vec[L];
+	}
+	
+	// General.
+	v0                                     = params_dbl["v0"];
+	S_CRITERION                            = params_int["S_CRITERION"];
+	S_LES                                  = params_int["S_LES"];
+	S_FORCE_TYPE                           = params_int["S_FORCE_TYPE"];
+	S_FORCEVOLUME_Xm                       = 4.0*(int(params_dbl["S_FORCEVOLUME_Xm"]*(mesh->Nxi[0]/4)))*dxf_vec[0];
+	S_FORCEVOLUME_XM                       = 4.0*(int(params_dbl["S_FORCEVOLUME_XM"]*(mesh->Nxi[0]/4)))*dxf_vec[0];
+	S_FORCEVOLUME_Ym                       = 4.0*(int(params_dbl["S_FORCEVOLUME_Ym"]*(mesh->Nxi[1]/4)))*dxf_vec[0];
+	S_FORCEVOLUME_YM                       = 4.0*(int(params_dbl["S_FORCEVOLUME_YM"]*(mesh->Nxi[1]/4)))*dxf_vec[0];
+	S_FORCEVOLUME_Zm                       = 4.0*(int(params_dbl["S_FORCEVOLUME_Zm"]*(mesh->Nxi[2]/4)))*dxf_vec[0];
+	S_FORCEVOLUME_ZM                       = 4.0*(int(params_dbl["S_FORCEVOLUME_ZM"]*(mesh->Nxi[2]/4)))*dxf_vec[0];
+// 	S_LES_P1                               = params_dbl["S_LES_P1"]; // TODO
+// 	S_LES_P2                               = params_dbl["S_LES_P2"]; // TODO
+// 	S_LES_P3                               = params_dbl["S_LES_P3"]; // TODO
 	
 	// BGK.
 	if (CM==CM_BGK)

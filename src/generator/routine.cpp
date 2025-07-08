@@ -9,7 +9,9 @@ int ProcessLineGetRoutineParameters(std::string &line,
 	std::vector<std::vector<std::string>> &r_kernel_inputs,
 	std::string &r_template_params,
 	std::vector<std::string> &r_template_vals,
-	std::vector<std::string> &r_template_args
+	std::vector<std::string> &r_template_args,
+	std::string &r_nblocks,
+	std::string &r_blocksize
 )
 {
 	// Parameters.
@@ -54,6 +56,26 @@ int ProcessLineGetRoutineParameters(std::string &line,
 		if (word2.length() > 0)
 			word2.pop_back();
 		r_params.push_back(word2);
+		
+		line = "";
+	}
+	
+	// Routine's number of blocks in CUDA kernel launch.
+	else if (word == "ROUTINE_NBLOCKS")
+	{
+		word2 = "(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK";
+		if (ss >> word2)
+			r_nblocks = word2;
+		
+		line = "";
+	}
+	
+	// Routine's thread-block size in CUDA kernel launch.
+	else if (word == "ROUTINE_BLOCKSIZE")
+	{
+		word2 = "M_TBLOCK";
+		if (ss >> word2)
+			r_blocksize = word2;
 		
 		line = "";
 	}
@@ -178,7 +200,9 @@ int GenerateRoutine(ImportedSet &iset, std::string set_label, std::string &s_in,
 	std::vector<std::vector<std::string>> &r_kernel_inputs,
 	std::string &r_template_params,
 	std::vector<std::string> &r_template_vals,
-	std::vector<std::string> &r_template_args
+	std::vector<std::string> &r_template_args,
+	std::string &r_nblocks,
+	std::string &r_blocksize
 )
 {
 	std::string s_out = "";
@@ -215,7 +239,7 @@ int GenerateRoutine(ImportedSet &iset, std::string set_label, std::string &s_in,
 	{
 		s_out += "\tif (" + r_template_args[k] + ")\n";
 		s_out += "\t{\n";
-		s_out += "\t\tCu_" + r_name + MakeSetName(set_label) + "<" + r_template_vals[k] + "><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(" + MakeKernelInputs(k,r_kernel_inputs) + ");\n";
+		s_out += "\t\tCu_" + r_name + MakeSetName(set_label) + "<" + r_template_vals[k] + "><<<" + r_nblocks + "," + r_blocksize + ",0,mesh->streams[i_dev]>>>(" + MakeKernelInputs(k,r_kernel_inputs) + ");\n";
 		s_out += "\t}\n";
 	}
 	s_out += "\n";
@@ -244,6 +268,8 @@ int Process_OutputGenerateRoutine(ImportedSet &iset, std::string set_label, std:
 	std::string r_template_params = "typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP";
 	std::vector<std::string> r_template_vals;
 	std::vector<std::string> r_template_args;
+	std::string r_nblocks = "(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK";
+	std::string r_blocksize = "M_TBLOCK";
 	
 	s_in = "";
 	while (ss.peek() != EOF)
@@ -258,7 +284,9 @@ int Process_OutputGenerateRoutine(ImportedSet &iset, std::string set_label, std:
 			r_kernel_inputs,
 			r_template_params,
 			r_template_vals,
-			r_template_args
+			r_template_args,
+			r_nblocks,
+			r_blocksize
 		);
 		s_in += line;
 	}
@@ -273,7 +301,9 @@ int Process_OutputGenerateRoutine(ImportedSet &iset, std::string set_label, std:
 		r_kernel_inputs,
 		r_template_params,
 		r_template_vals,
-		r_template_args
+		r_template_args,
+		r_nblocks,
+		r_blocksize
 	);
 	
 	return 0;

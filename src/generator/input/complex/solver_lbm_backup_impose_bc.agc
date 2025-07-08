@@ -55,6 +55,12 @@ REG constexpr int N_Q_max = AP->N_Q_max;
 REG __shared__ int s_ID_cblock[M_TBLOCK];
 REG __shared__ int s_ID_nbr[N_Q_max];
 REG __shared__ ufloat_t s_u[3*M_TBLOCK];
+#REG __shared__ double s_Fpx[M_TBLOCK];
+#REG __shared__ double s_Fmx[M_TBLOCK];
+#REG __shared__ double s_Fpy[M_TBLOCK];
+#REG __shared__ double s_Fmy[M_TBLOCK];
+#REG __shared__ double s_Fpz[M_TBLOCK];
+#REG __shared__ double s_Fmz[M_TBLOCK];
 REG int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
 REG int I = threadIdx.x % 4;
 REG int Ip = I;
@@ -103,6 +109,14 @@ REG valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
 OUTIFL (geometry_init)
     REG block_mask = cblock_ID_onb_solid[i_kap_b];
 END_OUTIFL
+#OUTIF (n_maxblocks_b > 0 && force_type > 0 && block_mask > -1)
+    #REG s_Fpx[threadIdx.x] = 0;
+    #REG s_Fmx[threadIdx.x] = 0;
+    #REG s_Fpy[threadIdx.x] = 0;
+    #REG s_Fmy[threadIdx.x] = 0;
+    #REG s_Fpz[threadIdx.x] = 0;
+    #REG s_Fmz[threadIdx.x] = 0;
+#END_OUTIF
 INIF Ldim==2
     REG x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
     REG y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
@@ -289,6 +303,52 @@ INFOR p 1   1 Lsize 1
                     REG f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                 END_OUTIF
                 
+                # Force computation using old and new values.
+                #OUTIF (force_type == 1)
+                    #OUTIF (n_maxblocks_b > 0 && dQ > 0)
+                        #INIF (Lc0(<p>) > 0)
+                            #REG s_Fpx[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                        #INIF (Lc0(<p>) < 0)
+                            #REG s_Fmx[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                        #INIF (Lc1(<p>) > 0)
+                            #REG s_Fpy[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                        #INIF (Lc1(<p>) < 0)
+                            #REG s_Fmy[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                        #INIF (Lc2(<p>) > 0)
+                            #REG s_Fpz[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                        #INIF (Lc2(<p>) < 0)
+                            #REG s_Fmz[threadIdx.x] += (f_p+f_p_p);
+                        #END_INIF
+                    #END_OUTIF
+                #END_OUTIF
+                #OUTIF (force_type == 2)
+                    #OUTIF (n_maxblocks_b > 0 && dQ > 0)
+                        #INIF (Lc0(<p>) > 0)
+                            #REG s_Fpx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                        #INIF (Lc0(<p>) < 0)
+                            #REG s_Fmx[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                        #INIF (Lc1(<p>) > 0)
+                            #REG s_Fpy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                        #INIF (Lc1(<p>) < 0)
+                            #REG s_Fmy[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                        #INIF (Lc2(<p>) > 0)
+                            #REG s_Fpz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                        #INIF (Lc2(<p>) < 0)
+                            #REG s_Fmz[threadIdx.x] += (0.5+dQ)*(f_p+f_p_p)+(0.5-dQ)*(f_m+f_q_p);
+                        #END_INIF
+                    #END_OUTIF
+                #END_OUTIF
+                
                 
                 #
                 # q
@@ -344,6 +404,52 @@ INFOR p 1   1 Lsize 1
                     REG f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                 END_OUTIF
                 
+                # Force computation using old and new values.
+                #OUTIF (force_type == 1)
+                    #OUTIF (n_maxblocks_b > 0 && dQ > 0)
+                        #INIF (Lc0(Lpb(<p>)) > 0)
+                            #REG s_Fpx[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                        #INIF (Lc0(Lpb(<p>)) < 0)
+                            #REG s_Fmx[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                        #INIF (Lc1(Lpb(<p>)) > 0)
+                            #REG s_Fpy[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                        #INIF (Lc1(Lpb(<p>)) < 0)
+                            #REG s_Fmy[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                        #INIF (Lc2(Lpb(<p>)) > 0)
+                            #REG s_Fpz[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                        #INIF (Lc2(Lpb(<p>)) < 0)
+                            #REG s_Fmz[threadIdx.x] += (f_q+f_q_p);
+                        #END_INIF
+                    #END_OUTIF
+                #END_OUTIF
+                #OUTIF (force_type == 2)
+                    #OUTIF (n_maxblocks_b > 0 && dQ > 0)
+                        #INIF (Lc0(Lpb(<p>)) > 0)
+                            #REG s_Fpx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                        #INIF (Lc0(Lpb(<p>)) < 0)
+                            #REG s_Fmx[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                        #INIF (Lc1(Lpb(<p>)) > 0)
+                            #REG s_Fpy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                        #INIF (Lc1(Lpb(<p>)) < 0)
+                            #REG s_Fmy[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                        #INIF (Lc2(Lpb(<p>)) > 0)
+                            #REG s_Fpz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                        #INIF (Lc2(Lpb(<p>)) < 0)
+                            #REG s_Fmz[threadIdx.x] += (0.5+dQ)*(f_q+f_q_p) + (0.5-dQ)*(f_m+f_p_p);
+                        #END_INIF
+                    #END_OUTIF
+                #END_OUTIF
+                
             END_OUTIF
         END_INIF
         
@@ -357,6 +463,37 @@ INFOR p 1   1 Lsize 1
         <
     END_INIF
 END_INFOR
+
+#OUTIF (n_maxblocks_b > 0 && force_type > 0 && block_mask > -1)
+    #// Reductions for the sums of force contributions in this cell-block.
+    #__syncthreads();
+    #REG for (int s=blockDim.x/2; s>0; s>>=1)
+    #REG {
+            #OUTIF (threadIdx.x < s)
+                    #REG s_Fpx[threadIdx.x] = s_Fpx[threadIdx.x] + s_Fpx[threadIdx.x + s];
+                    #REG s_Fmx[threadIdx.x] = s_Fmx[threadIdx.x] + s_Fmx[threadIdx.x + s];
+                    #REG s_Fpy[threadIdx.x] = s_Fpy[threadIdx.x] + s_Fpy[threadIdx.x + s];
+                    #REG s_Fmy[threadIdx.x] = s_Fmy[threadIdx.x] + s_Fmy[threadIdx.x + s];
+                    #INIF Ldim==3
+                        #REG s_Fpz[threadIdx.x] = s_Fpz[threadIdx.x] + s_Fpz[threadIdx.x + s];
+                        #REG s_Fmz[threadIdx.x] = s_Fmz[threadIdx.x] + s_Fmz[threadIdx.x + s];
+                    #END_INIF
+            #END_OUTIF
+            #REG __syncthreads();
+    #REG }
+    
+    #// Store the sums of contributions in global memory; this will be reduced further later.
+    #OUTIF (threadIdx.x == 0)
+        #REG cblock_f_Ff_solid[block_mask + 0*n_maxblocks_b] = s_Fpx[0];
+        #REG cblock_f_Ff_solid[block_mask + 1*n_maxblocks_b] = s_Fmx[0];
+        #REG cblock_f_Ff_solid[block_mask + 2*n_maxblocks_b] = s_Fpy[0];
+        #REG cblock_f_Ff_solid[block_mask + 3*n_maxblocks_b] = s_Fmy[0];
+        #INIF Ldim==3
+            #REG cblock_f_Ff_solid[block_mask + 4*n_maxblocks_b] = s_Fpz[0];
+            #REG cblock_f_Ff_solid[block_mask + 5*n_maxblocks_b] = s_Fmz[0];
+        #END_INIF
+    #END_OUTIF
+#END_OUTIF
 
 
 TEMPLATE NEW_BLOCK

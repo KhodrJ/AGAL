@@ -51,7 +51,7 @@ LIBS = -lcuda\
 # Fixed solver parameters (defaults specified).
 N_CASE?=0
 P_SHOW_REFINE?=0
-P_SHOW_ADVANCE?=0
+P_SHOW_ADVANCE?=1
 N_REGEN?=0
 # OPTS = -DINPUT_CONFMAKE\
 #        -DN_PRECISION=$(N_PRECISION)\
@@ -197,12 +197,12 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_collision_original_D2Q9.cu\
 	solver_lbm_collision_original_D3Q19.cu\
 	solver_lbm_collision_original_D3Q27.cu\
-	solver_lbm_collision_new_s1_D2Q9.cu\
-	solver_lbm_collision_new_s1_D3Q19.cu\
-	solver_lbm_collision_new_s1_D3Q27.cu\
-	solver_lbm_collision_new_s2_D2Q9.cu\
-	solver_lbm_collision_new_s2_D3Q19.cu\
-	solver_lbm_collision_new_s2_D3Q27.cu\
+	solver_lbm_collision_new_D2Q9.cu\
+	solver_lbm_collision_new_D3Q19.cu\
+	solver_lbm_collision_new_D3Q27.cu\
+	solver_lbm_compute_forces_D2Q9.cu\
+	solver_lbm_compute_forces_D3Q19.cu\
+	solver_lbm_compute_forces_D3Q27.cu\
 	solver_lbm_imposebc_D2Q9.cu\
 	solver_lbm_imposebc_D3Q19.cu\
 	solver_lbm_imposebc_D3Q27.cu\
