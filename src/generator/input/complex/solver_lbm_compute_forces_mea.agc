@@ -6,10 +6,10 @@
 # /**************************************************************************************/
 
 # File metadata and routine parameters.
-FILE_NAME solver_lbm_compute_forces
+FILE_NAME solver_lbm_compute_forces_mea
 FILE_DIR ../solver_lbm/
 
-ROUTINE_NAME ComputeForces
+ROUTINE_NAME ComputeForces_MEA
 ROUTINE_OBJECT_NAME Solver_LBM
 ROUTINE_INCLUDE "solver_lbm.h"
 ROUTINE_INCLUDE "mesh.h"
@@ -38,7 +38,7 @@ KERNEL_REQUIRE int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
 KERNEL_REQUIRE ufloat_t *__restrict__ cblock_f_Ff      | mesh->c_cblock_f_Ff[i_dev]
 KERNEL_REQUIRE bool geometry_init                      | mesh->geometry_init
-KERNEL_REQUIRE int order                               | S_FORCE_TYPE
+KERNEL_REQUIRE int order                               | S_FORCE_ORDER
 
 ROUTINE_TEMPLATE_PARAMS int post_step
 ROUTINE_TEMPLATE_VALS 0

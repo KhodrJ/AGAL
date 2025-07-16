@@ -113,9 +113,6 @@ class Mesh
 	//! A Thrust pointer-cast of the device array @ref c_tmp_counting_iter.
 	thrust::device_ptr<int> *c_tmp_counting_iter_dptr = new thrust::device_ptr<int>[N_DEV];
 	
-	//! A Thrust pointer-cast of the device array @ref c_cblock_f_Ff.
-	thrust::device_ptr<ufloat_t> *c_cblock_f_Ff_dptr = new thrust::device_ptr<ufloat_t>[N_DEV];
-	
 	
 	//! Temporary GPU storage.
 	/*! Currently being used in:
@@ -474,6 +471,9 @@ class Mesh
 	
 	//! A Thrust pointer-cast of the device array @ref c_cblock_level.
 	thrust::device_ptr<int> *c_cblock_level_dptr = new thrust::device_ptr<int>[N_DEV];
+	
+	//! A Thrust pointer-cast of the device array @ref c_cblock_f_Ff.
+	thrust::device_ptr<ufloat_t> *c_cblock_f_Ff_dptr = new thrust::device_ptr<ufloat_t>[N_DEV];
 	
 	// o====================================================================================
 	// | Routines.

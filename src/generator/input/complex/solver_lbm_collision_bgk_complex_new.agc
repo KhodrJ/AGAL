@@ -100,8 +100,8 @@ END_INIF
 
 // Collision step.
 INFOR p 1   0 Lsize 1
-REG-vz cdotu = gNz(Lc0(<p>)*u + Lc1(<p>)*v + Lc2(<p>)*w);
-REG-vm f_<p> = f_<p>*omegp + ( (ufloat_t)(gD(Lw(<p>)))*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
+    REG-vz cdotu = gNz(Lc0(<p>)*u + Lc1(<p>)*v + Lc2(<p>)*w);
+    REG-vm f_<p> = f_<p>*omegp + ( (ufloat_t)(gD(Lw(<p>)))*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
 END_INFOR
 <
 

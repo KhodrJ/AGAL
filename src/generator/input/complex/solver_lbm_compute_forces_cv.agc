@@ -6,10 +6,10 @@
 # /**************************************************************************************/
 
 # File metadata and routine parameters.
-FILE_NAME solver_lbm_compute_forces
+FILE_NAME solver_lbm_compute_forces_cv
 FILE_DIR ../solver_lbm/
 
-ROUTINE_NAME ComputeForces
+ROUTINE_NAME ComputeForces_CV
 ROUTINE_OBJECT_NAME Solver_LBM
 ROUTINE_INCLUDE "solver_lbm.h"
 ROUTINE_INCLUDE "mesh.h"
@@ -18,12 +18,13 @@ ROUTINE_REQUIRE int i_dev
 ROUTINE_REQUIRE int L
 ROUTINE_REQUIRE int var
 
+KERNEL_REQUIRE int is_root                             | L==N_LEVEL_START
 KERNEL_REQUIRE int n_ids_idev_L                        | mesh->n_ids[i_dev][L]
 KERNEL_REQUIRE long int n_maxcells
 KERNEL_REQUIRE int n_maxcblocks
-KERNEL_REQUIRE ufloat_t dx_0                           | dxf_vec[0]
 KERNEL_REQUIRE ufloat_t dx_L                           | dxf_vec[L]
 KERNEL_REQUIRE ufloat_t dv_L                           | dvf_vec[L]
+KERNEL_REQUIRE ufloat_t otau_0                         | dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START]
 KERNEL_REQUIRE int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
 KERNEL_REQUIRE int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
 KERNEL_REQUIRE ufloat_t *__restrict__ cells_f_F        | mesh->c_cells_f_F[i_dev]
@@ -78,10 +79,11 @@ END_INIF
 REG int i_kap_b = -1;
 REG int i_kap_bc = -1;
 REG int valid_block = -1;
-REG int valid_mask = -1;
-INFOR p 1   1 Lsize 1
+REG int valid_mask = -10;
+INFOR p 1   0 Lsize 1
     REG ufloat_t f_<p> = (ufloat_t)(0.0);
 END_INFOR
+REG ufloat_t rho = (ufloat_t)(0.0);
 REG ufloat_t rhou = (ufloat_t)(0.0);
 REG ufloat_t rhov = (ufloat_t)(0.0);
 INIF Ldim==3
@@ -94,6 +96,10 @@ INIF Ldim==3
 END_INIF
 REG bool participatesV = false;
 REG bool participatesS = false;
+REG ufloat_t omeg = otau_0;
+REG ufloat_t omegp = (ufloat_t)(1.0) - omeg;
+REG ufloat_t cdotu = (ufloat_t)(0.0);
+REG ufloat_t udotu = (ufloat_t)(0.0);
 
 
 
@@ -105,6 +111,7 @@ TEMPLATE NAME PRIMARY_ORIGINAL
 
 // Compute cell coordinates and retrieve macroscopic properties.
 REG valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+REG i_kap_bc = cblock_ID_nbr_child[i_kap_b];
 REG s_Fpx[threadIdx.x] = 0;
 REG s_Fmx[threadIdx.x] = 0;
 REG s_Fpy[threadIdx.x] = 0;
@@ -121,84 +128,97 @@ INIF Ldim==3
     REG z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
 END_INIF
 INIF Ldim==2
-    REG participatesV = CheckPointInRegion2D(x,y,cv_xm,cv_xM,cv_ym,cv_yM);
+    REG participatesV = CheckPointInRegion2D(x,y,cv_xm,cv_xM,cv_ym,cv_yM) && valid_mask != -1;
 INELSE
-    REG participatesV = CheckPointInRegion3D(x,y,z,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
+    REG participatesV = CheckPointInRegion3D(x,y,z,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM) && valid_mask != -1;
 END_INIF
 <
 
 // Load the DDFs. Compute the momentum in all cells.
-OUTIF (post_step == 0) // Post-collision.
-    INFOR p 1   1 Lsize 1
-        REG-v f_<p> = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + <p>*n_maxcells];
-    END_INFOR
-    REG-vsvz rhou = ( gNz(gSUM(i,0 Lsize 1,Lc0(<i>)*f_<i>)) );
-    REG-vsvz rhov = ( gNz(gSUM(i,0 Lsize 1,Lc1(<i>)*f_<i>)) );
+INFOR p 1   0 Lsize 1
+    REG-v f_<p> = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + Lpb(<p>)*n_maxcells];
+END_INFOR
+#OUTIF (post_step == 0 && L == 0) // Post-collision.
+    #REG-vsvz rhou = ( gNz(gSUM(i,0 Lsize 1,Lc0(<i>)*f_<i>)) );
+    #REG-vsvz rhov = ( gNz(gSUM(i,0 Lsize 1,Lc1(<i>)*f_<i>)) );
+    #INIF Ldim==3
+        #REG-vsvz rhow = ( gNz(gSUM(i,0 Lsize 1,Lc2(<i>)*f_<i>)) );
+    #END_INIF
+#END_OUTIF
+#OUTIF (post_step == 1 || L > 0) // Post-streaming.
+REG-vsvz rho = ( gNz(gSUM(i,0 Lsize 1,f_<i>)) );
+REG-vsvz rhou = ( gNz(gSUM(i,0 Lsize 1,Lc0(<i>)*f_<i>)) );
+REG-vsvz rhov = ( gNz(gSUM(i,0 Lsize 1,Lc1(<i>)*f_<i>)) );
+INIF Ldim==3
+    REG-vsvz rhow = ( gNz(gSUM(i,0 Lsize 1,Lc2(<i>)*f_<i>)) );
+END_INIF
+#END_OUTIF
+<
+
+// Add force contributions in the volume.
+OUTIF (participatesV && post_step==0 && i_kap_bc<0)
+    OUTIF (rhou > 0)
+        REG s_Fpx[threadIdx.x] += rhou;
+    END_OUTIF
+    OUTIF (rhou < 0)
+        REG s_Fmx[threadIdx.x] += rhou;
+    END_OUTIF
+    OUTIF (rhov > 0)
+        REG s_Fpy[threadIdx.x] += rhov;
+    END_OUTIF
+    OUTIF (rhov < 0)
+        REG s_Fmy[threadIdx.x] += rhov;
+    END_OUTIF
     INIF Ldim==3
-        REG-vsvz rhow = ( gNz(gSUM(i,0 Lsize 1,Lc2(<i>)*f_<i>)) );
+        OUTIF (rhow > 0)
+            REG s_Fpz[threadIdx.x] += rhow;
+        END_OUTIF
+        OUTIF (rhow < 0)
+            REG s_Fmz[threadIdx.x] += rhow;
+        END_OUTIF
     END_INIF
 END_OUTIF
-OUTIF (post_step == 1) // Post-streaming.
-    INFOR p 1   1 Lsize 1
-        REG-v f_<p> = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + <p>*n_maxcells];
-    END_INFOR
-    REG-vsvz rhou = ( gNz(gSUM(i,0 Lsize 1,Lc0(Lpb(<i>))*f_<i>)) );
-    REG-vsvz rhov = ( gNz(gSUM(i,0 Lsize 1,Lc1(Lpb(<i>))*f_<i>)) );
+OUTIF (participatesV && post_step==1 && i_kap_bc<0)
+    OUTIF (rhou > 0)
+        REG s_Fmx[threadIdx.x] += rhou;
+    END_OUTIF
+    OUTIF (rhou < 0)
+        REG s_Fpx[threadIdx.x] += rhou;
+    END_OUTIF
+    OUTIF (rhov > 0)
+        REG s_Fmy[threadIdx.x] += rhov;
+    END_OUTIF
+    OUTIF (rhov < 0)
+        REG s_Fpy[threadIdx.x] += rhov;
+    END_OUTIF
     INIF Ldim==3
-        REG-vsvz rhow = ( gNz(gSUM(i,0 Lsize 1,Lc2(Lpb(<i>))*f_<i>)) );
+        OUTIF (rhow > 0)
+            REG s_Fmz[threadIdx.x] += rhow;
+        END_OUTIF
+        OUTIF (rhow < 0)
+            REG s_Fpz[threadIdx.x] += rhow;
+        END_OUTIF
     END_INIF
 END_OUTIF
 <
 
-// Add force contributions in the volume.
-OUTIF (valid_mask != -1 && participatesV && post_step==0)
-    OUTIF (rhou > 0)
-        REG s_Fpx[threadIdx.x] += rhou;
-    END_OUTIF
-    OUTIF (rhou < 0)
-        REG s_Fmx[threadIdx.x] += rhou;
-    END_OUTIF
-    OUTIF (rhov > 0)
-        REG s_Fpy[threadIdx.x] += rhov;
-    END_OUTIF
-    OUTIF (rhov < 0)
-        REG s_Fmy[threadIdx.x] += rhov;
-    END_OUTIF
+// Perform collisions right here, but don't store.
+OUTIF (post_step==0)
+    REG rhou /= rho;
+    REG rhov /= rho;
     INIF Ldim==3
-        OUTIF (rhow > 0)
-            REG s_Fpz[threadIdx.x] += rhow;
-        OUTIF
-        OUTIF (rhow < 0)
-            REG s_Fmz[threadIdx.x] += rhow;
-        OUTIF
+        REG rhow /= rho;
     END_INIF
-END_OUTIF
-OUTIF (valid_mask != -1 && participatesV && post_step==1)
-    OUTIF (rhou > 0)
-        REG s_Fmx[threadIdx.x] += rhou;
-    END_OUTIF
-    OUTIF (rhou < 0)
-        REG s_Fpx[threadIdx.x] += rhou;
-    END_OUTIF
-    OUTIF (rhov > 0)
-        REG s_Fmy[threadIdx.x] += rhov;
-    END_OUTIF
-    OUTIF (rhov < 0)
-        REG s_Fpy[threadIdx.x] += rhov;
-    END_OUTIF
-    INIF Ldim==3
-        OUTIF (rhow > 0)
-            REG s_Fmz[threadIdx.x] += rhow;
-        OUTIF
-        OUTIF (rhow < 0)
-            REG s_Fpz[threadIdx.x] += rhow;
-        OUTIF
-    END_INIF
+    REG-vmz udotu = gNz(rhou*rhou + rhov*rhov + gI(Ldim-2)*rhow*rhow);
+    INFOR p 1   1 Lsize 1
+        REG-vz cdotu = gNz(Lc0(<p>)*rhou + Lc1(<p>)*rhov + Lc2(<p>)*rhow);
+        REG-vm f_<p> = f_<p>*omegp + ( (ufloat_t)(gD(Lw(<p>)))*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
+    END_INFOR
 END_OUTIF
 <
 
 // Now check if DDFs are leaving the CV.
-OUTIF (post_step==0)
+OUTIF (post_step==0 && is_root)
     INFOR p 1   1 Lsize 1
         INIF Ldim==2
         REG-v participatesS = !CheckPointInRegion2D(x+Lc0(<p>)*dx_L,y+Lc1(<p>)*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
@@ -231,39 +251,40 @@ END_OUTIF
 <
 
 // Now check if DDFs are entering the CV.
-OUTIF (post_step==1)
+OUTIF (post_step==1 && is_root)
     INFOR p 1   1 Lsize 1
         INIF Ldim==2
-        REG-v participatesS = !CheckPointInRegion2D(x+Lc0(<p>)*dx_L,y+Lc1(<p>)*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
+        REG-v participatesS = !CheckPointInRegion2D(x+Lc0(Lpb(<p>))*dx_L,y+Lc1(Lpb(<p>))*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
         INELSE
-            REG-v participatesS = !CheckPointInRegion3D(x+Lc0(<p>)*dx_L,y+Lc1(<p>)*dx_L,z+Lc2(<p>)*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
+            REG-v participatesS = !CheckPointInRegion3D(x+Lc0(Lpb(<p>))*dx_L,y+Lc1(Lpb(<p>))*dx_L,z+Lc2(Lpb(<p>))*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
         END_INIF
         
         OUTIF (participatesS && participatesV)
-            INIF (Lc0(<p>) > 0)
-                REG s_Fmx[threadIdx.x] += f_<p>;
+            INIF (Lc0(Lpb(<p>)) > 0)
+                REG-v s_Fmx[threadIdx.x] += f_<p>;
             END_INIF
-            INIF (Lc0(<p>) < 0)
-                REG s_Fpx[threadIdx.x] += f_<p>;
+            INIF (Lc0(Lpb(<p>)) < 0)
+                REG-v s_Fpx[threadIdx.x] += f_<p>;
             END_INIF
-            INIF (Lc1(<p>) > 0)
-                REG s_Fmy[threadIdx.x] += f_<p>;
+            INIF (Lc1(Lpb(<p>)) > 0)
+                REG-v s_Fmy[threadIdx.x] += f_<p>;
             END_INIF
-            INIF (Lc1(<p>) < 0)
-                REG s_Fpy[threadIdx.x] += f_<p>;
+            INIF (Lc1(Lpb(<p>)) < 0)
+                REG-v s_Fpy[threadIdx.x] += f_<p>;
             END_INIF
-            INIF (Lc2(<p>) > 0)
-                REG s_Fmz[threadIdx.x] += f_<p>;
+            INIF (Lc2(Lpb(<p>)) > 0)
+                REG-v s_Fmz[threadIdx.x] += f_<p>;
             END_INIF
-            INIF (Lc2(<p>) < 0)
-                REG s_Fpz[threadIdx.x] += f_<p>;
+            INIF (Lc2(Lpb(<p>)) < 0)
+                REG-v s_Fpz[threadIdx.x] += f_<p>;
             END_INIF
         END_OUTIF
     END_INFOR
 END_OUTIF
 <
 
-OUTIF (participatesV)
+
+#OUTIF (participatesV)
     // Reductions for the sums of force contributions in this cell-block.
     __syncthreads();
     REG for (int s=blockDim.x/2; s>0; s>>=1)
@@ -303,7 +324,7 @@ OUTIF (participatesV)
             END_INIF
         END_OUTIF
     END_OUTIF
-END_OUTIF
+#END_OUTIF
 
 
 TEMPLATE NEW_BLOCK

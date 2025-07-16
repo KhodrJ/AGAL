@@ -1,6 +1,8 @@
 #include "mesh.h"
 #include "solver_lbm.h"
 
+int global_Liter = 0;
+
 /*
  .d8888b.           888                           
 d88P  Y88b          888                           
@@ -12,62 +14,66 @@ Y88b  d88P Y88..88P 888  Y8bd8P  Y8b.     888
  "Y8888P"   "Y88P"  888   Y88P    "Y8888  888     
 */
 
+#if (P_SHOW_ADVANCE==1)
+	#define TIMER(code, arg1)                \
+	do                                       \
+	{                                        \
+		tic_simple("");                  \
+		code;                            \
+		cudaDeviceSynchronize();         \
+		arg1 += toc_simple("",T_US,0);   \
+	} while (0)
+#else
+	#define TIMER(code,arg1)
+#endif
+
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *tmp)
 {
+	// NOTE: tmp should be of length MAX_LEVELS*4.
+	
 	if (MAX_LEVELS>1 && (MAX_LEVELS!=N_LEVEL_START+1))
 	{
 		if (L == N_LEVEL_START)
 		{
-#if (P_SHOW_ADVANCE==1)
-			tic_simple("");
-#endif
-			// |
-			//if (S_INTERP_HYBRID==0)
-			S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[0 + L*4] += toc_simple("",T_US,0);
+			global_Liter = 0;
+// 			if (S_FORCE_TYPE==1)
+// 			{
+// 				for (int K = N_LEVEL_START; K < MAX_LEVELS-1; K++)
+// 					TIMER( S_Interpolate(i_dev, K, V_INTERP_ADVANCE); ,   tmp[4 + L*6] );
+// 			}
+			if (S_FORCE_TYPE==1)
+			{
+				for (int K = N_LEVEL_START; K < MAX_LEVELS; K++)
+					TIMER( S_ComputeForcesCV(i_dev, K, 0); ,              tmp[4 + L*6] );
+			}
 			
-			tic_simple("");
-#endif
-			// |
-			S_Collide(i_dev, L);
-			S_ComputeForces(i_dev, L, 0);
-			S_ImposeBC(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[1 + L*4] += toc_simple("",T_US,0);
-			//
-			tic_simple("");
-#endif
-			// |
-			S_Stream(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[2 + L*4] += toc_simple("",T_US,0);
-#endif
+			TIMER( S_Interpolate(i_dev, L, V_INTERP_ADVANCE); ,                   tmp[0 + L*6] );
+			TIMER( S_Collide(i_dev, L); ,                                         tmp[1 + L*6] );
+			TIMER( S_ImposeBC(i_dev, L); ,                                        tmp[5 + L*6] );
+			TIMER( S_Stream(i_dev, L); ,                                          tmp[2 + L*6] );
 			
 			S_Advance(i_dev, L+1, tmp);
 			
-#if (P_SHOW_ADVANCE==1)
-			tic_simple("");
-#endif
-			// |
-			S_Average(i_dev, L, V_AVERAGE_ADVANCE);
-			S_ComputeForces(i_dev, L, 1);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[3 + L*4] += toc_simple("",T_US,0);
+			TIMER( S_Average(i_dev, L, V_AVERAGE_ADVANCE); ,                      tmp[3 + L*6] );
 			
+			if (S_FORCE_TYPE==1)
+			{
+				for (int K = MAX_LEVELS-2; K >= N_LEVEL_START; K--)
+					TIMER( S_Average(0,K,V_AVERAGE_GRID); ,               tmp[4 + L*6] );
+				for (int K = N_LEVEL_START; K < MAX_LEVELS-1; K++)
+					TIMER( S_Interpolate(i_dev, K, V_INTERP_ADVANCE); ,   tmp[4 + L*6] );
+				for (int K = N_LEVEL_START; K < MAX_LEVELS; K++)
+					TIMER( S_ComputeForcesCV(i_dev, K, 1); ,              tmp[4 + L*6] );
+			}
+
+			
+			
+#if (P_SHOW_ADVANCE==1)
 			double tot_time = 0.0;
 			long int tot_cells = 0;
 			int multip = 1;
-			for (int Lp = N_LEVEL_START; Lp < 4*MAX_LEVELS; Lp++)
+			for (int Lp = N_LEVEL_START; Lp < 6*MAX_LEVELS; Lp++)
 			{
 				tot_time += tmp[Lp];
 				mesh->to.adv_printer << tmp[Lp] << " ";
@@ -84,131 +90,71 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 		}
 		else
 		{
+			// Interpolate.
 			if (L < MAX_LEVELS-1)
 			{
-#if (P_SHOW_ADVANCE==1)
-				tic_simple("");
-#endif
-				// |
-				//if (S_INTERP_HYBRID==0)
-				S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
-				// |
-#if (P_SHOW_ADVANCE==1)
-				cudaDeviceSynchronize();
-				tmp[0 + L*4] += toc_simple("",T_US,0);
-#endif
+				TIMER( S_Interpolate(i_dev, L, V_INTERP_ADVANCE); ,   tmp[0 + L*6] );
 			}
 			
-#if (P_SHOW_ADVANCE==1)
-			tic_simple("");
-#endif
-			// |
-			S_Collide(i_dev, L);
-			S_ImposeBC(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[1 + L*4] += toc_simple("",T_US,0);
-			tic_simple("");
-#endif
-			// |
-			S_Stream(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[2 + L*4] += toc_simple("",T_US,0);
-#endif
+			// First fine step.
+			TIMER( S_Collide(i_dev, L); ,                                 tmp[1 + L*6] );
+			TIMER( S_ImposeBC(i_dev, L); ,                                tmp[5 + L*6] );
+			TIMER( S_Stream(i_dev, L); ,                                  tmp[2 + L*6] );
+			if (L == MAX_LEVELS-1) global_Liter++;
 			
+			// Average, then interpolate again.
 			if (L < MAX_LEVELS-1)
 			{
 				S_Advance(i_dev, L+1, tmp);
-				
-#if (P_SHOW_ADVANCE==1)
-				tic_simple("");
-#endif
-				// |
-				S_Average(i_dev, L, V_AVERAGE_ADVANCE);
-				// |
-#if (P_SHOW_ADVANCE==1)
-				cudaDeviceSynchronize();
-				tmp[3 + 4*L] += toc_simple("",T_US,0);
-				
-				tic_simple("");
-#endif
-				// |
-				//if (S_INTERP_HYBRID==0)
-				S_Interpolate(i_dev, L, V_INTERP_ADVANCE);
-				// |
-#if (P_SHOW_ADVANCE==1)
-				cudaDeviceSynchronize();
-				tmp[0 + 4*L] += toc_simple("",T_US,0);
-#endif
+				TIMER( S_Average(i_dev, L, V_AVERAGE_ADVANCE); ,      tmp[3 + 6*L] );
+				TIMER( S_Interpolate(i_dev, L, V_INTERP_ADVANCE); ,   tmp[0 + 6*L] );
 			}
 			
-#if (P_SHOW_ADVANCE==1)
-			tic_simple("");
-#endif
-			// |
-			S_Collide(i_dev, L);
-			S_ImposeBC(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[1 + 4*L] += toc_simple("",T_US,0);
-			tic_simple("");
-#endif
-			// |
-			S_Stream(i_dev, L);
-			// |
-#if (P_SHOW_ADVANCE==1)
-			cudaDeviceSynchronize();
-			tmp[2 + 4*L] += toc_simple("",T_US,0);
-#endif
+			// Second fine step.
+			TIMER( S_Collide(i_dev, L); ,                                 tmp[1 + L*6] );
+			if (S_FORCE_TYPE==0)
+			{
+				if (global_Liter == (1<<(MAX_LEVELS-1))-1)
+					TIMER( S_ComputeForcesMEA(i_dev, L, 0); ,     tmp[4 + L*6] );
+			}
+			TIMER( S_ImposeBC(i_dev, L); ,                                tmp[5 + L*6] );
+			TIMER( S_Stream(i_dev, L); ,                                  tmp[2 + L*6] );
+			if (S_FORCE_TYPE==0)
+			{
+				if (global_Liter == (1<<(MAX_LEVELS-1))-1)
+					TIMER( S_ComputeForcesMEA(i_dev, L, 1); ,     tmp[4 + L*6] );
+			}
+			if (L == MAX_LEVELS-1) global_Liter++;
 			
+			// Average.
 			if (L < MAX_LEVELS-1)
 			{
 				S_Advance(i_dev, L+1, tmp);
-				
-#if (P_SHOW_ADVANCE==1)
-				tic_simple("");
-#endif
-				// |
-				S_Average(i_dev, L, V_AVERAGE_ADVANCE);
-				// |
-#if (P_SHOW_ADVANCE==1)
-				cudaDeviceSynchronize();
-				tmp[3 + 4*L] += toc_simple("",T_US,0);
-#endif
+				TIMER( S_Average(i_dev, L, V_AVERAGE_ADVANCE); ,      tmp[3 + 4*L] );
 			}
 		}
 	}
 	else
 	{
-#if (P_SHOW_ADVANCE==1)
-		tic_simple("");
-#endif
-		// |
-		S_Collide(i_dev, L);
-		S_ComputeForces(i_dev, L, 0);
-		S_ImposeBC(i_dev, L);
-		// |
-#if (P_SHOW_ADVANCE==1)
-		cudaDeviceSynchronize();
-		tmp[1] += toc_simple("",T_US,0);
-		tic_simple("");
-#endif
-		// |
-		S_Stream(i_dev, L);
-		S_ComputeForces(i_dev, L, 1);
-		// |
-#if (P_SHOW_ADVANCE==1)
-		cudaDeviceSynchronize();
-		tmp[2] += toc_simple("",T_US,0);
+		if (S_FORCE_TYPE==1)
+			TIMER( S_ComputeForcesCV(i_dev, L, 0); ,      tmp[4] );
+		TIMER( S_Collide(i_dev, L); ,                         tmp[1] );
+		if (S_FORCE_TYPE==0)
+			TIMER( S_ComputeForcesMEA(i_dev, L, 0); ,     tmp[4] );
+		TIMER( S_ImposeBC(i_dev, L); ,                        tmp[5] );
+		TIMER( S_Stream(i_dev, L); ,                          tmp[2] );
+		if (S_FORCE_TYPE==0)
+			TIMER( S_ComputeForcesMEA(i_dev, L, 1); ,      tmp[4] );
+		if (S_FORCE_TYPE==1)
+			TIMER( S_ComputeForcesCV(i_dev, L, 1); ,      tmp[4] );
 		
+		
+		
+#if (P_SHOW_ADVANCE==1)
 		double tot_time = 0.0;
 		long int tot_cells = 0;
 		int multip = 1;
-		for (int Lp = N_LEVEL_START; Lp < 4*MAX_LEVELS; Lp++)
+		for (int Lp = N_LEVEL_START; Lp < 6*MAX_LEVELS; Lp++)
 		{
 			tot_time += tmp[Lp];
 			mesh->to.adv_printer << tmp[Lp] << " ";

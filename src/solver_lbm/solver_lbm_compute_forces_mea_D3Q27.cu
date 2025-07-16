@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Tue Jul  8 00:01:41 2025                                            */
+/*  Last Updated: Mon Jul 14 23:00:26 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int post_step>
 __global__
-void Cu_ComputeForces_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dv_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,ufloat_t *__restrict__ cblock_f_Ff,bool geometry_init,int order)
+void Cu_ComputeForces_MEA_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dv_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,ufloat_t *__restrict__ cblock_f_Ff,bool geometry_init,int order)
 {
     constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
@@ -1366,15 +1366,15 @@ void Cu_ComputeForces_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblock
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForces_D3Q27(int i_dev, int L, int var)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForces_MEA_D3Q27(int i_dev, int L, int var)
 {
 	if (mesh->n_ids[i_dev][L]>0 && var==0)
 	{
-		Cu_ComputeForces_D3Q27<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE);
+		Cu_ComputeForces_MEA_D3Q27<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_ORDER);
 	}
 	if (mesh->n_ids[i_dev][L]>0 && var==1)
 	{
-		Cu_ComputeForces_D3Q27<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE);
+		Cu_ComputeForces_MEA_D3Q27<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_ORDER);
 	}
 
 	return 0;

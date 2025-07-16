@@ -95,7 +95,9 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	// Input parameters.
 	int        S_INTERP;                ///< Indicates type of interpolation (0 for linear, 1 for cubic).
 	int        S_LES;                   ///< Indicates the turbulence model to employ during collision.
-	int        S_FORCE_TYPE;            ///< Indicates the order of accuracy for the momentum exchange algorithm.
+	int        S_FORCE_ORDER;           ///< Indicates the order of accuracy for the momentum exchange algorithm.
+	int        S_FORCE_TYPE;            ///< Indicates the type of force calculation approach [0: MEA, 1: CV].
+	int        S_BC_TYPE;               ///< Indicates the type of curved-boundary BC type to use [0: SBB, 2: IBB].
 	int        S_CRITERION;             ///< Indicates refinement criterion (0 for |w|, 1 for Q).
 	int        V_INTERP_ADVANCE;        ///< Controls interpolation parameters.
 	int        V_AVERAGE_ADVANCE;       ///< Controls averaging parameters.
@@ -120,6 +122,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	//int S_Stream(int i_dev, int L);
 	int S_Vel2Mom(int i_dev, int L);
 	int S_Mom2Vel(int i_dev, int L);
+	int S_ReportForcesLBM(int i_dev, int L, int i, double t, int START);
 	int S_ComputeMacroProperties(int i_dev, int i_kap, int i_Q, int kap_i, ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w);
 	int S_IdentifyFaces(int i_dev, int L);
 	
@@ -167,7 +170,6 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collision_New_D2Q9(int i_dev, int L);
 	int S_Collision_New_D3Q19(int i_dev, int L);
 	int S_Collision_New_D3Q27(int i_dev, int L);
-	int S_ReportForces(int i_dev, int L) { mesh->M_ReportForces(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D2Q9(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q19(i_dev, L); return 0; }
 // 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q27(i_dev, L); return 0; }
@@ -239,13 +241,20 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collide_MRT_Interpolate_Cubic_D2Q9(int i_dev, int L); // TODO
 	
 	// Force calculation.
-	int S_ComputeForces_D2Q9(int i_dev, int L, int var);
-	int S_ComputeForces_D3Q19(int i_dev, int L, int var);
-	int S_ComputeForces_D3Q27(int i_dev, int L, int var);
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D2Q9(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D3Q19(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesW(int i_dev, int L, int var) { S_ComputeForces_D3Q27(i_dev, L, var); return 0; }
-	int S_ComputeForces(int i_dev, int L, int var) { S_ComputeForcesW(i_dev, L, var); return 0; }
+	int S_ComputeForces_MEA_D2Q9(int i_dev, int L, int var);
+	int S_ComputeForces_MEA_D3Q19(int i_dev, int L, int var);
+	int S_ComputeForces_MEA_D3Q27(int i_dev, int L, int var);
+	int S_ComputeForces_CV_D2Q9(int i_dev, int L, int var);
+	int S_ComputeForces_CV_D3Q19(int i_dev, int L, int var);
+	int S_ComputeForces_CV_D3Q27(int i_dev, int L, int var);
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q27(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D2Q9(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q19(i_dev, L, var); return 0; }
+	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q27(i_dev, L, var); return 0; }
+	int S_ComputeForces(int i_dev, int L, int var) { S_ComputeForcesCV(i_dev, L, var); return 0; }
+	int S_ReportForces(int i_dev, int L, int i, double t, int START) { S_ReportForcesLBM(i_dev,L,i,t,START); return 0; }
 	
 	// DEBUG: Draw geometry.
 	int S_Debug_DrawGeometry_D2Q9(int i_dev, int L);

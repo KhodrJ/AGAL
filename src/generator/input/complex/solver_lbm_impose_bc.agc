@@ -38,6 +38,7 @@ KERNEL_REQUIRE int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i
 KERNEL_REQUIRE int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
 KERNEL_REQUIRE bool geometry_init                      | mesh->geometry_init
 KERNEL_REQUIRE int force_type                          | S_FORCE_TYPE
+KERNEL_REQUIRE int bc_type                             | S_BC_TYPE
 
 
 
@@ -75,9 +76,7 @@ REG int valid_block = -1;
 REG int block_mask = -1;
 REG int valid_mask = -1;
 REG ufloat_t f_p = (ufloat_t)(0.0);
-REG ufloat_t f_p_p = (ufloat_t)(0.0);
 REG ufloat_t f_q = (ufloat_t)(0.0);
-REG ufloat_t f_q_p = (ufloat_t)(0.0);
 REG ufloat_t f_m = (ufloat_t)(0.0);
 REG ufloat_g_t dQ = (ufloat_g_t)(0.0);
 REG ufloat_t rho = (ufloat_t)(0.0);
@@ -231,62 +230,60 @@ INFOR p 1   1 Lsize 1
         //
         INIF (<p> > 0)
             OUTIF (valid_mask == -2)
-                // Store old values of DDFs p and q.
-                REG-v f_p_p = f_p;
-                REG-v f_q_p = f_q;
-            
                 #
                 # p
                 #
                 
                 // Check if DDF <p> is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                REG-v dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + <p>*n_maxcells_b] / dx_L_g;
-            
-                // Pick the right neighbor block for this cell (pb).
-                REG nbr_kap_b = i_kap_b;
-                REG-v Ip = I + Lc0(Lpb(<p>));
-                REG-v Jp = J + Lc1(Lpb(<p>));
-                INIF (Ldim==3)
-                    REG-v Kp = K + Lc2(Lpb(<p>));
-                END_INIF
-                INFOR q 1   1 Lsize 1
-                    INIF ((Lc0(Lpb(<p>))==Lc0(<q>) or Lc0(<q>)==0) and (Lc1(Lpb(<p>))==Lc1(<q>) or Lc1(<q>)==0) and (Lc2(Lpb(<p>))==Lc2(<q>) or Lc2(<q>)==0))
-                        // Consider nbr <q>.
-                        OUTIFL ( gNa( gCOND(Lc0(<q>): 1,(Ip==4),-1,(Ip==-1),def.,(Ip>=0)and(Ip<4)) and \
-                                    gCOND(Lc1(<q>): 1,(Jp==4),-1,(Jp==-1),def.,(Jp>=0)and(Jp<4)) and \
-                                    gCOND(Ldim: 3,gCOND(Lc2(<q>): 1,(Kp==4),-1,(Kp==-1),def.,(Kp>=0)and(Kp<4)), def.,true) )\
-                        )
-                            REG nbr_kap_b = s_ID_nbr[<q>];
-                        END_OUTIFL
+                OUTIF (bc_type==2)
+                    REG-v dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + <p>*n_maxcells_b] / dx_L_g;
+                
+                    // Pick the right neighbor block for this cell (pb).
+                    REG nbr_kap_b = i_kap_b;
+                    REG-v Ip = I + Lc0(Lpb(<p>));
+                    REG-v Jp = J + Lc1(Lpb(<p>));
+                    INIF (Ldim==3)
+                        REG-v Kp = K + Lc2(Lpb(<p>));
                     END_INIF
-                END_INFOR
+                    INFOR q 1   1 Lsize 1
+                        INIF ((Lc0(Lpb(<p>))==Lc0(<q>) or Lc0(<q>)==0) and (Lc1(Lpb(<p>))==Lc1(<q>) or Lc1(<q>)==0) and (Lc2(Lpb(<p>))==Lc2(<q>) or Lc2(<q>)==0))
+                            // Consider nbr <q>.
+                            OUTIFL ( gNa( gCOND(Lc0(<q>): 1,(Ip==4),-1,(Ip==-1),def.,(Ip>=0)and(Ip<4)) and \
+                                        gCOND(Lc1(<q>): 1,(Jp==4),-1,(Jp==-1),def.,(Jp>=0)and(Jp<4)) and \
+                                        gCOND(Ldim: 3,gCOND(Lc2(<q>): 1,(Kp==4),-1,(Kp==-1),def.,(Kp>=0)and(Kp<4)), def.,true) )\
+                            )
+                                REG nbr_kap_b = s_ID_nbr[<q>];
+                            END_OUTIFL
+                        END_INIF
+                    END_INFOR
+                    
+                    // Get the fluid node behind this boundary node.
+                    INIF (Lc0(Lpb(<p>)) != 0)
+                        REG Ip = (4 + (Ip % 4)) % 4;
+                    END_INIF
+                    INIF (Lc1(Lpb(<p>)) != 0)
+                        REG Jp = (4 + (Jp % 4)) % 4;
+                    END_INIF
+                    INIF (Lc2(Lpb(<p>)) != 0)
+                        REG Kp = (4 + (Kp % 4)) % 4;
+                    END_INIF
+                    INIF Ldim==2
+                        REG nbr_kap_c = Ip + 4*Jp;
+                    INELSE
+                        REG nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    END_INIF
+                    REG f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + <p>*n_maxcells];
                 
-                // Get the fluid node behind this boundary node.
-                INIF (Lc0(Lpb(<p>)) != 0)
-                    REG Ip = (4 + (Ip % 4)) % 4;
-                END_INIF
-                INIF (Lc1(Lpb(<p>)) != 0)
-                    REG Jp = (4 + (Jp % 4)) % 4;
-                END_INIF
-                INIF (Lc2(Lpb(<p>)) != 0)
-                    REG Kp = (4 + (Kp % 4)) % 4;
-                END_INIF
-                INIF Ldim==2
-                    REG nbr_kap_c = Ip + 4*Jp;
-                INELSE
-                    REG nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                END_INIF
-                REG f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + <p>*n_maxcells];
-            
-                // ULI.
-                OUTIF (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    REG f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                END_OUTIF
-                
-                // DLI.
-                OUTIF (dQ >= (ufloat_g_t)(0.5))
-                    REG f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    // ULI.
+                    OUTIF (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                        REG f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    END_OUTIF
+                    
+                    // DLI.
+                    OUTIF (dQ >= (ufloat_g_t)(0.5))
+                        REG f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    END_OUTIF
                 END_OUTIF
                 
                 
@@ -296,52 +293,54 @@ INFOR p 1   1 Lsize 1
                 
                 REG-v // Check if DDF Lpb(<p>) is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                REG-v dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + Lpb(<p>)*n_maxcells_b] / dx_L_g;
-            
-                // Pick the right neighbor block for this cell (p).
-                REG nbr_kap_b = i_kap_b;
-                REG-v Ip = I + Lc0(<p>);
-                REG-v Jp = J + Lc1(<p>);
-                INIF (Ldim==3)
-                    REG-v Kp = K + Lc2(<p>);
-                END_INIF
-                INFOR q 1   1 Lsize 1
-                    INIF ((Lc0(<p>)==Lc0(<q>) or Lc0(<q>)==0) and (Lc1(<p>)==Lc1(<q>) or Lc1(<q>)==0) and (Lc2(<p>)==Lc2(<q>) or Lc2(<q>)==0))
-                        // Consider nbr <q>.
-                        OUTIFL ( gNa( gCOND(Lc0(<q>): 1,(Ip==4),-1,(Ip==-1),def.,(Ip>=0)and(Ip<4)) and \
-                                    gCOND(Lc1(<q>): 1,(Jp==4),-1,(Jp==-1),def.,(Jp>=0)and(Jp<4)) and \
-                                    gCOND(Ldim: 3,gCOND(Lc2(<q>): 1,(Kp==4),-1,(Kp==-1),def.,(Kp>=0)and(Kp<4)), def.,true) )\
-                        )
-                            REG nbr_kap_b = s_ID_nbr[<q>];
-                        END_OUTIFL
+                OUTIF (bc_type==2)
+                    REG-v dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + Lpb(<p>)*n_maxcells_b] / dx_L_g;
+                
+                    // Pick the right neighbor block for this cell (p).
+                    REG nbr_kap_b = i_kap_b;
+                    REG-v Ip = I + Lc0(<p>);
+                    REG-v Jp = J + Lc1(<p>);
+                    INIF (Ldim==3)
+                        REG-v Kp = K + Lc2(<p>);
                     END_INIF
-                END_INFOR
+                    INFOR q 1   1 Lsize 1
+                        INIF ((Lc0(<p>)==Lc0(<q>) or Lc0(<q>)==0) and (Lc1(<p>)==Lc1(<q>) or Lc1(<q>)==0) and (Lc2(<p>)==Lc2(<q>) or Lc2(<q>)==0))
+                            // Consider nbr <q>.
+                            OUTIFL ( gNa( gCOND(Lc0(<q>): 1,(Ip==4),-1,(Ip==-1),def.,(Ip>=0)and(Ip<4)) and \
+                                        gCOND(Lc1(<q>): 1,(Jp==4),-1,(Jp==-1),def.,(Jp>=0)and(Jp<4)) and \
+                                        gCOND(Ldim: 3,gCOND(Lc2(<q>): 1,(Kp==4),-1,(Kp==-1),def.,(Kp>=0)and(Kp<4)), def.,true) )\
+                            )
+                                REG nbr_kap_b = s_ID_nbr[<q>];
+                            END_OUTIFL
+                        END_INIF
+                    END_INFOR
+                    
+                    // Get the fluid node behind this boundary node.
+                    INIF (Lc0(<p>) != 0)
+                        REG Ip = (4 + (Ip % 4)) % 4;
+                    END_INIF
+                    INIF (Lc1(<p>) != 0)
+                        REG Jp = (4 + (Jp % 4)) % 4;
+                    END_INIF
+                    INIF (Lc2(<p>) != 0)
+                        REG Kp = (4 + (Kp % 4)) % 4;
+                    END_INIF
+                    INIF Ldim==2
+                        REG nbr_kap_c = Ip + 4*Jp;
+                    INELSE
+                        REG nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    END_INIF
+                    REG-v f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + Lpb(<p>)*n_maxcells];
                 
-                // Get the fluid node behind this boundary node.
-                INIF (Lc0(<p>) != 0)
-                    REG Ip = (4 + (Ip % 4)) % 4;
-                END_INIF
-                INIF (Lc1(<p>) != 0)
-                    REG Jp = (4 + (Jp % 4)) % 4;
-                END_INIF
-                INIF (Lc2(<p>) != 0)
-                    REG Kp = (4 + (Kp % 4)) % 4;
-                END_INIF
-                INIF Ldim==2
-                    REG nbr_kap_c = Ip + 4*Jp;
-                INELSE
-                    REG nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                END_INIF
-                REG-v f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + Lpb(<p>)*n_maxcells];
-            
-                // ULI.
-                OUTIF (dQ > 0 && dQ < (ufloat_g_t)(0.5))
-                    REG f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                END_OUTIF
-                
-                // DLI.
-                OUTIF (dQ >= (ufloat_g_t)(0.5))
-                    REG f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    // ULI.
+                    OUTIF (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                        REG f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    END_OUTIF
+                    
+                    // DLI.
+                    OUTIF (dQ >= (ufloat_g_t)(0.5))
+                        REG f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    END_OUTIF
                 END_OUTIF
                 
             END_OUTIF

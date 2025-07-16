@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Tue Jul  8 00:01:40 2025                                            */
+/*  Last Updated: Mon Jul 14 23:00:25 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dx_L_g,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,bool geometry_init,int force_type)
+void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dx_L_g,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,bool geometry_init,int force_type,int bc_type)
 {
     constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
@@ -40,9 +40,7 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
     int block_mask = -1;
     int valid_mask = -1;
     ufloat_t f_p = (ufloat_t)(0.0);
-    ufloat_t f_p_p = (ufloat_t)(0.0);
     ufloat_t f_q = (ufloat_t)(0.0);
-    ufloat_t f_q_p = (ufloat_t)(0.0);
     ufloat_t f_m = (ufloat_t)(0.0);
     ufloat_g_t dQ = (ufloat_g_t)(0.0);
     ufloat_t rho = (ufloat_t)(0.0);
@@ -181,58 +179,61 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 1 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 1*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 0;
-                Kp = K + 0;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 1*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 1*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 0;
+                    Kp = K + 0;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 1*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 2 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 2*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 0;
-                Kp = K + 0;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 2*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 0;
+                    Kp = K + 0;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 2*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -301,58 +302,61 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 3 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 3*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + -1;
-                Kp = K + 0;
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 3*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 3*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 3*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 4 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 4*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + 1;
-                Kp = K + 0;
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 4*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 4*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -421,58 +425,61 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 5 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 5*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + 0;
-                Kp = K + -1;
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Get the fluid node behind this boundary node.
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 5*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 5*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Get the fluid node behind this boundary node.
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 5*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 6 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 6*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + 0;
-                Kp = K + 1;
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Get the fluid node behind this boundary node.
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 6*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Get the fluid node behind this boundary node.
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 6*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -553,72 +560,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 7 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 7*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + -1;
-                Kp = K + 0;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 8.
-                if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[8];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 7*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 8.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[8];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 8 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 8*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 1;
-                Kp = K + 0;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 7.
-                if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[7];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 8*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 7.
+                    if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[7];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 8*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -699,72 +709,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 9 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 9*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 0;
-                Kp = K + -1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 10.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[10];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 9*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 9*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 10.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[10];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 9*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 10 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 10*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 0;
-                Kp = K + 1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 9.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[9];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 10*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 9.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[9];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 10*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -845,72 +858,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 11 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 11*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + -1;
-                Kp = K + -1;
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 12.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[12];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 11*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 11*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + -1;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 12.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[12];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 11*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 12 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 12*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + 1;
-                Kp = K + 1;
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 11.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[11];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 12*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + 1;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 11.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[11];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 12*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -991,72 +1007,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 13 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 13*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 1;
-                Kp = K + 0;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 14.
-                if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[14];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 13*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 13*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 1;
+                    Kp = K + 0;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 14.
+                    if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[14];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 13*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 14 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 14*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + -1;
-                Kp = K + 0;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 13.
-                if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[13];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 14*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + -1;
+                    Kp = K + 0;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 13.
+                    if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[13];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 14*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -1137,72 +1156,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 15 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 15*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 0;
-                Kp = K + 1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 16.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[16];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 15*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 15*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 0;
+                    Kp = K + 1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 16.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[16];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 15*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 16 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 16*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 0;
-                Kp = K + -1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 15.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[15];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 16*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 0;
+                    Kp = K + -1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 15.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[15];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 16*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -1283,72 +1305,75 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 17 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 17*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + -1;
-                Kp = K + 1;
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 18.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[18];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 17*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 17*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + -1;
+                    Kp = K + 1;
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 18.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[18];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 17*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 18 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 18*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 0;
-                Jp = J + 1;
-                Kp = K + -1;
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 17.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[17];
-                // Get the fluid node behind this boundary node.
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 18*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 0;
+                    Jp = J + 1;
+                    Kp = K + -1;
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 17.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[17];
+                    // Get the fluid node behind this boundary node.
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 18*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -1453,98 +1478,101 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 19 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 19*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + -1;
-                Kp = K + -1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 8.
-                if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[8];
-                // Consider nbr 10.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[10];
-                // Consider nbr 12.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[12];
-                // Consider nbr 20.
-                if ( (Ip==-1)and(Jp==-1)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[20];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 19*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 19*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + -1;
+                    Kp = K + -1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 8.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[8];
+                    // Consider nbr 10.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[10];
+                    // Consider nbr 12.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[12];
+                    // Consider nbr 20.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[20];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 19*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 20 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 20*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 1;
-                Kp = K + 1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 7.
-                if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[7];
-                // Consider nbr 9.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[9];
-                // Consider nbr 11.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[11];
-                // Consider nbr 19.
-                if ( (Ip==4)and(Jp==4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[19];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 20*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 20*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 1;
+                    Kp = K + 1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 7.
+                    if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[7];
+                    // Consider nbr 9.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[9];
+                    // Consider nbr 11.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[11];
+                    // Consider nbr 19.
+                    if ( (Ip==4)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[19];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 20*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -1649,98 +1677,101 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 21 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 21*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + -1;
-                Kp = K + 1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 8.
-                if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[8];
-                // Consider nbr 16.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[16];
-                // Consider nbr 18.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[18];
-                // Consider nbr 22.
-                if ( (Ip==-1)and(Jp==-1)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[22];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 21*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 21*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + -1;
+                    Kp = K + 1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 8.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[8];
+                    // Consider nbr 16.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[16];
+                    // Consider nbr 18.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[18];
+                    // Consider nbr 22.
+                    if ( (Ip==-1)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[22];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 21*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 22 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 22*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + 1;
-                Kp = K + -1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 7.
-                if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[7];
-                // Consider nbr 15.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[15];
-                // Consider nbr 17.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[17];
-                // Consider nbr 21.
-                if ( (Ip==4)and(Jp==4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[21];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 22*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 22*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + 1;
+                    Kp = K + -1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 7.
+                    if ( (Ip==4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[7];
+                    // Consider nbr 15.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[15];
+                    // Consider nbr 17.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[17];
+                    // Consider nbr 21.
+                    if ( (Ip==4)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[21];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 22*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -1845,98 +1876,101 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 23 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 23*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 1;
-                Kp = K + -1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 10.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[10];
-                // Consider nbr 14.
-                if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[14];
-                // Consider nbr 17.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[17];
-                // Consider nbr 24.
-                if ( (Ip==-1)and(Jp==4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[24];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 23*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 23*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 1;
+                    Kp = K + -1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 10.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[10];
+                    // Consider nbr 14.
+                    if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[14];
+                    // Consider nbr 17.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[17];
+                    // Consider nbr 24.
+                    if ( (Ip==-1)and(Jp==4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[24];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 23*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 24 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 24*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + -1;
-                Kp = K + 1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 9.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[9];
-                // Consider nbr 13.
-                if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[13];
-                // Consider nbr 18.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[18];
-                // Consider nbr 23.
-                if ( (Ip==4)and(Jp==-1)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[23];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 24*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 24*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + -1;
+                    Kp = K + 1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 9.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[9];
+                    // Consider nbr 13.
+                    if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[13];
+                    // Consider nbr 18.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[18];
+                    // Consider nbr 23.
+                    if ( (Ip==4)and(Jp==-1)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[23];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 24*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -2041,98 +2075,101 @@ void Cu_ImposeBC_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
             //
             if (valid_mask == -2)
             {
-                // Store old values of DDFs p and q.
-                f_p_p = f_p;
-                f_q_p = f_q;
                 // Check if DDF 26 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 26*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (pb).
-                nbr_kap_b = i_kap_b;
-                Ip = I + -1;
-                Jp = J + 1;
-                Kp = K + 1;
-                // Consider nbr 2.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[2];
-                // Consider nbr 3.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[3];
-                // Consider nbr 5.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[5];
-                // Consider nbr 11.
-                if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[11];
-                // Consider nbr 14.
-                if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[14];
-                // Consider nbr 16.
-                if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[16];
-                // Consider nbr 25.
-                if ( (Ip==-1)and(Jp==4)and(Kp==4) )
-                    nbr_kap_b = s_ID_nbr[25];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 26*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 26*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (pb).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + -1;
+                    Jp = J + 1;
+                    Kp = K + 1;
+                    // Consider nbr 2.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[2];
+                    // Consider nbr 3.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[3];
+                    // Consider nbr 5.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[5];
+                    // Consider nbr 11.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[11];
+                    // Consider nbr 14.
+                    if ( (Ip==-1)and(Jp==4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[14];
+                    // Consider nbr 16.
+                    if ( (Ip==-1)and(Jp>=0)and(Jp<4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[16];
+                    // Consider nbr 25.
+                    if ( (Ip==-1)and(Jp==4)and(Kp==4) )
+                        nbr_kap_b = s_ID_nbr[25];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 26*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                    }
                 }
                 // Check if DDF 25 is directed towards the solid object.
                 // If computing forces, add the contributions of DDFs entering the geometry.
-                dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 25*n_maxcells_b] / dx_L_g;
-                // Pick the right neighbor block for this cell (p).
-                nbr_kap_b = i_kap_b;
-                Ip = I + 1;
-                Jp = J + -1;
-                Kp = K + -1;
-                // Consider nbr 1.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[1];
-                // Consider nbr 4.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[4];
-                // Consider nbr 6.
-                if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[6];
-                // Consider nbr 12.
-                if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[12];
-                // Consider nbr 13.
-                if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
-                    nbr_kap_b = s_ID_nbr[13];
-                // Consider nbr 15.
-                if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[15];
-                // Consider nbr 26.
-                if ( (Ip==4)and(Jp==-1)and(Kp==-1) )
-                    nbr_kap_b = s_ID_nbr[26];
-                // Get the fluid node behind this boundary node.
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                Kp = (4 + (Kp % 4)) % 4;
-                nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 25*n_maxcells];
-                // ULI.
-                if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                if (bc_type==2)
                 {
-                    f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                }
-                // DLI.
-                if (dQ >= (ufloat_g_t)(0.5))
-                {
-                    f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + 25*n_maxcells_b] / dx_L_g;
+                    // Pick the right neighbor block for this cell (p).
+                    nbr_kap_b = i_kap_b;
+                    Ip = I + 1;
+                    Jp = J + -1;
+                    Kp = K + -1;
+                    // Consider nbr 1.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[1];
+                    // Consider nbr 4.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[4];
+                    // Consider nbr 6.
+                    if ( (Ip>=0)and(Ip<4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[6];
+                    // Consider nbr 12.
+                    if ( (Ip>=0)and(Ip<4)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[12];
+                    // Consider nbr 13.
+                    if ( (Ip==4)and(Jp==-1)and(Kp>=0)and(Kp<4) )
+                        nbr_kap_b = s_ID_nbr[13];
+                    // Consider nbr 15.
+                    if ( (Ip==4)and(Jp>=0)and(Jp<4)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[15];
+                    // Consider nbr 26.
+                    if ( (Ip==4)and(Jp==-1)and(Kp==-1) )
+                        nbr_kap_b = s_ID_nbr[26];
+                    // Get the fluid node behind this boundary node.
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    Kp = (4 + (Kp % 4)) % 4;
+                    nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + 25*n_maxcells];
+                    // ULI.
+                    if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                    {
+                        f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                    }
+                    // DLI.
+                    if (dQ >= (ufloat_g_t)(0.5))
+                    {
+                        f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                    }
                 }
             }
             // Write fi* to global memory.
@@ -2151,7 +2188,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC_D3Q27(int i_dev, int L)
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_ImposeBC_D3Q27<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], (ufloat_g_t)dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->geometry_init, S_FORCE_TYPE);
+		Cu_ImposeBC_D3Q27<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], (ufloat_g_t)dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_BC_TYPE);
 	}
 
 	return 0;

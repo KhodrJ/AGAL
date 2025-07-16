@@ -31,7 +31,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_InitTextOutput()
 		to.adv_printer.open(output_dir + "time_counter.txt");
 		to.adv_printer << "iter ";
 		for (int L = 0; L < MAX_LEVELS; L++) to.adv_printer << "n" << L << " ";
-		for (int L = 0; L < MAX_LEVELS; L++) to.adv_printer << L << "-Interp " << L << "-Collide " << L << "-Stream " << L << "-Average ";
+		for (int L = 0; L < MAX_LEVELS; L++) to.adv_printer << L << "-Interp " << L << "-Collide " << L << "-Stream " << L << "-Average " << L << "-Forces " << L << "-BC ";
 		to.adv_printer << "MLUPS" << std::endl;
 #endif
 		
@@ -207,7 +207,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_Step(int i, int iter_s, int iter_mul
 			std::cout << "    Sub-Iteration: " << j << ", t = " << i*dxf_vec[0] + j*dxf_vec[N_LEVEL_START] << std::endl;
 		
 #if (P_SHOW_ADVANCE==1)
-		double tmp_arr[4*MAX_LEVELS]; for (int L = 0; L < 4*MAX_LEVELS; L++) tmp_arr[L] = 0.0;
+		double tmp_arr[6*MAX_LEVELS]; for (int L = 0; L < 6*MAX_LEVELS; L++) tmp_arr[L] = 0.0;
 		to.adv_printer << i << " ";
 		for (int L = 0; L < MAX_LEVELS; L++)
 			to.adv_printer << n_ids[0][L] << " ";
@@ -216,10 +216,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_Step(int i, int iter_s, int iter_mul
 		solver->S_Advance(0,N_LEVEL_START, tmp_arr);
 		cudaDeviceSynchronize();
 #else
-		//solver->S_Debug(0,N_LEVEL_START, 0);
 		solver->S_Advance(0,N_LEVEL_START, 0);
-		//M_ReportForces(0,MAX_LEVELS_WALL-1);
-		//cudaDeviceSynchronize();
 #endif
 	}
 	
@@ -453,9 +450,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 		M_Advance_PrintIter(i, iter_s);
 		
 		
-		// Part A of force calculation.
-		//if (N_PROBE_FORCE==1)
-		//	M_Advance_PrintForces(i, iter_s, 0);
+		// Report on force calculation.
+		if (N_PROBE_FORCE==1)
+			M_Advance_PrintForces(i, iter_s, 1);
 		
 		
 		// Reset advancement time counters, then output the grid hierarchy sizes for computation later.
@@ -468,24 +465,18 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 		
 		
 		// Convergence check, performed every N_PROBE_FREQ iterations.
-		if (N_PROBE==1)
-			M_Advance_Probe(i, iter_s);
+		//if (N_PROBE==1)
+		//	M_Advance_Probe(i, iter_s);
 		
 		
 		// Update the time-average solution, if selected.
-		if (N_PROBE_AVE==1)
-			M_Advance_ProbeAverage(i, iter_s, N_iters_ave);
+		//if (N_PROBE_AVE==1)
+		//	M_Advance_ProbeAverage(i, iter_s, N_iters_ave);
 		
 
 		// Printing stage, performed every P_PRINT iterations.
 		if ((i+1)%P_OUTPUT == 0 && i > iter_s+N_OUTPUT_START)
 			M_Advance_PrintData(i, iter_s);
-		
-		
-		// Part B of force calculation.
-		// Print lift and drag forces to output if applicable.
-		if (N_PROBE_FORCE==1)
-			M_Advance_PrintForces(i, iter_s, 1);
 	}
 	
 	return 0;

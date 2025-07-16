@@ -48,7 +48,8 @@
 	#include "solver_lbm_interp_cubic_original_D2Q9.cu"
 	#include "solver_lbm_average_original_D2Q9.cu"
 	#include "solver_lbm_debug_drawgeom_D2Q9.cu"
-	#include "solver_lbm_compute_forces_D2Q9.cu"
+	#include "solver_lbm_compute_forces_mea_D2Q9.cu"
+	#include "solver_lbm_compute_forces_cv_D2Q9.cu"
 #endif
 #ifdef USED3Q19
 	#include "solver_lbm_setic_D3Q19.cu"
@@ -61,7 +62,8 @@
 	#include "solver_lbm_interp_cubic_original_D3Q19.cu"
 	#include "solver_lbm_average_original_D3Q19.cu"
 	#include "solver_lbm_debug_drawgeom_D3Q19.cu"
-	#include "solver_lbm_compute_forces_D3Q19.cu"
+	#include "solver_lbm_compute_forces_mea_D3Q19.cu"
+	#include "solver_lbm_compute_forces_cv_D3Q19.cu"
 #endif
 #ifdef USED3Q27
 	#include "solver_lbm_setic_D3Q27.cu"
@@ -74,7 +76,8 @@
 	#include "solver_lbm_interp_cubic_original_D3Q27.cu"
 	#include "solver_lbm_average_original_D3Q27.cu"
 	#include "solver_lbm_debug_drawgeom_D3Q27.cu"
-	#include "solver_lbm_compute_forces_D3Q27.cu"
+	#include "solver_lbm_compute_forces_mea_D3Q27.cu"
+	#include "solver_lbm_compute_forces_cv_D3Q27.cu"
 #endif
 
 int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);

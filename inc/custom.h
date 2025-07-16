@@ -16,8 +16,11 @@ bool Cu_RefineRegion
 	// --- HERE ---
 	// Define a custom region of refinement here.
 	// --- HERE ---
+	//return (x > (ufloat_t)(2.0) && x < (ufloat_t)(0.5) && y > (ufloat_t)(0.3) && y < (ufloat_t)(0.7));
+	double D = (double)(1<<L);
+	return   x > 0.3-0.1/D && x <= 0.3+0.1/D && y > 0.5-0.25/D && y < 0.5+0.25/D; 
 	
-	return false;
+	//return false;
 }
 
 // o====================================================================================

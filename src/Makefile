@@ -200,9 +200,12 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_collision_new_D2Q9.cu\
 	solver_lbm_collision_new_D3Q19.cu\
 	solver_lbm_collision_new_D3Q27.cu\
-	solver_lbm_compute_forces_D2Q9.cu\
-	solver_lbm_compute_forces_D3Q19.cu\
-	solver_lbm_compute_forces_D3Q27.cu\
+	solver_lbm_compute_forces_mea_D2Q9.cu\
+	solver_lbm_compute_forces_mea_D3Q19.cu\
+	solver_lbm_compute_forces_mea_D3Q27.cu\
+	solver_lbm_compute_forces_cv_D2Q9.cu\
+	solver_lbm_compute_forces_cv_D3Q19.cu\
+	solver_lbm_compute_forces_cv_D3Q27.cu\
 	solver_lbm_imposebc_D2Q9.cu\
 	solver_lbm_imposebc_D3Q19.cu\
 	solver_lbm_imposebc_D3Q27.cu\

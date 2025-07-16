@@ -24,13 +24,16 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 		dvf_vec[L] = (ufloat_t)1.0;
 		for (int d = 0; d < N_DIM; d++)
 			dvf_vec[L] *= dxf_vec[L];
+		std::cout << "DX/V: " << dxf_vec[L] << " " << dvf_vec[L] << std::endl;
 	}
 	
 	// General.
 	v0                                     = params_dbl["v0"];
 	S_CRITERION                            = params_int["S_CRITERION"];
 	S_LES                                  = params_int["S_LES"];
+	S_FORCE_ORDER                          = params_int["S_FORCE_ORDER"];
 	S_FORCE_TYPE                           = params_int["S_FORCE_TYPE"];
+	S_BC_TYPE                              = params_int["S_BC_TYPE"];
 	S_FORCEVOLUME_Xm                       = 4.0*(int(params_dbl["S_FORCEVOLUME_Xm"]*(mesh->Nxi[0]/4)))*dxf_vec[0];
 	S_FORCEVOLUME_XM                       = 4.0*(int(params_dbl["S_FORCEVOLUME_XM"]*(mesh->Nxi[0]/4)))*dxf_vec[0];
 	S_FORCEVOLUME_Ym                       = 4.0*(int(params_dbl["S_FORCEVOLUME_Ym"]*(mesh->Nxi[1]/4)))*dxf_vec[0];

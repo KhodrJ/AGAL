@@ -11,14 +11,13 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_FillBinned
 (
-	int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dx_L, bool hit_max,
-	int *cells_ID_mask, int *cblock_ID_mask, ufloat_t *cblock_f_X, int *cblock_ID_ref, int *cblock_ID_nbr,
-	int n_faces, int n_faces_a, ufloat_g_t *geom_f_face_X,
-	int *binned_face_ids_n, int *binned_face_ids_N, int *binned_face_ids, int G_BIN_DENSITY
+	int n_ids_idev_L, int *__restrict__ id_set_idev_L, int n_maxcblocks, ufloat_t dx_L, bool hit_max,
+	int *__restrict__ cells_ID_mask, int *__restrict__ cblock_ID_mask, ufloat_t *__restrict__ cblock_f_X, int *__restrict__ cblock_ID_ref, int *__restrict__ cblock_ID_nbr,
+	int n_faces, int n_faces_a, ufloat_g_t *__restrict__ geom_f_face_X,
+	int *__restrict__ binned_face_ids_n, int *__restrict__ binned_face_ids_N, int *__restrict__ binned_face_ids, int G_BIN_DENSITY
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
-	//constexpr int N_Q_max __attribute__((unused)) = AP->N_Q_max;
 	constexpr int M_TBLOCK = AP->M_TBLOCK;
 	constexpr int M_CBLOCK = AP->M_CBLOCK;
 	constexpr int M_LBLOCK = AP->M_LBLOCK;
@@ -55,7 +54,6 @@ void Cu_FillBinned
 	ufloat_g_t vzp = (ufloat_g_t)0.0;
 	ufloat_g_t tmp = (ufloat_g_t)0.0;
 	ufloat_g_t tmp2 = (ufloat_g_t)0.0;
-	//ufloat_g_t min_d = (ufloat_g_t)1.0;
 	int intersect_counter = 0;
 	bool C;
 	//bool eligible __attribute__((unused)) = true;
@@ -176,126 +174,6 @@ void Cu_FillBinned
 		}
 	}
 }
-
-/*
-template <const ArgsPack *AP>
-__global__
-void Cu_MarkBlocks
-(
-	int id_max_curr, int n_maxcblocks, 
-	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr
-)
-{
-	constexpr int N_DIM = AP->N_DIM;
-	constexpr int M_BLOCK = AP->M_BLOCK;
-	__shared__ int s_ID_nbr[M_BLOCK*(2*N_DIM+1)];
-	int D = (2*N_DIM+1);
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	bool mark_for_refinement = false;
-	
-	// Initialize shared memory.
-	for (int p = 0; p < D; p++)
-		s_ID_nbr[p + threadIdx.x*D] = -1;
-	__syncthreads();
-	
-	// First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-	if (kap < id_max_curr && cblock_ID_mask[kap] == -1)
-	{
-		for (int p = 0; p < D; p++)
-			s_ID_nbr[p + threadIdx.x*D] = cblock_ID_nbr[kap + p*n_maxcblocks];
-	}
-	__syncthreads();
-	
-	// Replace neighbor Ids with their respective block masks.
-	for (int p = 0; p < D; p++)
-	{
-		int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-		if (i_p > -1 && cblock_ID_mask[i_p] == -1)
-			s_ID_nbr[threadIdx.x + p*M_BLOCK] = 1;
-	}
-	__syncthreads();
-	
-	// Finally, assign marks for refinement if applicable. Arrange for contiguity.
-	if (kap < id_max_curr && cblock_ID_mask[kap] == -1)
-	{
-		for (int p = 0; p < D; p++)
-		{
-			if (s_ID_nbr[p + threadIdx.x*D] == 1)
-				mark_for_refinement = true;
-		}
-		
-		if (mark_for_refinement)
-			cblock_ID_ref[kap] = V_REF_ID_MARK_REFINE;
-		cblock_ID_mask[kap] = 0;
-	}
-}
-
-template <const ArgsPack *AP>
-__global__
-void Cu_PropagateMarks_Alt_S1
-(
-	int id_max_curr, int n_maxcblocks, 
-	int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child
-)
-{
-	constexpr int N_DIM = AP->N_DIM;
-	constexpr int M_BLOCK = AP->M_BLOCK;
-	__shared__ int s_ID_nbr[M_BLOCK*(2*N_DIM+1)];
-	int D = (2*N_DIM+1);
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	// Initialize shared memory.
-	for (int p = 0; p < D; p++)
-		s_ID_nbr[p + threadIdx.x*D] = -1;
-	__syncthreads();
-	
-	// First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-	if (kap < id_max_curr && cblock_ID_ref[kap] == V_REF_ID_MARK_REFINE)
-	{
-		
-		for (int p = 0; p < D; p++)
-			s_ID_nbr[p + threadIdx.x*D] = cblock_ID_nbr[kap + p*n_maxcblocks];
-	}
-	__syncthreads();
-	
-	// Replace neighbor Ids with their respective marks.
-	for (int p = 0; p < D; p++)
-	{
-		int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-		if (i_p > -1 && cblock_ID_ref[i_p] == V_REF_ID_UNREFINED)
-			cblock_ID_ref[i_p] = V_REF_ID_INDETERMINATE;
-	}
-}
-
-template <const ArgsPack *AP>
-__global__
-void Cu_PropagateMarks_Alt_S2
-(
-	int id_max_curr, int n_maxcblocks, 
-	int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child
-)
-{
-	constexpr int N_Q_max = AP->N_Q_max;
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	bool eligible = true;
-	int mark = V_REF_ID_UNREFINED;
-	
-	if (kap < id_max_curr && cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE)
-	{
-		// Don't refine near invalid fine-grid boundaries. Only in the interior for quality purposes.
-		bool eligible = true;
-		for (int p = 1; p < N_Q_max; p++)
-		{
-			if (cblock_ID_nbr[kap + p*n_maxcblocks] == N_SKIPID)
-				eligible = false;
-		}
-		
-		if (eligible)
-			mark = V_REF_ID_MARK_REFINE;
-		cblock_ID_ref[kap] = mark;
-	}
-}
-*/
 
 // TODO: Update comments describing the logic behind access.
 
