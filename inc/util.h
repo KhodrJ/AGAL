@@ -134,15 +134,15 @@ void GetShortedLinkVertex3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &v
 }
 
 template <typename T>
-__device__
-bool CheckInLine(T &d, T &vxp, T &vx0, T &vx1)
+__host__ __device__ __forceinline__
+bool CheckInLine(T d, T vxp, T vx0, T vx1)
 {
 	return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1);
 }
 
 template <typename T>
-__device__
-bool CheckInRect(T &d, T &vxp, T &vyp, T &vx0, T &vy0, T &vx1, T &vy1)
+__host__ __device__ __forceinline__
+bool CheckInRect(T d, T vxp, T vyp, T vx0, T vy0, T vx1, T vy1)
 {
 	return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1 && vyp > vy0 && vyp < vy1);
 }

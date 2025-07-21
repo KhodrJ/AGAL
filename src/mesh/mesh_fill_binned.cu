@@ -11,10 +11,23 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_FillBinned
 (
-	int n_ids_idev_L, int *__restrict__ id_set_idev_L, int n_maxcblocks, ufloat_t dx_L, bool hit_max,
-	int *__restrict__ cells_ID_mask, int *__restrict__ cblock_ID_mask, ufloat_t *__restrict__ cblock_f_X, int *__restrict__ cblock_ID_ref, int *__restrict__ cblock_ID_nbr,
-	int n_faces, int n_faces_a, ufloat_g_t *__restrict__ geom_f_face_X,
-	int *__restrict__ binned_face_ids_n, int *__restrict__ binned_face_ids_N, int *__restrict__ binned_face_ids, int G_BIN_DENSITY
+	const int n_ids_idev_L,
+	const int *__restrict__ id_set_idev_L,
+	const int n_maxcblocks,
+	const ufloat_t dx_L,
+	const bool hit_max,
+	int *__restrict__ cells_ID_mask,
+	int *__restrict__ cblock_ID_mask,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_ref,
+	const int *__restrict__ cblock_ID_nbr,
+	const int n_faces,
+	const int n_faces_a,
+	const ufloat_g_t *__restrict__ geom_f_face_X,
+	const int *__restrict__ binned_face_ids_n,
+	const int *__restrict__ binned_face_ids_N,
+	const int *__restrict__ binned_face_ids,
+	const int G_BIN_DENSITY
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
@@ -24,40 +37,21 @@ void Cu_FillBinned
 	__shared__ int s_ID_cblock[M_TBLOCK];
 	__shared__ int s_D[M_TBLOCK];
 	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-	int I_kap = threadIdx.x % 4;
-	int J_kap = (threadIdx.x / 4) % 4;
-	int K_kap = (threadIdx.x / 4) / 4;
 	int i_kap_b;
 	int global_bin_id;
-	int bin_id_y = 0;
-	int bin_id_z __attribute__((unused)) = 0;
-	ufloat_g_t vx1 = (ufloat_g_t)0.0;
-	ufloat_g_t vy1 = (ufloat_g_t)0.0;
-	ufloat_g_t vz1 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vx2 = (ufloat_g_t)0.0;
-	ufloat_g_t vy2 = (ufloat_g_t)0.0;
-	ufloat_g_t vz2 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vx3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vy3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vz3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t nx = (ufloat_g_t)0.0;
-	ufloat_g_t ny = (ufloat_g_t)0.0;
-	ufloat_g_t nz = (ufloat_g_t)0.0;
-	ufloat_g_t ex1 = (ufloat_g_t)0.0;
-	ufloat_g_t ey1 = (ufloat_g_t)0.0;
-	ufloat_g_t ez1 = (ufloat_g_t)0.0;
-	ufloat_g_t ex2 = (ufloat_g_t)0.0;
-	ufloat_g_t ey2 = (ufloat_g_t)0.0;
-	ufloat_g_t ez2 = (ufloat_g_t)0.0;
 	ufloat_g_t vxp = (ufloat_g_t)0.0;
 	ufloat_g_t vyp = (ufloat_g_t)0.0;
 	ufloat_g_t vzp = (ufloat_g_t)0.0;
+	ufloat_g_t vx = (ufloat_g_t)0.0;
+	ufloat_g_t vy = (ufloat_g_t)0.0;
+	ufloat_g_t vz = (ufloat_g_t)0.0;
+	ufloat_g_t nx = (ufloat_g_t)0.0;
+	ufloat_g_t ny = (ufloat_g_t)0.0;
+	ufloat_g_t nz = (ufloat_g_t)0.0;
 	ufloat_g_t tmp = (ufloat_g_t)0.0;
 	ufloat_g_t tmp2 = (ufloat_g_t)0.0;
 	int intersect_counter = 0;
 	bool C;
-	//bool eligible __attribute__((unused)) = true;
-	//bool D = false;
 	
 	s_ID_cblock[threadIdx.x] = -1;
 	if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
@@ -74,19 +68,17 @@ void Cu_FillBinned
 		// Latter condition is added only if n>0.
 		if (i_kap_b > -1)
 		{
-			vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I_kap*dx_L + 0.5*dx_L;
-			vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J_kap*dx_L + 0.5*dx_L;
+			// Compute cell-center coordinates.
+			vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + (threadIdx.x % 4)*dx_L + 0.5*dx_L;
+			vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + ((threadIdx.x / 4) % 4)*dx_L + 0.5*dx_L;
 			if (N_DIM==3)
-				vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K_kap*dx_L + 0.5*dx_L;
+				vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + ((threadIdx.x / 4) / 4)*dx_L + 0.5*dx_L;
 			
 			// For each face, check if the current cell is within the appropriate bounds. If at least
 			// one condition is satisfied, exit the loop and make a note.
-			bin_id_y = (int)(vyp*G_BIN_DENSITY);
-			if (N_DIM==3)
-				bin_id_z = (int)(vzp*G_BIN_DENSITY);
+			global_bin_id = ((int)(vyp*G_BIN_DENSITY)) + G_BIN_DENSITY*((int)(vzp*G_BIN_DENSITY));
 			
 			// Now find the total number of intersections a ray makes in the direction with the smallest number of bins.
-			global_bin_id = bin_id_y + G_BIN_DENSITY*bin_id_z;
 			int n_f = binned_face_ids_n[global_bin_id];
 			int N_f = 0;
 			if (n_f > 0)
@@ -94,51 +86,81 @@ void Cu_FillBinned
 			for (int p = 0; p < n_f; p++)
 			{
 				int f_p = binned_face_ids[N_f+p];
-				vx1 = geom_f_face_X[f_p + 0*n_faces_a];
-				vy1 = geom_f_face_X[f_p + 1*n_faces_a];
-				vx2 = geom_f_face_X[f_p + 3*n_faces_a];
-				vy2 = geom_f_face_X[f_p + 4*n_faces_a];
-				nx = vy2-vy1;
-				ny = vx1-vx2;
 				
 				if (N_DIM==2)
 				{
+					// Load normal.
+					nx = geom_f_face_X[f_p + 9*n_faces_a];
+					ny = geom_f_face_X[f_p + 10*n_faces_a];
+					
+					// Load vertices 1 and 2.
+					vx = geom_f_face_X[f_p + 0*n_faces_a];
+					vy = geom_f_face_X[f_p + 1*n_faces_a];
+					
 					// Find the distance along a ray with direction [1,0].
-					tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx);
+					tmp = (vx-vxp) + (vy-vyp)*(ny/nx);
 					if (tmp > 0)
 					{
 						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
-						C = CheckPointInLine(tmp2, vyp, vx1, vy1, vx2, vy2);
+						
+						// First check if point is inside the line.
+						nx = geom_f_face_X[f_p + 12*n_faces_a]; // nx stores edge now.
+						ny = geom_f_face_X[f_p + 13*n_faces_a];
+						C = -( ((vx-vxp)*nx)+((vy-vyp)*ny) ) > 0;
+						
+						// Second check if point is inside the line.
+						vx = geom_f_face_X[f_p + 3*n_faces_a];
+						vy = geom_f_face_X[f_p + 4*n_faces_a];
+						C = C && ( ((vx-vxp)*nx)+((vy-vyp)*ny) ) > 0;
+						
+						//C = CheckPointInLine(tmp2, vyp, vx1, vy1, vx2, vy2);
 						if (C)
 							intersect_counter++;
 					}
 				}
 				else
 				{
-					vz1 = geom_f_face_X[f_p + 2*n_faces_a];
-					vz2 = geom_f_face_X[f_p + 5*n_faces_a];
-					vx3 = geom_f_face_X[f_p + 6*n_faces_a];
-					vy3 = geom_f_face_X[f_p + 7*n_faces_a];
-					vz3 = geom_f_face_X[f_p + 8*n_faces_a];
+					// Load normal.
+					nx = geom_f_face_X[f_p + 9*n_faces_a];
+					ny = geom_f_face_X[f_p + 10*n_faces_a];
+					nz = geom_f_face_X[f_p + 11*n_faces_a];
 					
-					ex1 = vx2-vx1;
-					ey1 = vy2-vy1;
-					ez1 = vz2-vz1;
-					ex2 = vx3-vx1;
-					ey2 = vy3-vy1;
-					ez2 = vz3-vz1;
-					Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
-					tmp = Tsqrt(nx*nx + ny*ny + nz*nz);
-					nx /= tmp;
-					ny /= tmp;
-					nz /= tmp;
+					// Load vertex 1.
+					vx = geom_f_face_X[f_p + 0*n_faces_a];
+					vy = geom_f_face_X[f_p + 1*n_faces_a];
+					vz = geom_f_face_X[f_p + 2*n_faces_a];
 					
 					// Find the distance along a ray with direction [1,0,0].
-					tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx) + (vz1-vzp)*(nz/nx);
+					tmp = (vx-vxp) + (vy-vyp)*(ny/nx) + (vz-vzp)*(nz/nx);
 					if (tmp > 0)
 					{
 						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
-						C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
+						
+						// First check that point is inside the triangle.
+						nx = geom_f_face_X[f_p + 21*n_faces_a]; // nx stores edge normal now.
+						ny = geom_f_face_X[f_p + 22*n_faces_a];
+						nz = geom_f_face_X[f_p + 23*n_faces_a];
+						C = (vx-vxp)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
+						
+						// Second check that point is inside the triangle.
+						vx = geom_f_face_X[f_p + 3*n_faces_a];
+						vy = geom_f_face_X[f_p + 4*n_faces_a];
+						vz = geom_f_face_X[f_p + 5*n_faces_a];
+						nx = geom_f_face_X[f_p + 24*n_faces_a]; // nx stores edge normal now.
+						ny = geom_f_face_X[f_p + 25*n_faces_a];
+						nz = geom_f_face_X[f_p + 26*n_faces_a];
+						C = C && (vx-vxp)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
+						
+						// Second check that point is inside the triangle.
+						vx = geom_f_face_X[f_p + 6*n_faces_a];
+						vy = geom_f_face_X[f_p + 7*n_faces_a];
+						vz = geom_f_face_X[f_p + 8*n_faces_a];
+						nx = geom_f_face_X[f_p + 27*n_faces_a]; // nx stores edge normal now.
+						ny = geom_f_face_X[f_p + 28*n_faces_a];
+						nz = geom_f_face_X[f_p + 29*n_faces_a];
+						C = C && (vx-vxp)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
+						
+						//C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
 						if (C)
 							intersect_counter++;
 					}

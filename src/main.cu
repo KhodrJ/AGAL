@@ -4,8 +4,10 @@
 #include "solver_lbm.h"
 
 #include "geometry_add.cu"
+#include "geometry_bin.cu"
 #include "geometry_bin_alt.cu"
-#include "geometry_bin_alt_3D.cu"
+// #include "geometry_bin_2D.cu"
+// #include "geometry_bin_3D.cu"
 #include "geometry_convert.cu"
 #include "geometry_dest.cu"
 #include "geometry_import.cu"
@@ -29,7 +31,6 @@
 #include "solver_lbm_compute_macro.cu"
 #include "solver_lbm_compute.cu"
 #include "solver_lbm_criterion.cu"
-// #include "solver_lbm_impl.cu"
 #include "solver_lbm_init.cu"
 #include "solver_lbm_identify_faces.cu"
 //
@@ -98,7 +99,7 @@ constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_B
 typedef float REAL_s;
 typedef float REAL_g;
 constexpr ArgsPack APc = AP2D;
-constexpr LBMPack LPc = LP2D;
+constexpr LBMPack LPc __attribute__((unused)) = LP2D;
 
 
 int main(int argc, char *argv[])
@@ -127,26 +128,22 @@ int main(int argc, char *argv[])
 	geometry.G_Init_Arrays_CoordsList_CPU(0);
 	if (geometry.G_PRINT)
 		geometry.G_PrintSTL(0);
+// 	geometry.G_MakeBins2D(0);
+// 	geometry.G_MakeBins3D(0);
 	geometry.G_MakeBins(0);
-	geometry.G_MakeBins3D(0);
+	geometry.G_MakeBinsAltCPU(0);
 	
 	// Create a mesh.
-	int enable_aux_data = 1;
-	Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, LPc.N_Q, enable_aux_data, APc.N_DIM+1+1);
-	mesh.M_AddGeometry(&geometry);
-	//
-	//mesh.geometry = &geometry;
-	//geometry.mesh = &mesh;
-	//mesh.geometry_init = 1;
+	//int enable_aux_data = 1;
+	//Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, LPc.N_Q, enable_aux_data, APc.N_DIM+1+1);
+	//mesh.M_AddGeometry(&geometry);
 	
 	// Create a solver.
-	Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);
-	mesh.M_AddSolver(&solver);
-	//
-	//mesh.solver = &solver;
+	//Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);
+	//mesh.M_AddSolver(&solver);
 	
 	// Solver loop (includes rendering and printing).
-	mesh.M_AdvanceLoop();
+	//mesh.M_AdvanceLoop();
 	
 	return 0;
 }

@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Mon Jul 14 23:00:26 2025                                            */
+/*  Last Updated: Wed Jul 16 13:46:25 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,33 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int post_step>
 __global__
-void Cu_ComputeForces_CV_D3Q27(int is_root,int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,ufloat_t dx_L,ufloat_t dv_L,ufloat_t otau_0,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,ufloat_t *__restrict__ cblock_f_Ff,bool geometry_init,int order,ufloat_t cv_xm,ufloat_t cv_xM,ufloat_t cv_ym,ufloat_t cv_yM,ufloat_t cv_zm,ufloat_t cv_zM)
+void Cu_ComputeForces_CV_D3Q27
+(
+	const int is_root,
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const ufloat_t dx_L,
+	const ufloat_t dv_L,
+	const ufloat_t otau_0,
+	const int *__restrict__ id_set_idev_L,
+	const int *__restrict__ cells_ID_mask,
+	const ufloat_t *__restrict__ cells_f_F,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_nbr_child,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_onb,
+	ufloat_t *__restrict__ cblock_f_Ff,
+	const bool geometry_init,
+	const int order,
+	const ufloat_t cv_xm,
+	const ufloat_t cv_xM,
+	const ufloat_t cv_ym,
+	const ufloat_t cv_yM,
+	const ufloat_t cv_zm,
+	const ufloat_t cv_zM
+)
 {
     constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
@@ -257,161 +283,161 @@ void Cu_ComputeForces_CV_D3Q27(int is_root,int n_ids_idev_L,long int n_maxcells,
             }
             
             // Now check if DDFs are leaving the CV.
-            if (post_step==0)
+            if (post_step==0 && is_root)
             {
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_1;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_2;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_3;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_4;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmz[threadIdx.x] += f_5;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpz[threadIdx.x] += f_6;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_7;
                     s_Fmy[threadIdx.x] += f_7;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_8;
                     s_Fpy[threadIdx.x] += f_8;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_9;
                     s_Fmz[threadIdx.x] += f_9;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_10;
                     s_Fpz[threadIdx.x] += f_10;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_11;
                     s_Fmz[threadIdx.x] += f_11;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_12;
                     s_Fpz[threadIdx.x] += f_12;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_13;
                     s_Fpy[threadIdx.x] += f_13;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_14;
                     s_Fmy[threadIdx.x] += f_14;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_15;
                     s_Fpz[threadIdx.x] += f_15;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_16;
                     s_Fmz[threadIdx.x] += f_16;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_17;
                     s_Fpz[threadIdx.x] += f_17;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_18;
                     s_Fmz[threadIdx.x] += f_18;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_19;
                     s_Fmy[threadIdx.x] += f_19;
                     s_Fmz[threadIdx.x] += f_19;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_20;
                     s_Fpy[threadIdx.x] += f_20;
                     s_Fpz[threadIdx.x] += f_20;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_21;
                     s_Fmy[threadIdx.x] += f_21;
                     s_Fpz[threadIdx.x] += f_21;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_22;
                     s_Fpy[threadIdx.x] += f_22;
                     s_Fmz[threadIdx.x] += f_22;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_23;
                     s_Fpy[threadIdx.x] += f_23;
                     s_Fmz[threadIdx.x] += f_23;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_24;
                     s_Fmy[threadIdx.x] += f_24;
                     s_Fpz[threadIdx.x] += f_24;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_25;
                     s_Fmy[threadIdx.x] += f_25;
                     s_Fmz[threadIdx.x] += f_25;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_26;
                     s_Fpy[threadIdx.x] += f_26;
@@ -420,161 +446,161 @@ void Cu_ComputeForces_CV_D3Q27(int is_root,int n_ids_idev_L,long int n_maxcells,
             }
             
             // Now check if DDFs are entering the CV.
-            if (post_step==1)
+            if (post_step==1 && is_root)
             {
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_1;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_2;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_3;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_4;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpz[threadIdx.x] += f_5;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmz[threadIdx.x] += f_6;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_7;
                     s_Fpy[threadIdx.x] += f_7;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_8;
                     s_Fmy[threadIdx.x] += f_8;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_9;
                     s_Fpz[threadIdx.x] += f_9;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_10;
                     s_Fmz[threadIdx.x] += f_10;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_11;
                     s_Fpz[threadIdx.x] += f_11;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_12;
                     s_Fmz[threadIdx.x] += f_12;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_13;
                     s_Fmy[threadIdx.x] += f_13;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+0*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_14;
                     s_Fpy[threadIdx.x] += f_14;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+0*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_15;
                     s_Fmz[threadIdx.x] += f_15;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+0*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_16;
                     s_Fpz[threadIdx.x] += f_16;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpy[threadIdx.x] += f_17;
                     s_Fmz[threadIdx.x] += f_17;
                 }
                 participatesS = !CheckPointInRegion3D(x+0*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmy[threadIdx.x] += f_18;
                     s_Fpz[threadIdx.x] += f_18;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_19;
                     s_Fpy[threadIdx.x] += f_19;
                     s_Fpz[threadIdx.x] += f_19;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_20;
                     s_Fmy[threadIdx.x] += f_20;
                     s_Fmz[threadIdx.x] += f_20;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_21;
                     s_Fpy[threadIdx.x] += f_21;
                     s_Fmz[threadIdx.x] += f_21;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_22;
                     s_Fmy[threadIdx.x] += f_22;
                     s_Fpz[threadIdx.x] += f_22;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_23;
                     s_Fmy[threadIdx.x] += f_23;
                     s_Fpz[threadIdx.x] += f_23;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_24;
                     s_Fpy[threadIdx.x] += f_24;
                     s_Fmz[threadIdx.x] += f_24;
                 }
                 participatesS = !CheckPointInRegion3D(x+1*dx_L,y+-1*dx_L,z+-1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fmx[threadIdx.x] += f_25;
                     s_Fpy[threadIdx.x] += f_25;
                     s_Fpz[threadIdx.x] += f_25;
                 }
                 participatesS = !CheckPointInRegion3D(x+-1*dx_L,y+1*dx_L,z+1*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                if (participatesS && participatesV && is_root)
+                if (participatesS && participatesV)
                 {
                     s_Fpx[threadIdx.x] += f_26;
                     s_Fmy[threadIdx.x] += f_26;
@@ -628,11 +654,11 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForces_CV_D3Q27(int i_dev, i
 {
 	if (mesh->n_ids[i_dev][L]>0 && var==0)
 	{
-		Cu_ComputeForces_CV_D3Q27<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
+		Cu_ComputeForces_CV_D3Q27<ufloat_t,ufloat_g_t,AP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
 	}
 	if (mesh->n_ids[i_dev][L]>0 && var==1)
 	{
-		Cu_ComputeForces_CV_D3Q27<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_F_aux[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
+		Cu_ComputeForces_CV_D3Q27<ufloat_t,ufloat_g_t,AP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
 	}
 
 	return 0;

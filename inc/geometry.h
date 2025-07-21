@@ -68,8 +68,10 @@ class Geometry
 	int             n_bins_b                = 1;            ///< Number of bins to use for enforcing boundary conditions.
 	int             G_LOADTYPE              = 0;            ///< The type of load to perform [0: from and STL file, 1: from the txt file].
 	int             G_PRINT                 = 0;            ///< Indicates if the geometry should be printed in STL format after processing.
+	int             G_BIN_OVERLAP           = 10;           ///< Factor accounting for the overlap of faces among bins
 	int             G_BIN_DENSITY           = 1;            ///< The number of bins to divide the geometry surface.
 	int             G_BIN_FRAC              = 1;            ///< Fraction of bin arrays to consider at a time.
+	int             G_BIN_APPROACH          = 0;            ///< The approach to take for classifying faces [0: bounding-box, 1: intersection].
 	std::string     input_dir;                              ///< Input directory.
 	std::string     output_dir;                             ///< Output directory.
 	std::string     G_FILENAME;
@@ -123,9 +125,9 @@ class Geometry
 	std::vector<ufloat_g_t>     v_geom_f_node_X;
 	std::vector<ufloat_g_t>     v_geom_f_node_Y;
 	std::vector<ufloat_g_t>     v_geom_f_node_Z;
-	std::vector<int>        v_geom_ID_face_1;
-	std::vector<int>        v_geom_ID_face_2;
-	std::vector<int>        v_geom_ID_face_3;
+	std::vector<int>            v_geom_ID_face_1;
+	std::vector<int>            v_geom_ID_face_2;
+	std::vector<int>            v_geom_ID_face_3;
 	std::vector<ufloat_g_t>     v_geom_f_face_1_X;
 	std::vector<ufloat_g_t>     v_geom_f_face_1_Y;
 	std::vector<ufloat_g_t>     v_geom_f_face_1_Z;
@@ -171,9 +173,12 @@ class Geometry
 	int G_Convert_IndexListsToCoordList(int i_dev);
 	int G_Convert_CoordListToIndexLists(int i_dev);
 	int G_CoordList_MachineEps(int i_dev);
-	int G_MakeBins(int i_dev);
-	int G_DrawBinsAndFaces(int i_dev);
+	int G_MakeBins2D(int i_dev);
 	int G_MakeBins3D(int i_dev);
+	int G_MakeBins(int i_dev);
+	int G_MakeBinsAltCPU(int i_dev);
+	int G_DrawBinsAndFaces(int i_dev);
+	int G_DrawBinsAndFaces2D(int i_dev);
 	int G_DrawBinsAndFaces3D(int i_dev);
 	
 	int G_AddBoundingBox(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz);

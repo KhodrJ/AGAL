@@ -8,8 +8,26 @@
 #include "structs.h"
 #include "geometry.h"
 
+
+
+
+
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_ResetBins3D ]===========================================================  */
+/*                                                                                    */
+/*  The bin indicator array is reset for the next call to Cu_FillBins.                */
+/*                                                                                    */
+/**************************************************************************************/
+
 __global__
-void Cu_ResetBins3D(int n_faces, int n_faces_a, int G_BIN_NUM, int *bin_indicators)
+void Cu_ResetBins3D
+(
+	const int n_faces,
+	const int n_faces_a,
+	const int G_BIN_NUM,
+	int *__restrict__ bin_indicators
+)
 {
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	
@@ -23,11 +41,128 @@ void Cu_ResetBins3D(int n_faces, int n_faces_a, int G_BIN_NUM, int *bin_indicato
 	}
 }
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_FillBins3D_V1 ]=========================================================  */
+/*                                                                                    */
+/*  This CUDA kernel bins the faces of the geometry according to their bounding       */
+/*  boxes. The vertices of the bounding box are truncated to the nearest integer      */
+/*  (after scaling by a user-defined 'bin density'), and the face is considered to    */
+/*  be a part of a bin if the bin is enclosed by the bounding box. Threads are        */
+/*  assigned to each face and loop over a subset of bins for consideration (if the    */
+/*  total number of bins is small enough, binning can be completed in one pass).      */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_FillBins3D(
-	int j0, int n_faces, int n_faces_a, int G_BIN_NUM, ufloat_g_t *geom_f_face_X, int *bin_indicators,
-	ufloat_g_t dx, ufloat_g_t Lx, ufloat_g_t LxOg, ufloat_g_t LyOg, ufloat_g_t LzOg, ufloat_g_t minL0g, int G_BIN_DENSITY
+void Cu_FillBins3D_V1
+(
+	const int j0,
+	const int n_faces,
+	const int n_faces_a,
+	const int G_BIN_NUM,
+	const ufloat_g_t *__restrict__ geom_f_face_X,
+	int *__restrict__ bin_indicators,
+	const ufloat_g_t dx,
+	const ufloat_g_t LxOg,
+	const ufloat_g_t LyOg,
+	const ufloat_g_t LzOg,
+	const int G_BIN_DENSITY
+)
+{
+	constexpr int N_DIM = AP->N_DIM;
+	int kap = blockIdx.x*blockDim.x + threadIdx.x;
+	
+	if (kap < n_faces)
+	{
+		// Loop over the possible bins.
+		for (int j = j0; j < j0+G_BIN_NUM; j++)
+		{
+			int bi = j%G_BIN_DENSITY;
+			int bj = (j/G_BIN_DENSITY)%G_BIN_DENSITY;
+			int bk = (j/G_BIN_DENSITY)/G_BIN_DENSITY;
+			
+			// Load the current line vertices.
+			ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
+			ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
+			ufloat_g_t vz1 = geom_f_face_X[kap + 2*n_faces_a];
+			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
+			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
+			ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
+if (N_DIM==2)
+{
+			// Get the bounding box.
+			ufloat_g_t vBx_m = fmin(vx1,vx2);
+			ufloat_g_t vBx_M = fmax(vx1,vx2);
+			ufloat_g_t vBy_m = fmin(vy1,vy2);
+			ufloat_g_t vBy_M = fmax(vy1,vy2);
+			
+			int bin_id_xl = (int)(vBx_m*G_BIN_DENSITY)-1;
+			int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY)-1;
+			int bin_id_xL = (int)(vBx_M*G_BIN_DENSITY)+2;
+			int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY)+2;
+			
+			if (bi >= bin_id_xl && bi < bin_id_xL && bj >= bin_id_yl && bj < bin_id_yL)
+				bin_indicators[kap + (j-j0)*n_faces_a] = kap;
+}
+else
+{
+			// Load the remaining line vertices.
+			ufloat_g_t vx3 = geom_f_face_X[kap + 6*n_faces_a];
+			ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
+			ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
+			
+			// Get bounding box.
+			ufloat_g_t vBx_m = fmin(fmin(vx1,vx2),vx3);
+			ufloat_g_t vBx_M = fmax(fmax(vx1,vx2),vx3);
+			ufloat_g_t vBy_m = fmin(fmin(vy1,vy2),vy3);
+			ufloat_g_t vBy_M = fmax(fmax(vy1,vy2),vy3);
+			ufloat_g_t vBz_m = fmin(fmin(vz1,vz2),vz3);
+			ufloat_g_t vBz_M = fmax(fmax(vz1,vz2),vz3);
+			
+			// Identify the bin indices of the lower and upper bounds.
+			int bin_id_xl = (int)(vBx_m*G_BIN_DENSITY)-1;
+			int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY)-1;
+			int bin_id_zl = (int)(vBz_m*G_BIN_DENSITY)-1;
+			int bin_id_xL = (int)(vBx_M*G_BIN_DENSITY)+2;
+			int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY)+2;
+			int bin_id_zL = (int)(vBz_M*G_BIN_DENSITY)+2;
+			
+			if (bi >= bin_id_xl && bi+1 < bin_id_xL && bj >= bin_id_yl && bj+1 < bin_id_yL && bk >= bin_id_zl && bk+1 < bin_id_zL)
+				bin_indicators[kap + (j-j0)*n_faces_a] = kap;
+}
+		}
+	}
+}
+
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_FillBins3D_V2 ]=========================================================  */
+/*                                                                                    */
+/*  This CUDA kernel bins the faces of the geometry according to their shape. The     */
+/*  face is considered to be a part of a bin if it 1) is enclosed entirely by the     */
+/*  bin, 2) cuts through the bin, 3) enloses the bin entirely. Threads are assigned   */
+/*  to each face and loop over a subset of bins for consideration (if the total       */
+/*  number of bins is small enough, binning can be completed in one pass).            */
+/*                                                                                    */
+/**************************************************************************************/
+
+template <typename ufloat_g_t, const ArgsPack *AP>
+__global__
+void Cu_FillBins3D_V2
+(
+	const int j0,
+	const int n_faces,
+	const int n_faces_a,
+	const int G_BIN_NUM,
+	const ufloat_g_t *__restrict__ geom_f_face_X,
+	int *__restrict__ bin_indicators,
+	const ufloat_g_t dx,
+	const ufloat_g_t LxOg,
+	const ufloat_g_t LyOg,
+	const ufloat_g_t LzOg,
+	const int G_BIN_DENSITY
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
@@ -69,7 +204,6 @@ void Cu_FillBins3D(
 			ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
 if (N_DIM==2)
 {
-			
 			// Get the bounding box.
 			ufloat_g_t vBx_m = fmin(vx1,vx2);
 			ufloat_g_t vBx_M = fmax(vx1,vx2);
@@ -161,7 +295,6 @@ else
 				if (vx3 > xm && vx3 < xM && vy3 > ym && vy3 < yM && vz3 > zm && vz3 < zM) { C = true; }
 				
 				// Check the bottom face of the bin.
-				//if (!C)
 				{
 					ez1 = vz2-vz1;
 					tmp = (zm-vz1)/(ez1);
@@ -170,7 +303,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ex1,ey1,xm,ym,xM,yM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ez1 = vz3-vz2;
 					tmp = (zm-vz2)/(ez1);
@@ -179,7 +311,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ex1,ey1,xm,ym,xM,yM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ez1 = vz1-vz3;
 					tmp = (zm-vz3)/(ez1);
@@ -190,7 +321,6 @@ else
 				}
 				
 				// Check the top face of the bin.
-				//if (!C)
 				{
 					ez1 = vz2-vz1;
 					tmp = (zM-vz1)/(ez1);
@@ -199,7 +329,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ex1,ey1,xm,ym,xM,yM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ez1 = vz3-vz2;
 					tmp = (zM-vz2)/(ez1);
@@ -208,7 +337,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ex1,ey1,xm,ym,xM,yM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ez1 = vz1-vz3;
 					tmp = (zM-vz3)/(ez1);
@@ -219,7 +347,6 @@ else
 				}
 				
 				// Check the back face of the bin.
-				//if (!C)
 				{
 					ey1 = vy2-vy1;
 					tmp = (ym-vy1)/(ey1);
@@ -228,7 +355,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ex1,ez1,xm,zm,xM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ey1 = vy3-vy2;
 					tmp = (ym-vy2)/(ey1);
@@ -237,7 +363,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ex1,ez1,xm,zm,xM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ey1 = vy1-vy3;
 					tmp = (ym-vy3)/(ey1);
@@ -248,7 +373,6 @@ else
 				}
 				
 				// Check the front face of the bin.
-				//if (!C)
 				{
 					ey1 = vy2-vy1;
 					tmp = (yM-vy1)/(ey1);
@@ -257,7 +381,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ex1,ez1,xm,zm,xM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ey1 = vy3-vy2;
 					tmp = (yM-vy2)/(ey1);
@@ -266,7 +389,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ex1,ez1,xm,zm,xM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ey1 = vy1-vy3;
 					tmp = (yM-vy3)/(ey1);
@@ -277,7 +399,6 @@ else
 				}
 				
 				// Check the left face of the bin.
-				//if (!C)
 				{
 					ex1 = vx2-vx1;
 					tmp = (xm-vx1)/(ex1);
@@ -286,7 +407,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ey1,ez1,ym,zm,yM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ex1 = vx3-vx2;
 					tmp = (xm-vx2)/(ex1);
@@ -295,7 +415,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ey1,ez1,ym,zm,yM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ex1 = vx1-vx3;
 					tmp = (xm-vx3)/(ex1);
@@ -306,7 +425,6 @@ else
 				}
 				
 				// Check the right face of the bin.
-				//if (!C)
 				{
 					ex1 = vx2-vx1;
 					tmp = (xM-vx1)/(ex1);
@@ -315,7 +433,6 @@ else
 					ez1 = vz1 + tmp*(vz2-vz1);
 					if (CheckInRect(tmp,ey1,ez1,ym,zm,yM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ex1 = vx3-vx2;
 					tmp = (xM-vx2)/(ex1);
@@ -324,7 +441,6 @@ else
 					ez1 = vz2 + tmp*(vz3-vz2);
 					if (CheckInRect(tmp,ey1,ez1,ym,zm,yM,zM)) { C = true; }
 				}
-				//if (!C)
 				{
 					ex1 = vx1-vx3;
 					tmp = (xM-vx3)/(ex1);
@@ -343,6 +459,16 @@ else
 	}
 }
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ G_MakeBins3D ]=============================================================  */
+/*                                                                                    */
+/*  Performs the '3D binning' portion of the geometry-incorporation algorithm.        */
+/*  Here, faces (edges or triangles in 2D or 3D, respectively) are assigned to        */
+/*  square/cubic bins to be used in the cell-face linkage identification step.        */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 {
@@ -354,7 +480,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 	ufloat_g_t Lx0g = Lx/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t Ly0g = Ly/(ufloat_g_t)G_BIN_DENSITY;
 	ufloat_g_t Lz0g = Lz/(ufloat_g_t)G_BIN_DENSITY;
-	ufloat_g_t minL0g = std::min({Lx0g,Ly0g,(N_DIM==2?Lx0g:Lz0g)});
 	
 	// Initialize the intermediate device array to store the bin indicators. Set values to -1 as default.
 	gpuErrchk( cudaMalloc((void **)&c_bin_indicators_b[i_dev], G_BIN_NUM*n_faces_a[i_dev]*sizeof(int)) );
@@ -378,11 +503,20 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 	{
 		// Fill the bins.
 		int j0 = j*G_BIN_NUM;
-		//std::cout << "Iter " << j << ", filling bins " << j0 << "-" << (j0+G_BIN_NUM) << std::endl;
-		Cu_FillBins3D<ufloat_g_t,AP> <<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
-			j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators_b[i_dev],
-			dx, Lx, Lx0g, Ly0g, Lz0g, minL0g, G_BIN_DENSITY
-		);
+		if (G_BIN_APPROACH==0)
+		{
+			Cu_FillBins3D_V1<ufloat_g_t,AP> <<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
+				j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators_b[i_dev],
+				dx, Lx0g, Ly0g, Lz0g, G_BIN_DENSITY
+			);
+		}
+		else
+		{
+			Cu_FillBins3D_V2<ufloat_g_t,AP> <<<(M_BLOCK+n_faces_a[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
+				j0, n_faces[i_dev], n_faces_a[i_dev], G_BIN_NUM, c_geom_f_face_X[i_dev], c_bin_indicators_b[i_dev],
+				dx, Lx0g, Ly0g, Lz0g, G_BIN_DENSITY
+			);
+		}
 		
 		// Perform stream compaction.
 		for (int p = 0; p < G_BIN_NUM; p++)
@@ -394,7 +528,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 			);
 			binned_face_ids_N_b[i_dev][j_p] = n_pm1;
 			binned_face_ids_n_b[i_dev][j_p] = n_p;
-			//std::cout << n_p << " faces found in bin " << j_p << std::endl;
 			
 			// Copy the faces into the stored binned ID set.
 			if (n_pm1 >= 10*n_faces_a[i_dev]-1)
@@ -408,7 +541,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 			
 			// Update trackers.
 			n_pm1 = binned_face_ids_N_b[i_dev][j_p] + n_p;
-			//std::cout << "Cumulative count: " << n_pm1 << std::endl;
 		}
 		
 		// Reset intermediate arrays before next run.
@@ -426,23 +558,34 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBins3D(int i_dev)
 	gpuErrchk( cudaMemcpy(binned_face_ids_b[i_dev], c_binned_face_ids_b[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
 	
 	// DEBUG
-// 	gpuErrchk( cudaMemcpy(binned_face_ids_b, c_binned_face_ids_b[i_dev], n_pm1*sizeof(int), cudaMemcpyDeviceToHost) );
-// 	for (int p = 0; p < n_pm1; p++)
-// 		std::cout << binned_face_ids_b[p] << " ";
-// 	std::cout << std::endl;
-// 	for (int p = 0; p < n_bins; p++)
-// 		std::cout << binned_face_ids_N_b[p] << " ";
-// 	std::cout << std::endl;
-// 	for (int p = 0; p < n_bins; p++)
-// 		std::cout << binned_face_ids_n_b[p] << " ";
-// 	std::cout << std::endl;
-// 	G_DrawBinsAndFaces3D(i_dev);
+// 	std::cout << "APPROACH: 3D" << std::endl;
+// 	for (int p = 0; p < n_bins_b; p++)
+// 	{
+// 		int Nbp = binned_face_ids_N_b[i_dev][p];
+// 		int npb = binned_face_ids_n_b[i_dev][p];
+// 		if (npb > 0)
+// 		{
+// 			std::cout << "Bin #" << p << ": ";
+// 			for (int K = 0; K < npb; K++)
+// 				std::cout << binned_face_ids_b[i_dev][Nbp + K] << " ";
+// 			std::cout << std::endl;
+// 		}
+// 	}
 	
 	// Free memory in intermediate device arrays.
 	gpuErrchk( cudaFree(c_bin_indicators_b[i_dev]) );
 	
 	return 0;
 }
+
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ G_DrawBinsAndFaces3D ]=====================================================  */
+/*                                                                                    */
+/*  This is a debug routine that generates a MATLAB script in which the various       */
+/*  bins and faces assignments can be plotted.                                        */
+/*                                                                                    */
+/**************************************************************************************/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_DrawBinsAndFaces3D(int i_dev)

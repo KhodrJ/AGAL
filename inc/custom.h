@@ -47,7 +47,7 @@ bool Cu_ForceRegion
 
 template <typename ufloat_t>
 __device__
-void Cu_ComputeIC(ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, ufloat_t &x, ufloat_t &y, ufloat_t &z)
+void Cu_ComputeIC(ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, ufloat_t x, ufloat_t y, ufloat_t z)
 {
 	// --- HERE ---
 	// Change the initial conditions here.
@@ -67,7 +67,7 @@ template <typename ufloat_t>
 __device__
 void Cu_ImposeBC
 (
-	int &nbr_id, ufloat_t &f, ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, ufloat_t &x, ufloat_t &y, ufloat_t &z,
+	int nbr_id, ufloat_t &f, ufloat_t rho, ufloat_t u, ufloat_t v, ufloat_t w, ufloat_t x, ufloat_t y, ufloat_t z,
 	ufloat_t wp, ufloat_t cxp, ufloat_t cyp, ufloat_t czp, ufloat_t &cdotu
 )
 {

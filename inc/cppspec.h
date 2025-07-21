@@ -289,6 +289,40 @@ int DebugPrintDeviceArray(int N, T *d_arr)
 	return 0;
 }
 
+template <typename T, int M, int PER, int BSZ>
+__global__
+void Cu_SoA2AoS(const T *__restrict__ in, T *__restrict__ out, const int N)
+{
+	int kap = blockIdx.x * blockDim.x + threadIdx.x;
+
+	__shared__ T s_d[PER * (BSZ+0)]; // Stores arranged data.
+	__shared__ T s_I[BSZ];       // Stores current indices.
+
+	for (int K = 0; K < M/PER; K++)
+	{
+		if (kap < N)
+		{
+			#pragma unroll
+			for (int i = 0; i < PER; ++i)
+			{
+				T val = in[kap + (i+PER*K)*N];
+				s_d[i + PER*threadIdx.x] = val;
+			}
+			s_I[threadIdx.x] = kap;
+			__syncthreads();
+			
+			#pragma unroll
+			for (int k = 0; k < PER; k++)
+			{
+				int id = s_I[threadIdx.x/PER + k*(BSZ/PER)];
+				T val = s_d[threadIdx.x + BSZ*k];
+				out[threadIdx.x%PER + PER*K + M*id] = val;
+			}
+                        __syncthreads();
+		}
+	}
+}
+
 inline int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double z0, double z1, double c0, double c1, double c2)
 {
 	out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";

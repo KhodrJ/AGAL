@@ -18,27 +18,26 @@ ROUTINE_REQUIRE int i_dev
 ROUTINE_REQUIRE int L
 ROUTINE_REQUIRE int var
 
-KERNEL_REQUIRE int n_ids_idev_L                        | mesh->n_ids[i_dev][L]
-KERNEL_REQUIRE long int n_maxcells
-KERNEL_REQUIRE int n_maxcblocks
-KERNEL_REQUIRE int n_maxcells_b                        | mesh->n_maxcells_b
-KERNEL_REQUIRE int n_maxblocks_b                       | mesh->n_solidb
-KERNEL_REQUIRE ufloat_t dx_L                           | dxf_vec[L]
-KERNEL_REQUIRE ufloat_t dv_L                           | dvf_vec[L]
-KERNEL_REQUIRE int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
-KERNEL_REQUIRE int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
-KERNEL_REQUIRE ufloat_t *__restrict__ cells_f_F        | mesh->c_cells_f_F[i_dev]
-KERNEL_REQUIRE ufloat_g_t *__restrict__ cells_f_X_b    | mesh->c_cells_f_X_b[i_dev]
-KERNEL_REQUIRE ufloat_t *__restrict__ cells_f_F_aux    | mesh->c_cells_f_F_aux[i_dev]
-KERNEL_REQUIRE ufloat_t *__restrict__ cblock_f_X       | mesh->c_cblock_f_X[i_dev]
-KERNEL_REQUIRE int *__restrict__ cblock_ID_nbr         | mesh->c_cblock_ID_nbr[i_dev]
-KERNEL_REQUIRE int *__restrict__ cblock_ID_nbr_child   | mesh->c_cblock_ID_nbr_child[i_dev]
-KERNEL_REQUIRE int *__restrict__ cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
-KERNEL_REQUIRE int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
-KERNEL_REQUIRE int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
-KERNEL_REQUIRE ufloat_t *__restrict__ cblock_f_Ff      | mesh->c_cblock_f_Ff[i_dev]
-KERNEL_REQUIRE bool geometry_init                      | mesh->geometry_init
-KERNEL_REQUIRE int order                               | S_FORCE_ORDER
+KERNEL_REQUIRE const int n_ids_idev_L                        | mesh->n_ids[i_dev][L]
+KERNEL_REQUIRE const long int n_maxcells
+KERNEL_REQUIRE const int n_maxcblocks
+KERNEL_REQUIRE const int n_maxcells_b                        | mesh->n_maxcells_b
+KERNEL_REQUIRE const int n_maxblocks_b                       | mesh->n_solidb
+KERNEL_REQUIRE const ufloat_t dx_L                           | dxf_vec[L]
+KERNEL_REQUIRE const ufloat_t dv_L                           | dvf_vec[L]
+KERNEL_REQUIRE const int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
+KERNEL_REQUIRE const int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
+KERNEL_REQUIRE const ufloat_t *__restrict__ cells_f_F        | mesh->c_cells_f_F[i_dev]
+KERNEL_REQUIRE const ufloat_g_t *__restrict__ cells_f_X_b    | mesh->c_cells_f_X_b[i_dev]
+KERNEL_REQUIRE const ufloat_t *__restrict__ cblock_f_X       | mesh->c_cblock_f_X[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_nbr         | mesh->c_cblock_ID_nbr[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_nbr_child   | mesh->c_cblock_ID_nbr_child[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_onb_solid   | mesh->c_cblock_ID_onb_solid[i_dev]
+KERNEL_REQUIRE ufloat_t *__restrict__ cblock_f_Ff            | mesh->c_cblock_f_Ff[i_dev]
+KERNEL_REQUIRE const bool geometry_init                      | mesh->geometry_init
+KERNEL_REQUIRE const int order                               | S_FORCE_ORDER
 
 ROUTINE_TEMPLATE_PARAMS int post_step
 ROUTINE_TEMPLATE_VALS 0

@@ -18,16 +18,16 @@ ROUTINE_INCLUDE "mesh.h"
 ROUTINE_REQUIRE int i_dev
 ROUTINE_REQUIRE int L
 
-KERNEL_REQUIRE int n_ids_idev_L           | mesh->n_ids[i_dev][L]
-KERNEL_REQUIRE long int n_maxcells
-KERNEL_REQUIRE int n_maxcblocks
-KERNEL_REQUIRE int *id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
-KERNEL_REQUIRE int *cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
-KERNEL_REQUIRE ufloat_t *cells_f_F        | mesh->c_cells_f_F[i_dev]
-KERNEL_REQUIRE ufloat_t *cblock_f_X       | mesh->c_cblock_f_X[i_dev]
-KERNEL_REQUIRE int *cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
-KERNEL_REQUIRE int *cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
-KERNEL_REQUIRE ufloat_t dx_L              | mesh->dxf_vec[L]
+KERNEL_REQUIRE const int n_ids_idev_L                        | mesh->n_ids[i_dev][L]
+KERNEL_REQUIRE const long int n_maxcells
+KERNEL_REQUIRE const int n_maxcblocks
+KERNEL_REQUIRE const int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
+KERNEL_REQUIRE const int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
+KERNEL_REQUIRE ufloat_t *__restrict__ cells_f_F              | mesh->c_cells_f_F[i_dev]
+KERNEL_REQUIRE const ufloat_t *__restrict__ cblock_f_X       | mesh->c_cblock_f_X[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_mask        | mesh->c_cblock_ID_mask[i_dev]
+KERNEL_REQUIRE const int *__restrict__ cblock_ID_onb         | mesh->c_cblock_ID_onb[i_dev]
+KERNEL_REQUIRE const ufloat_t dx_L                           | mesh->dxf_vec[L]
 
 
 

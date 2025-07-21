@@ -221,10 +221,10 @@ int GenerateRoutine(ImportedSet &iset, std::string set_label, std::string &s_in,
 	s_out += MakeIncludes(r_includes) + "\n";
 	s_out += MakeRoutineTemplateHeader(r_template_params);
 	s_out += "__global__\n";
-	s_out += "void Cu_" + r_name + MakeSetName(set_label) + "(";
+	s_out += "void Cu_" + r_name + MakeSetName(set_label) + "\n(\n\t";
 	//s_out += "double A";
-	s_out += Commatize(r_kernel_params, ",");
-	s_out += ")\n";
+	s_out += Commatize(r_kernel_params, ",\n\t");
+	s_out += "\n)\n";
 	s_out += "{\n";
 	s_out += s_in;
 	s_out += "}\n\n";
