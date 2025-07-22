@@ -24,7 +24,6 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 		dvf_vec[L] = (ufloat_t)1.0;
 		for (int d = 0; d < N_DIM; d++)
 			dvf_vec[L] *= dxf_vec[L];
-		std::cout << "DX/V: " << dxf_vec[L] << " " << dvf_vec[L] << std::endl;
 	}
 	
 	// General.

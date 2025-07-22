@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Thu Apr 24 21:38:10 2025                                            */
+/*  Last Updated: Tue Jul 22 17:12:42 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,10 +11,20 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int interp_type>
 __global__
-void Cu_Interpolate_Cubic_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,ufloat_t tau_ratio,int *id_set_idev_L,int *cells_ID_mask,ufloat_t *cells_f_F,int *cblock_ID_nbr,int *cblock_ID_nbr_child,int *cblock_ID_mask)
+void Cu_Interpolate_Cubic_Original_D2Q9
+(
+	int n_ids_idev_L,
+	long int n_maxcells,
+	int n_maxcblocks,
+	ufloat_t tau_ratio,
+	int *id_set_idev_L,
+	int *cells_ID_mask,
+	ufloat_t *cells_f_F,
+	int *cblock_ID_nbr,
+	int *cblock_ID_nbr_child,
+	int *cblock_ID_mask
+)
 {
-    constexpr int Nqx = AP->Nqx;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
@@ -62,7 +72,7 @@ void Cu_Interpolate_Cubic_Original_D2Q9(int n_ids_idev_L,long int n_maxcells,int
     {
         i_kap_b = s_ID_cblock[k];
         
-        // This part is included if n>0 only.
+        // Load data for conditions on cell-blocks.
         if (i_kap_b>-1)
         {
             i_kap_bc=cblock_ID_nbr_child[i_kap_b];

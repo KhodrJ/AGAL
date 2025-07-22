@@ -6,8 +6,6 @@
 #include "geometry_add.cu"
 #include "geometry_bin.cu"
 #include "geometry_bin_alt.cu"
-// #include "geometry_bin_2D.cu"
-// #include "geometry_bin_3D.cu"
 #include "geometry_convert.cu"
 #include "geometry_dest.cu"
 #include "geometry_import.cu"
@@ -34,7 +32,7 @@
 #include "solver_lbm_init.cu"
 #include "solver_lbm_identify_faces.cu"
 //
-#define USED2Q9
+// #define USED2Q9
 // #define USED3Q19
 // #define USED3Q27
 //
@@ -98,8 +96,19 @@ constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_B
 // Typedefs and chosen packs.
 typedef float REAL_s;
 typedef float REAL_g;
-constexpr ArgsPack APc = AP2D;
-constexpr LBMPack LPc __attribute__((unused)) = LP2D;
+
+#ifdef USED2Q9
+	constexpr ArgsPack APc = AP2D;
+	constexpr LBMPack LPc __attribute__((unused)) = LP2D;
+#endif
+#ifdef USED3Q19
+	constexpr ArgsPack APc = AP3D;
+	constexpr LBMPack LPc __attribute__((unused)) = LP3D_1;
+#endif
+#ifdef USED3Q27
+	constexpr ArgsPack APc = AP3D;
+	constexpr LBMPack LPc __attribute__((unused)) = LP3D_2;
+#endif
 
 
 int main(int argc, char *argv[])
@@ -128,22 +137,23 @@ int main(int argc, char *argv[])
 	geometry.G_Init_Arrays_CoordsList_CPU(0);
 	if (geometry.G_PRINT)
 		geometry.G_PrintSTL(0);
-// 	geometry.G_MakeBins2D(0);
-// 	geometry.G_MakeBins3D(0);
-	geometry.G_MakeBins(0);
+	//geometry.G_MakeBins(0);
 	geometry.G_MakeBinsAltCPU(0);
+	geometry.G_DrawBinsAndFaces(0);
 	
 	// Create a mesh.
-	//int enable_aux_data = 1;
-	//Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, LPc.N_Q, enable_aux_data, APc.N_DIM+1+1);
-	//mesh.M_AddGeometry(&geometry);
+	int enable_aux_data = 1;
+	Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, LPc.N_Q, enable_aux_data, APc.N_DIM+1+1);
+	mesh.M_AddGeometry(&geometry);
 	
 	// Create a solver.
-	//Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);
-	//mesh.M_AddSolver(&solver);
+	Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);
+	mesh.M_AddSolver(&solver);
 	
 	// Solver loop (includes rendering and printing).
 	//mesh.M_AdvanceLoop();
+	mesh.M_Advance_RefineNearWall();
+	mesh.M_Print_VTHB(0, 0);
 	
 	return 0;
 }

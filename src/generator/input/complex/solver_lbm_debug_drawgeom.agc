@@ -23,7 +23,6 @@ KERNEL_REQUIRE const int n_maxcblocks
 KERNEL_REQUIRE const int n_maxcells_b                        | mesh->n_maxcells_b
 KERNEL_REQUIRE const int n_maxblocks_b                       | mesh->n_solidb
 KERNEL_REQUIRE const ufloat_t dx_L                           | dxf_vec[L]
-KERNEL_REQUIRE const ufloat_t tau_L                          | tau_vec[L]
 KERNEL_REQUIRE const int *__restrict__ id_set_idev_L         | &mesh->c_id_set[i_dev][L*n_maxcblocks]
 KERNEL_REQUIRE const int *__restrict__ cells_ID_mask         | mesh->c_cells_ID_mask[i_dev]
 KERNEL_REQUIRE const ufloat_t *__restrict__ cells_f_F        | mesh->c_cells_f_F[i_dev]
@@ -44,55 +43,26 @@ KERNEL_REQUIRE const bool compute_forces                     | compute_forces
 # Kernel definition.
 #
 
-REG constexpr int Nqx = AP->Nqx;
 REG constexpr int M_TBLOCK = AP->M_TBLOCK;
 REG constexpr int M_CBLOCK = AP->M_CBLOCK;
 REG constexpr int M_LBLOCK = AP->M_LBLOCK;
-REG constexpr int N_DIM = AP->N_DIM;
-REG constexpr int N_Q_max = AP->N_Q_max;
 
 REG __shared__ int s_ID_cblock[M_TBLOCK];
-REG __shared__ int s_ID_nbr[N_Q_max];
-REG __shared__ ufloat_t s_u[3*M_TBLOCK];
-REG __shared__ double s_Fpx[M_TBLOCK];
-REG __shared__ double s_Fmx[M_TBLOCK];
-REG __shared__ double s_Fpy[M_TBLOCK];
-REG __shared__ double s_Fmy[M_TBLOCK];
-REG __shared__ double s_Fpz[M_TBLOCK];
-REG __shared__ double s_Fmz[M_TBLOCK];
 REG int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
 REG int I = threadIdx.x % 4;
-REG int Ip = I;
 REG int J = (threadIdx.x / 4) % 4;
-REG int Jp = J;
 INIF Ldim==3
     REG int K = (threadIdx.x / 4) / 4;
-    REG int Kp = K;
 END_INIF
 REG ufloat_t x __attribute__((unused)) = (ufloat_t)(0.0);
 REG ufloat_t y __attribute__((unused)) = (ufloat_t)(0.0);
 REG ufloat_t z __attribute__((unused)) = (ufloat_t)(0.0);
 REG int i_kap_b = -1;
-REG int i_kap_bc = -1;
-REG int nbr_kap_b = -1;
-REG int nbr_kap_c = -1;
 REG int valid_block = -1;
 REG int block_mask = -1;
 REG int valid_mask = -1;
-REG ufloat_t f_p = (ufloat_t)(0.0);
-REG ufloat_t f_q = (ufloat_t)(0.0);
-REG ufloat_t f_m = (ufloat_t)(0.0);
 REG ufloat_g_t dist_p = (ufloat_g_t)(0.0);
-REG ufloat_t rho = (ufloat_t)(0.0);
-REG ufloat_t u = (ufloat_t)(0.0);
-REG ufloat_t v = (ufloat_t)(0.0);
-REG ufloat_t w = (ufloat_t)(0.0);
-REG ufloat_t ub = (ufloat_t)(0.0);
-REG ufloat_t vb = (ufloat_t)(0.0);
-REG ufloat_t wb = (ufloat_t)(0.0);
-REG ufloat_t cdotu = (ufloat_t)(0.0);
-REG ufloat_t udotu = (ufloat_t)(0.0);
-REG bool near_geom = false;
+REG bool near_geom __attribute__((unused)) = false;
 
 
 
@@ -114,11 +84,6 @@ INELSE
     REG y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
     REG z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
 END_INIF
-OUTIF (valid_block == 1 && threadIdx.x == 0)
-    INFOR p 1   1 gI(3^Ldim) 1
-        REG s_ID_nbr[<p>] = cblock_ID_nbr[i_kap_b + <p>*n_maxcblocks];
-    END_INFOR
-END_OUTIF
 REG __syncthreads();
 <
 

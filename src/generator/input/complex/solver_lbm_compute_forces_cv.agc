@@ -55,20 +55,19 @@ ROUTINE_TEMPLATE_ARGS mesh->n_ids[i_dev][L]>0 && var==1
 # Kernel definition.
 #
 
-REG constexpr int Nqx = AP->Nqx;
 REG constexpr int M_TBLOCK = AP->M_TBLOCK;
 REG constexpr int M_CBLOCK = AP->M_CBLOCK;
 REG constexpr int M_LBLOCK = AP->M_LBLOCK;
-REG constexpr int N_DIM = AP->N_DIM;
-REG constexpr int N_Q_max = AP->N_Q_max;
 
 REG __shared__ int s_ID_cblock[M_TBLOCK];
 REG __shared__ ufloat_t s_Fpx[M_TBLOCK];
 REG __shared__ ufloat_t s_Fmx[M_TBLOCK];
 REG __shared__ ufloat_t s_Fpy[M_TBLOCK];
 REG __shared__ ufloat_t s_Fmy[M_TBLOCK];
-REG __shared__ ufloat_t s_Fpz[M_TBLOCK];
-REG __shared__ ufloat_t s_Fmz[M_TBLOCK];
+INIF Ldim==3
+    REG __shared__ ufloat_t s_Fpz[M_TBLOCK];
+    REG __shared__ ufloat_t s_Fmz[M_TBLOCK];
+END_INIF
 REG int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
 REG int I = threadIdx.x % 4;
 REG int J = (threadIdx.x / 4) % 4;
@@ -77,7 +76,7 @@ INIF Ldim==3
 END_INIF
 REG int i_kap_b = -1;
 REG int i_kap_bc = -1;
-REG int valid_block = -1;
+#REG int valid_block = -1;
 REG int valid_mask = -10;
 INFOR p 1   0 Lsize 1
     REG ufloat_t f_<p> = (ufloat_t)(0.0);
@@ -115,8 +114,10 @@ REG s_Fpx[threadIdx.x] = 0;
 REG s_Fmx[threadIdx.x] = 0;
 REG s_Fpy[threadIdx.x] = 0;
 REG s_Fmy[threadIdx.x] = 0;
-REG s_Fpz[threadIdx.x] = 0;
-REG s_Fmz[threadIdx.x] = 0;
+INIF Ldim==3
+    REG s_Fpz[threadIdx.x] = 0;
+    REG s_Fmz[threadIdx.x] = 0;
+END_INIF
 __syncthreads();
 <
 

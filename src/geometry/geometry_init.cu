@@ -92,19 +92,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 		G_UpdateCounts(i_dev);
 		
 		std::cout << "[-] Initializing the CPU coords list array..." << std::endl;
-		geom_f_face_X[i_dev] = new ufloat_g_t[30*n_faces_a[i_dev]];
+		geom_f_face_X[i_dev] = new ufloat_g_t[16*n_faces_a[i_dev]];
+		geom_f_face_Xt[i_dev] = new ufloat_g_t[16*n_faces_a[i_dev]];
 		
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
 		{
-			geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]] = 0.0;
-			geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = 0.0;
+			for (int p = 0; p < 16; p++)
+				geom_f_face_X[i_dev][j + p*n_faces_a[i_dev]] = 0.0;
+			for (int p = 0; p < 16; p++)
+				geom_f_face_Xt[i_dev][p + j*16] = 0.0;
 			if (j < n_faces[i_dev])
 			{
 				// Load vertices from vectors.
@@ -202,36 +198,36 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				vze = vz1 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-// 				vx1 = vx1 + eps*vxe;
-// 				vy1 = vy1 + eps*vye;
-// 				vz1 = vz1 + eps*vze;
-				vx1 = vx1 + eps;
-				vy1 = vy1 + eps;
-				vz1 = vz1 + eps;
+				vx1 = vx1 + eps*vxe;
+				vy1 = vy1 + eps*vye;
+				vz1 = vz1 + eps*vze;
+// 				vx1 = vx1 + eps;
+// 				vy1 = vy1 + eps;
+// 				vz1 = vz1 + eps;
 					// Vertex 2.
 				vxe = vx2 - vxc;
 				vye = vy2 - vyc;
 				vze = vz2 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-// 				vx2 = vx2 + eps*vxe;
-// 				vy2 = vy2 + eps*vye;
-// 				vz2 = vz2 + eps*vze;
-				vx2 = vx2 + eps;
-				vy2 = vy2 + eps;
-				vz2 = vz2 + eps;
+				vx2 = vx2 + eps*vxe;
+				vy2 = vy2 + eps*vye;
+				vz2 = vz2 + eps*vze;
+// 				vx2 = vx2 + eps;
+// 				vy2 = vy2 + eps;
+// 				vz2 = vz2 + eps;
 					// Vertex 3.
 				vxe = vx3 - vxc;
 				vye = vy3 - vyc;
 				vze = vz3 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-// 				vx3 = vx3 + eps*vxe;
-// 				vy3 = vy3 + eps*vye;
-// 				vz3 = vz3 + eps*vze;
-				vx3 = vx3 + eps;
-				vy3 = vy3 + eps;
-				vz3 = vz3 + eps;
+				vx3 = vx3 + eps*vxe;
+				vy3 = vy3 + eps*vye;
+				vz3 = vz3 + eps*vze;
+// 				vx3 = vx3 + eps;
+// 				vy3 = vy3 + eps;
+// 				vz3 = vz3 + eps;
 				
 				
 				
@@ -245,40 +241,76 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]] = vx3;
 				geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]] = vy3;
 				geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]] = vz3;
+				//
+				geom_f_face_Xt[i_dev][0 + j*16] = vx1;
+				geom_f_face_Xt[i_dev][1 + j*16] = vy1;
+				geom_f_face_Xt[i_dev][2 + j*16] = vz1;
+				geom_f_face_Xt[i_dev][3 + j*16] = vx2;
+				geom_f_face_Xt[i_dev][4 + j*16] = vy2;
+				geom_f_face_Xt[i_dev][5 + j*16] = vz2;
+				geom_f_face_Xt[i_dev][6 + j*16] = vx3;
+				geom_f_face_Xt[i_dev][7 + j*16] = vy3;
+				geom_f_face_Xt[i_dev][8 + j*16] = vz3;
 				
 				// Write normals.
 				geom_f_face_X[i_dev][j + 9*n_faces_a[i_dev]] = nx;
 				geom_f_face_X[i_dev][j + 10*n_faces_a[i_dev]] = ny;
 				geom_f_face_X[i_dev][j + 11*n_faces_a[i_dev]] = nz;
+				//
+				geom_f_face_Xt[i_dev][9 + j*16] = nx;
+				geom_f_face_Xt[i_dev][10 + j*16] = ny;
+				geom_f_face_Xt[i_dev][11 + j*16] = nz;
 				
 				// Write edges.
-				geom_f_face_X[i_dev][j + 12*n_faces_a[i_dev]] = ex1;
-				geom_f_face_X[i_dev][j + 13*n_faces_a[i_dev]] = ey1;
-				geom_f_face_X[i_dev][j + 14*n_faces_a[i_dev]] = ez1;
-				geom_f_face_X[i_dev][j + 15*n_faces_a[i_dev]] = ex2;
-				geom_f_face_X[i_dev][j + 16*n_faces_a[i_dev]] = ey2;
-				geom_f_face_X[i_dev][j + 17*n_faces_a[i_dev]] = ez2;
-				geom_f_face_X[i_dev][j + 18*n_faces_a[i_dev]] = ex3;
-				geom_f_face_X[i_dev][j + 19*n_faces_a[i_dev]] = ey3;
-				geom_f_face_X[i_dev][j + 20*n_faces_a[i_dev]] = ez3;
+// 				geom_f_face_X[i_dev][j + 12*n_faces_a[i_dev]] = ex1;
+// 				geom_f_face_X[i_dev][j + 13*n_faces_a[i_dev]] = ey1;
+// 				geom_f_face_X[i_dev][j + 14*n_faces_a[i_dev]] = ez1;
+// 				geom_f_face_X[i_dev][j + 15*n_faces_a[i_dev]] = ex2;
+// 				geom_f_face_X[i_dev][j + 16*n_faces_a[i_dev]] = ey2;
+// 				geom_f_face_X[i_dev][j + 17*n_faces_a[i_dev]] = ez2;
+// 				geom_f_face_X[i_dev][j + 18*n_faces_a[i_dev]] = ex3;
+// 				geom_f_face_X[i_dev][j + 19*n_faces_a[i_dev]] = ey3;
+// 				geom_f_face_X[i_dev][j + 20*n_faces_a[i_dev]] = ez3;
+				//
+// 				geom_f_face_X[i_dev][12 + j*32] = ex1;
+// 				geom_f_face_X[i_dev][13 + j*32] = ey1;
+// 				geom_f_face_X[i_dev][14 + j*32] = ez1;
+// 				geom_f_face_X[i_dev][15 + j*32] = ex2;
+// 				geom_f_face_X[i_dev][16 + j*32] = ey2;
+// 				geom_f_face_X[i_dev][17 + j*32] = ez2;
+// 				geom_f_face_X[i_dev][18 + j*32] = ex3;
+// 				geom_f_face_X[i_dev][19 + j*32] = ey3;
+// 				geom_f_face_X[i_dev][20 + j*32] = ez3;
 				
 				// Write edge normals.
-				geom_f_face_X[i_dev][j + 21*n_faces_a[i_dev]] = enx1;
-				geom_f_face_X[i_dev][j + 22*n_faces_a[i_dev]] = eny1;
-				geom_f_face_X[i_dev][j + 23*n_faces_a[i_dev]] = enz1;
-				geom_f_face_X[i_dev][j + 24*n_faces_a[i_dev]] = enx2;
-				geom_f_face_X[i_dev][j + 25*n_faces_a[i_dev]] = eny2;
-				geom_f_face_X[i_dev][j + 26*n_faces_a[i_dev]] = enz2;
-				geom_f_face_X[i_dev][j + 27*n_faces_a[i_dev]] = enx3;
-				geom_f_face_X[i_dev][j + 28*n_faces_a[i_dev]] = eny3;
-				geom_f_face_X[i_dev][j + 29*n_faces_a[i_dev]] = enz3;
+// 				geom_f_face_X[i_dev][j + 21*n_faces_a[i_dev]] = enx1;
+// 				geom_f_face_X[i_dev][j + 22*n_faces_a[i_dev]] = eny1;
+// 				geom_f_face_X[i_dev][j + 23*n_faces_a[i_dev]] = enz1;
+// 				geom_f_face_X[i_dev][j + 24*n_faces_a[i_dev]] = enx2;
+// 				geom_f_face_X[i_dev][j + 25*n_faces_a[i_dev]] = eny2;
+// 				geom_f_face_X[i_dev][j + 26*n_faces_a[i_dev]] = enz2;
+// 				geom_f_face_X[i_dev][j + 27*n_faces_a[i_dev]] = enx3;
+// 				geom_f_face_X[i_dev][j + 28*n_faces_a[i_dev]] = eny3;
+// 				geom_f_face_X[i_dev][j + 29*n_faces_a[i_dev]] = enz3;
+				//
+// 				geom_f_face_X[i_dev][21 + j*32] = enx1;
+// 				geom_f_face_X[i_dev][22 + j*32] = eny1;
+// 				geom_f_face_X[i_dev][23 + j*32] = enz1;
+// 				geom_f_face_X[i_dev][24 + j*32] = enx2;
+// 				geom_f_face_X[i_dev][25 + j*32] = eny2;
+// 				geom_f_face_X[i_dev][26 + j*32] = enz2;
+// 				geom_f_face_X[i_dev][27 + j*32] = enx3;
+// 				geom_f_face_X[i_dev][28 + j*32] = eny3;
+// 				geom_f_face_X[i_dev][29 + j*32] = enz3;
 			}
 		}
 		
 		// Allocate memory on the GPU to store geometry data and copy the CPU data.
 		std::cout << "[-] Initializing the GPU coords list array..." << std::endl;
-		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X[i_dev], 30*n_faces_a[i_dev]*sizeof(ufloat_g_t)) );
-		gpuErrchk( cudaMemcpy(c_geom_f_face_X[i_dev], geom_f_face_X[i_dev], 30*n_faces_a[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t)) );
+		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t)) );
+		gpuErrchk( cudaMemcpy(c_geom_f_face_X[i_dev], geom_f_face_X[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_geom_f_face_Xt[i_dev], geom_f_face_Xt[i_dev], 16*n_faces[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
 		std::cout << "[-] Finished copying the coords list array to the GPU..." << std::endl;
 		cudaDeviceSynchronize();
 	}

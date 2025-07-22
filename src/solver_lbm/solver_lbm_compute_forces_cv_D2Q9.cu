@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Wed Jul 16 13:46:25 2025                                            */
+/*  Last Updated: Tue Jul 22 17:13:19 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -39,25 +39,19 @@ void Cu_ComputeForces_CV_D2Q9
 	const ufloat_t cv_zM
 )
 {
-    constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
-    constexpr int N_DIM = AP->N_DIM;
-    constexpr int N_Q_max = AP->N_Q_max;
     __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ ufloat_t s_Fpx[M_TBLOCK];
     __shared__ ufloat_t s_Fmx[M_TBLOCK];
     __shared__ ufloat_t s_Fpy[M_TBLOCK];
     __shared__ ufloat_t s_Fmy[M_TBLOCK];
-    __shared__ ufloat_t s_Fpz[M_TBLOCK];
-    __shared__ ufloat_t s_Fmz[M_TBLOCK];
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int J = (threadIdx.x / 4) % 4;
     int i_kap_b = -1;
     int i_kap_bc = -1;
-    int valid_block = -1;
     int valid_mask = -10;
     ufloat_t f_0 = (ufloat_t)(0.0);
     ufloat_t f_1 = (ufloat_t)(0.0);
@@ -101,8 +95,6 @@ void Cu_ComputeForces_CV_D2Q9
             s_Fmx[threadIdx.x] = 0;
             s_Fpy[threadIdx.x] = 0;
             s_Fmy[threadIdx.x] = 0;
-            s_Fpz[threadIdx.x] = 0;
-            s_Fmz[threadIdx.x] = 0;
             __syncthreads();
             
             // Load the cell coordinates. Check if the current cell participates.

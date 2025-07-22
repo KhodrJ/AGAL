@@ -101,10 +101,10 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_print.cu\
       geometry_inst.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
-geometry_%.o: geometry_%.cu geometry.h cppspec.h
-	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
-libgeom.a: geometry_inst.o
-	ar rcs libgeom.a geometry_inst.o
+# geometry_%.o: geometry_%.cu geometry.h cppspec.h
+# 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+# libgeom.a: geometry_inst.o
+# 	ar rcs libgeom.a geometry_inst.o
 
 
 
@@ -123,8 +123,8 @@ SRC_MESH = mesh_init.cu\
       mesh_print_uniform.cu\
       mesh_print_vthb.cu
 OBJ_MESH = $(SRC_MESH:.cu=.o)
-mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
-	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+# mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
+# 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
 
 	
@@ -167,30 +167,38 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_interp_cubic_original_D3Q27.cu\
 	solver_lbm_debug_drawgeom_D2Q9.cu
 OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
-solver_lbm_%.o: solver_lbm_%.cu solver_lbm.h solver.h cppspec.h
-	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+# solver_lbm_%.o: solver_lbm_%.cu solver_lbm.h solver.h cppspec.h
+# 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
 
 # Building the application objects.
 INC_MAIN = cppspec.h geometry.h mesh.h solver_lbm.h solver.h structs.h util.h custom.h
 SRC_MAIN = main_read_input.cu
 OBJ_MAIN = $(SRC_MAIN:.cu=.o)
-main_%.o: main_%.cu
-	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
+# main_%.o: main_%.cu
+# 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
+
+# Make a time stamp indicating the last choice of velocity set.
+VSET ?= D2Q9
+VSET_STAMP := vset_$(VSET)
+$(VSET_STAMP):
+	@echo "VSET changed to $(VSET)"
+	@rm -f vset_*     # remove old VSET stamp files to ensure rebuild next time it changes
+	@touch $@
 
 
 # Application.
 OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER_LBM) $(OBJ_MAIN)
 SRC = $(SRC_GEOMETRY) $(SRC_MESH) $(SRC_SOLVER_LBM) $(SRC_MAIN)
-a.out: main.cu $(OBJ_MAIN) $(SRC) $(INC_MAIN)
+a.out: main.cu $(VSET_STAMP) $(OBJ_MAIN) $(SRC) $(INC_MAIN)
 	#$(NVCC) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@ $(NVCCFLAGS)
-	$(NVCC) $(NVCCFLAGS) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
+	$(NVCC) -DUSE$(VSET) $(NVCCFLAGS) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 
 geometry: $(OBJ_GEOMETRY)
 mesh: $(OBJ_MESH)
 solver_lbm: $(OBJ_SOLVER_LBM)
 clean:
-	$(RM) $(OBJ)
+	$(RM) $(OBJ) vset_*
 
 .PHONY: clean all geometry mesh solver_lbm

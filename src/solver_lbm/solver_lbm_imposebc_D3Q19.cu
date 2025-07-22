@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Mon Jul 14 23:00:25 2025                                            */
+/*  Last Updated: Tue Jul 22 17:22:36 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,13 +11,35 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int n_maxblocks_b,ufloat_t dx_L,ufloat_t dx_L_g,ufloat_t tau_L,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,ufloat_t *__restrict__ cells_f_F_aux,ufloat_t *__restrict__ cblock_f_X,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb,int *__restrict__ cblock_ID_onb_solid,bool geometry_init,int force_type,int bc_type)
+void Cu_ImposeBC_D3Q19
+(
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const int n_maxcells_b,
+	const int n_maxblocks_b,
+	const ufloat_t dx_L,
+	const ufloat_t dx_L_g,
+	const ufloat_t tau_L,
+	const int *__restrict__ id_set_idev_L,
+	const int *__restrict__ cells_ID_mask,
+	ufloat_t *__restrict__ cells_f_F,
+	const ufloat_g_t *__restrict__ cells_f_X_b,
+	const ufloat_t *__restrict__ cells_f_F_aux,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_nbr_child,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_onb,
+	const int *__restrict__ cblock_ID_onb_solid,
+	const bool geometry_init,
+	const int force_type,
+	const int bc_type
+)
 {
-    constexpr int Nqx = AP->Nqx;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
-    constexpr int N_DIM = AP->N_DIM;
     constexpr int N_Q_max = AP->N_Q_max;
     __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
@@ -33,7 +55,6 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
     ufloat_t y __attribute__((unused)) = (ufloat_t)(0.0);
     ufloat_t z __attribute__((unused)) = (ufloat_t)(0.0);
     int i_kap_b = -1;
-    int i_kap_bc = -1;
     int nbr_kap_b = -1;
     int nbr_kap_c = -1;
     int valid_block = -1;
@@ -51,7 +72,7 @@ void Cu_ImposeBC_D3Q19(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int
     ufloat_t vb = (ufloat_t)(0.0);
     ufloat_t wb = (ufloat_t)(0.0);
     ufloat_t cdotu = (ufloat_t)(0.0);
-    ufloat_t udotu = (ufloat_t)(0.0);
+    ufloat_t udotu __attribute__((unused)) = (ufloat_t)(0.0);
     s_ID_cblock[threadIdx.x] = -1;
     if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
     {

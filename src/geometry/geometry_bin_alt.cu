@@ -288,38 +288,57 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 	bool C3D = false; if (G_BIN_APPROACH==0) C3D = true;
 	
 	// Proceed only if there are actual faces loaded in the current object.
-	std::cout << "Starting CPU binning..." << std::endl;
+	tic_simple("");
 	if (v_geom_f_face_1_X.size() > 0)
 	{
 		// Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
-		int n_bins_av_2D = 1; for (int d = 0; d < N_DIM-1; d++) n_bins_av_2D *= G_BIN_DENSITY;
-		int n_bins_av_3D = 1; for (int d = 0; d < N_DIM; d++)   n_bins_av_3D *= G_BIN_DENSITY;
-		std::vector<int> *bins_a_2D = new std::vector<int>[n_bins_av_2D];
-		std::vector<int> *bins_a_3D = new std::vector<int>[n_bins_av_3D];
+		int n_bins_v = 1; for (int d = 0; d < N_DIM-1; d++) n_bins_v *= G_BIN_DENSITY;
+		int n_bins_b = 1; for (int d = 0; d < N_DIM; d++)   n_bins_b *= G_BIN_DENSITY;
+		std::vector<int> *bins_a_2D = new std::vector<int>[n_bins_v];
+		std::vector<int> *bins_a_3D = new std::vector<int>[n_bins_b];
 		
 		// Traverse faces and identify the bins they should go in.
+		int total_faces_2D = 0;
+		int total_faces_3D = 0;
+		std::cout << "Starting CPU binning..." << std::endl;
+		cudaDeviceSynchronize();
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
 		{
 			if (j < n_faces[i_dev])
 			{
 				// Load face vertices from coordinate list.
-				ufloat_g_t vx1 = geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]];
-				ufloat_g_t vy1 = geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]];
-				ufloat_g_t vz1 = geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]];
-				ufloat_g_t vx2 = geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]];
-				ufloat_g_t vy2 = geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]];
-				ufloat_g_t vz2 = geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]];
-				ufloat_g_t vx3 = geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]];
-				ufloat_g_t vy3 = geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]];
-				ufloat_g_t vz3 = geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]];
+// 				ufloat_g_t vx1 = geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]];
+// 				ufloat_g_t vy1 = geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]];
+// 				ufloat_g_t vz1 = geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]];
+// 				ufloat_g_t vx2 = geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]];
+// 				ufloat_g_t vy2 = geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]];
+// 				ufloat_g_t vz2 = geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]];
+// 				ufloat_g_t vx3 = geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]];
+// 				ufloat_g_t vy3 = geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]];
+// 				ufloat_g_t vz3 = geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]];
+				//
+				ufloat_g_t vx1 = geom_f_face_Xt[i_dev][0 + j*16];
+				ufloat_g_t vy1 = geom_f_face_Xt[i_dev][1 + j*16];
+				ufloat_g_t vz1 = geom_f_face_Xt[i_dev][2 + j*16];
+				ufloat_g_t vx2 = geom_f_face_Xt[i_dev][3 + j*16];
+				ufloat_g_t vy2 = geom_f_face_Xt[i_dev][4 + j*16];
+				ufloat_g_t vz2 = geom_f_face_Xt[i_dev][5 + j*16];
+				ufloat_g_t vx3 = geom_f_face_Xt[i_dev][6 + j*16];
+				ufloat_g_t vy3 = geom_f_face_Xt[i_dev][7 + j*16];
+				ufloat_g_t vz3 = geom_f_face_Xt[i_dev][8 + j*16];
 				
 				if (N_DIM==2)
 				{
 					// Get the bounding box.
+					bool C = true;
 					ufloat_g_t vBx_m = std::min({vx1,vx2});
 					ufloat_g_t vBx_M = std::max({vx1,vx2});
 					ufloat_g_t vBy_m = std::min({vy1,vy2});
 					ufloat_g_t vBy_M = std::max({vy1,vy2});
+					if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+						C = false;
+					if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+						C = false;
 					
 					// Identify the bin indices of the lower and upper bounds.
 					int bin_id_xl = std::max((int)(vBx_m*G_BIN_DENSITY)-1, 0);
@@ -327,34 +346,50 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 					int bin_id_xL = std::min((int)(vBx_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
 					int bin_id_yL = std::min((int)(vBy_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
 					
-					// 3D: Traverse bin indices and add this face to the corresponding vectors.
-					for (int J = bin_id_yl; J < bin_id_yL; J++)
+					// Traverse bin indices and add this face to the corresponding vectors.
+					if (C)
 					{
-						for (int I = bin_id_xl; I < bin_id_xL; I++)
+						for (int J = bin_id_yl; J < bin_id_yL; J++)
 						{
-							if (G_BIN_APPROACH==1)
-								C3D = IncludeInBin<ufloat_g_t,2>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
+							for (int I = bin_id_xl; I < bin_id_xL; I++)
+							{
+								if (G_BIN_APPROACH==1)
+									C3D = IncludeInBin<ufloat_g_t,2>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
+								
+								if (C3D)
+								{
+									bins_a_3D[I+G_BIN_DENSITY*J].push_back(j);
+									total_faces_3D++;
+								}
+							}
 							
-							if (C3D)
-								bins_a_3D[I+G_BIN_DENSITY*J].push_back(j);
+							if (G_BIN_APPROACH==1)
+								C2D = IncludeInBin<ufloat_g_t,2>(-eps,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+eps,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
+							
+							if (C2D)
+							{
+								bins_a_2D[J].push_back(j);
+								total_faces_2D++;
+							}
 						}
-						
-						if (G_BIN_APPROACH==1)
-							C2D = IncludeInBin<ufloat_g_t,2>(-eps,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+eps,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
-						
-						if (C2D)
-							bins_a_2D[J].push_back(j);
 					}
 				}
 				else // N_DIM==3
 				{
-					// Get bounding box.
-					ufloat_g_t vBx_m = std::min({vx1,vx2,vx3});
-					ufloat_g_t vBx_M = std::max({vx1,vx2,vx3});
-					ufloat_g_t vBy_m = std::min({vy1,vy2,vy3});
-					ufloat_g_t vBy_M = std::max({vy1,vy2,vy3});
-					ufloat_g_t vBz_m = std::min({vz1,vz2,vz3});
-					ufloat_g_t vBz_M = std::max({vz1,vz2,vz3});
+					// Get bounding box (safe version)
+					bool C = true;
+					ufloat_g_t vBx_m = std::min(std::min(vx1, vx2), vx3);
+					ufloat_g_t vBx_M = std::max(std::max(vx1, vx2), vx3);
+					ufloat_g_t vBy_m = std::min(std::min(vy1, vy2), vy3);
+					ufloat_g_t vBy_M = std::max(std::max(vy1, vy2), vy3);
+					ufloat_g_t vBz_m = std::min(std::min(vz1, vz2), vz3);
+					ufloat_g_t vBz_M = std::max(std::max(vz1, vz2), vz3);
+					if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+						C = false;
+					if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+						C = false;
+					if (vBz_m<-dx&&vBz_M<-dx || vBz_m>Lz+dx&&vBz_M>Lz+dx)
+						C = false;
 					
 					// Identify the bin indices of the lower and upper bounds.
 					int bin_id_xl = std::max((int)(vBx_m*G_BIN_DENSITY)-1, 0);
@@ -364,92 +399,186 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 					int bin_id_yL = std::min((int)(vBy_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
 					int bin_id_zL = std::min((int)(vBz_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
 					
-					// 3D: Traverse bin indices and add this face to the corresponding vectors.
-					for (int K = bin_id_zl; K < bin_id_zL; K++)
+					// Traverse bin indices and add this face to the corresponding vectors.
+					if (C)
 					{
-						for (int J = bin_id_yl; J < bin_id_yL; J++)
+						for (int K = bin_id_zl; K < bin_id_zL; K++)
 						{
-							for (int I = bin_id_xl; I < bin_id_xL; I++)
+							for (int J = bin_id_yl; J < bin_id_yL; J++)
 							{
+								for (int I = bin_id_xl; I < bin_id_xL; I++)
+								{
+									if (G_BIN_APPROACH==1)
+										C3D = IncludeInBin<ufloat_g_t,3>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,K*Lz0g-dx,(K+1)*Lz0g+dx,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
+									
+									if (C3D)
+									{
+										bins_a_3D[I+G_BIN_DENSITY*J+G_BIN_DENSITY*G_BIN_DENSITY*K].push_back(j);
+										total_faces_3D++;
+									}
+								}
+								
 								if (G_BIN_APPROACH==1)
-								C3D = IncludeInBin<ufloat_g_t,3>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,K*Lz0g-dx,(K+1)*Lz0g+dx,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
-								
-								if (C3D)
-									bins_a_3D[I+G_BIN_DENSITY*J+G_BIN_DENSITY*G_BIN_DENSITY*K].push_back(j);
+									C2D = IncludeInBin<ufloat_g_t,3>(-eps,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+eps,K*Lz0g-eps,(K+1)*Lz0g+eps,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
+									
+								if (C2D)
+								{
+									bins_a_2D[J+G_BIN_DENSITY*K].push_back(j);
+									total_faces_2D++;
+								}
 							}
-							
-							if (G_BIN_APPROACH==1)
-								C2D = IncludeInBin<ufloat_g_t,3>(-dx,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+dx,K*Lz0g-dx,(K+1)*Lz0g+dx,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
-								
-							if (C2D)
-								bins_a_2D[J+G_BIN_DENSITY*K].push_back(j);
 						}
 					}
 				}
 			}
 			
 		}
+		cudaDeviceSynchronize();
+		std::cout << "Elapsed time (CPU): " << toc_simple("",T_US) << std::endl;
+		
+		
+		// Insert binned faces into GPU memory.
+		std::vector<int> bins_n_v;
+		std::vector<int> bins_N_v;
+		std::vector<int> bins_f_v;
+		std::vector<int> bins_n_b;
+		std::vector<int> bins_N_b;
+		std::vector<int> bins_f_b;
+		int Npv = 0;
+		int Npb = 0;
+		for (int p = 0; p < n_bins_v; p++)
+		{
+			int npv = bins_a_2D[p].size();
+			bins_n_v.push_back(npv);
+			bins_N_v.push_back(Npv);
+			if (npv > 0)
+			{
+				for (int k = 0; k < npv; k++)
+					bins_f_v.push_back(bins_a_2D[p][k]);
+				
+				int rem = 4-npv%4;
+				for (int k = 0; k < rem; k++)
+					bins_f_v.push_back(0);
+				
+				Npv += npv + rem;
+			}
+		}
+		for (int p = 0; p < n_bins_b; p++)
+		{
+			int npb = bins_a_3D[p].size();
+			bins_n_b.push_back(npb);
+			bins_N_b.push_back(Npb);
+			if (npb > 0)
+			{
+				for (int k = 0; k < npb; k++)
+					bins_f_b.push_back(bins_a_3D[p][k]);
+				
+				int rem = 4-npb%4;
+				for (int k = 0; k < rem; k++)
+					bins_f_b.push_back(0);
+				
+				Npb += npb + rem;
+			}
+		}
+		
+		// Now copy final vector data to the GPU.
+		// 2D
+		binned_face_ids_n_v[i_dev] = new int[n_bins_v];
+		binned_face_ids_N_v[i_dev] = new int[n_bins_v];
+		binned_face_ids_v[i_dev] = new int[bins_f_v.size()];
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_v[i_dev], bins_f_v.size()*sizeof(int)) );
+		for (int p = 0; p < n_bins_v; p++)
+		{
+			binned_face_ids_n_v[i_dev][p] = bins_n_v[p];
+			binned_face_ids_N_v[i_dev][p] = bins_N_v[p];
+		}
+		for (int p = 0; p < bins_f_v.size(); p++)
+		{
+			binned_face_ids_v[i_dev][p] = bins_f_v[p];
+		}
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_n_v[i_dev], binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_N_v[i_dev], binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_v[i_dev], binned_face_ids_v[i_dev], bins_f_v.size()*sizeof(int), cudaMemcpyHostToDevice) );
+		// 3D
+		binned_face_ids_n_b[i_dev] = new int[n_bins_b];
+		binned_face_ids_N_b[i_dev] = new int[n_bins_b];
+		binned_face_ids_b[i_dev] = new int[bins_f_b.size()];
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_b[i_dev], n_bins_b*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_b[i_dev], n_bins_b*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_b[i_dev], bins_f_b.size()*sizeof(int)) );
+		for (int p = 0; p < n_bins_b; p++)
+		{
+			binned_face_ids_n_b[i_dev][p] = bins_n_b[p];
+			binned_face_ids_N_b[i_dev][p] = bins_N_b[p];
+		}
+		for (int p = 0; p < bins_f_b.size(); p++)
+		{
+			binned_face_ids_b[i_dev][p] = bins_f_b[p];
+		}
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_n_b[i_dev], binned_face_ids_n_b[i_dev], n_bins_b*sizeof(int), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_N_b[i_dev], binned_face_ids_N_b[i_dev], n_bins_b*sizeof(int), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_binned_face_ids_b[i_dev], binned_face_ids_b[i_dev], bins_f_b.size()*sizeof(int), cudaMemcpyHostToDevice) );
+		
 		
 		// DEBUG (2D)
-		std::cout << "Finished CPU binning, starting debugging..." << std::endl;
-		std::cout << "APPROACH: ALT 2D" << std::endl;
-		for (int p = 0; p < n_bins_av_2D; p++)
-		{
-			int Nbpv = binned_face_ids_N_v[i_dev][p];
-			int npbv = binned_face_ids_n_v[i_dev][p];
-			int npb = bins_a_2D[p].size();
-			if (npb > 0)
-			{
-				std::cout << "Bin #" << p << ": ";
-				bool same = true;
-				
-				if (npb != npbv)
-					same = false;
-				else
-				{
-					for (int K = 0; K < npb; K++)
-					{
-						if (bins_a_2D[p][K] != binned_face_ids_v[i_dev][Nbpv + K])
-							same = false;
-					}
-				}
-				if (same)
-					std::cout << "SAME" << std::endl;
-				else
-					std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
-			}
-		}
+// 		std::cout << "Finished CPU binning, starting debugging..." << std::endl;
+// 		std::cout << "APPROACH: ALT 2D" << std::endl;
+// 		for (int p = 0; p < n_bins_v; p++)
+// 		{
+// 			int Nbpv = binned_face_ids_N_v[i_dev][p];
+// 			int npbv = binned_face_ids_n_v[i_dev][p];
+// 			int npb = bins_a_2D[p].size();
+// 			if (npb > 0)
+// 			{
+// 				std::cout << "Bin #" << p << ": ";
+// 				bool same = true;
+// 				
+// 				if (npb != npbv)
+// 					same = false;
+// 				else
+// 				{
+// 					for (int K = 0; K < npb; K++)
+// 					{
+// 						if (bins_a_2D[p][K] != binned_face_ids_v[i_dev][Nbpv + K])
+// 							same = false;
+// 					}
+// 				}
+// 				if (same)
+// 					std::cout << "SAME" << std::endl;
+// 				else
+// 					std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
+// 			}
+// 		}
 		// DEBUG (3D)
-		std::cout << "APPROACH: ALT 3D" << std::endl;
-		for (int p = 0; p < n_bins_av_3D; p++)
-		{
-			int Nbpv = binned_face_ids_N_b[i_dev][p];
-			int npbv = binned_face_ids_n_b[i_dev][p];
-			int npb = bins_a_3D[p].size();
-			if (npb > 0)
-			{
-				std::cout << "Bin #" << p << ": ";
-				bool same = true;
-				
-				if (npb != npbv)
-					same = false;
-				else
-				{
-					for (int K = 0; K < npb; K++)
-					{
-						if (bins_a_3D[p][K] != binned_face_ids_b[i_dev][Nbpv + K])
-							same = false;
-					}
-				}
-				if (same)
-					std::cout << "SAME" << std::endl;
-				else
-					std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
-			}
-		}
-		
-		// Allocate memory for GPU-side bin arrays. Copy CPU arrays to GPU.
-		
+// 		std::cout << "APPROACH: ALT 3D" << std::endl;
+// 		for (int p = 0; p < n_bins_b; p++)
+// 		{
+// 			int Nbpv = binned_face_ids_N_b[i_dev][p];
+// 			int npbv = binned_face_ids_n_b[i_dev][p];
+// 			int npb = bins_a_3D[p].size();
+// 			if (npb > 0)
+// 			{
+// 				std::cout << "Bin #" << p << ": ";
+// 				bool same = true;
+// 				
+// 				if (npb != npbv)
+// 					same = false;
+// 				else
+// 				{
+// 					for (int K = 0; K < npb; K++)
+// 					{
+// 						if (bins_a_3D[p][K] != binned_face_ids_b[i_dev][Nbpv + K])
+// 							same = false;
+// 					}
+// 				}
+// 				if (same)
+// 					std::cout << "SAME" << std::endl;
+// 				else
+// 					std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
+// 			}
+// 		}
 		
 		
 		// Free memory used for CPU-side bin arrays.
@@ -460,6 +589,152 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 	{
 		std::cout << "ERROR: Could not make bins...there are no faces..." << std::endl;
 	}
+	
+	return 0;
+}
+
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ G_DrawBinsAndFaces ]=======================================================  */
+/*                                                                                    */
+/*  This is a debug routine that generates a MATLAB script in which the various       */
+/*  bins and faces assignments can be plotted.                                        */
+/*                                                                                    */
+/**************************************************************************************/
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Geometry<ufloat_t,ufloat_g_t,AP>::G_DrawBinsAndFaces(int i_dev)
+{
+	// Initial parameters. Open the output file.
+	ufloat_g_t Lx0g = Lx/(ufloat_g_t)G_BIN_DENSITY;
+	ufloat_g_t Ly0g = Ly/(ufloat_g_t)G_BIN_DENSITY;
+	ufloat_g_t Lz0g = Lz/(ufloat_g_t)G_BIN_DENSITY;
+	double c0 = 0.0;
+	double c1 = 0.0;
+	double c2 = 0.0;
+	std::ofstream out2D = std::ofstream("debug_bins_2D.m");
+	std::ofstream out3D = std::ofstream("debug_bins_3D.m");
+	std::cout << "Drawing 3D bins..." << std::endl;
+	out2D << "print_all = true;" << std::endl;
+	out2D << "print_bin = 1;" << std::endl;
+	out3D << "print_all = true;" << std::endl;
+	out3D << "print_bin = 1;" << std::endl;
+	
+	int counter_2D = 1;
+	int counter_3D = 1;
+	int kmax = N_DIM==2?1:G_BIN_DENSITY;
+	for (int k = 0; k < kmax; k++)
+	{
+		for (int j = 0; j < G_BIN_DENSITY; j++)
+		{
+			for (int i = 0; i < G_BIN_DENSITY; i++)
+			{
+				// Identify the bin.
+				int global_bin_id = i + G_BIN_DENSITY*j + G_BIN_DENSITY*G_BIN_DENSITY*k;
+				
+				// Get the number of faces in the bin.
+				int n_f = binned_face_ids_n_b[i_dev][global_bin_id];
+				int N_f = 0;
+				if (n_f > 0)
+				{
+					N_f = binned_face_ids_N_b[i_dev][global_bin_id];
+					out3D << "% Bin #" << counter_3D << std::endl;
+					out3D << "if (print_bin == " << counter_3D << " || print_all == true)" << std::endl;
+					counter_3D++;
+				}
+				
+				// If there are faces to draw, draw the bin too. Each bin gets its own unique color.
+				if (n_f > 0)
+				{
+					c0 = (double)(std::rand() % 256) / 256.0;
+					c1 = (double)(std::rand() % 256) / 256.0;
+					c2 = (double)(std::rand() % 256) / 256.0;
+					if (N_DIM==2)
+						DebugDrawSquareInMATLAB(out3D, i*Lx0g, (i+1)*Lx0g, j*Ly0g, (j+1)*Ly0g, c0, c1, c2);
+					else
+						DebugDrawCubeInMATLAB(out3D, i*Lx0g, (i+1)*Lx0g, j*Ly0g, (j+1)*Ly0g, k*Lz0g, (k+1)*Lz0g, c0, c1, c2);
+					if (counter_3D==2)
+						out3D << "hold on;\n";
+					
+					for (int p = 0; p < n_f; p++)
+					{
+						int f_p = binned_face_ids_b[i_dev][N_f+p];
+						ufloat_g_t vx1 = geom_f_face_X[i_dev][f_p + 0*n_faces_a[i_dev]];
+						ufloat_g_t vy1 = geom_f_face_X[i_dev][f_p + 1*n_faces_a[i_dev]];
+						ufloat_g_t vz1 = geom_f_face_X[i_dev][f_p + 2*n_faces_a[i_dev]];
+						ufloat_g_t vx2 = geom_f_face_X[i_dev][f_p + 3*n_faces_a[i_dev]];
+						ufloat_g_t vy2 = geom_f_face_X[i_dev][f_p + 4*n_faces_a[i_dev]];
+						ufloat_g_t vz2 = geom_f_face_X[i_dev][f_p + 5*n_faces_a[i_dev]];
+						ufloat_g_t vx3 = geom_f_face_X[i_dev][f_p + 6*n_faces_a[i_dev]];
+						ufloat_g_t vy3 = geom_f_face_X[i_dev][f_p + 7*n_faces_a[i_dev]];
+						ufloat_g_t vz3 = geom_f_face_X[i_dev][f_p + 8*n_faces_a[i_dev]];
+						
+						// Draw the faces in the current bin.
+						if (N_DIM==2)
+							DebugDrawLineInMATLAB(out3D, vx1, vy1, vx2, vy2, c0, c1, c2);
+						else
+							DebugDrawTriangleInMATLAB(out3D, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, c0, c1, c2);
+					}
+					
+					out3D << "end" << std::endl;
+				}
+			}
+			
+			
+			
+			// Identify the bin.
+			int global_bin_id_2D = j + G_BIN_DENSITY*k;
+			
+			// Get the number of faces in the bin.
+			int n_f_2D = binned_face_ids_n_v[i_dev][global_bin_id_2D];
+			int N_f_2D = 0;
+			if (n_f_2D > 0)
+			{
+				N_f_2D = binned_face_ids_N_v[i_dev][global_bin_id_2D];
+				out2D << "% Bin #" << counter_2D << std::endl;
+				counter_2D++;
+			}
+			
+			// If there are faces to draw, draw the bin too. Each bin gets its own unique color.
+			if (n_f_2D > 0)
+			{
+				c0 = (double)(std::rand() % 256) / 256.0;
+				c1 = (double)(std::rand() % 256) / 256.0;
+				c2 = (double)(std::rand() % 256) / 256.0;
+				if (N_DIM==2)
+					DebugDrawSquareInMATLAB(out2D, 0, Lx, j*Ly0g, (j+1)*Ly0g, c0, c1, c2);
+				else
+					DebugDrawCubeInMATLAB(out2D, 0, Lx, j*Ly0g, (j+1)*Ly0g, k*Lz0g, (k+1)*Lz0g, c0, c1, c2);
+				if (counter_2D==2)
+					out2D << "hold on;\n";
+				
+				for (int p = 0; p < n_f_2D; p++)
+				{
+					int f_p = binned_face_ids_v[i_dev][N_f_2D+p];
+					ufloat_g_t vx1 = geom_f_face_X[i_dev][f_p + 0*n_faces_a[i_dev]];
+					ufloat_g_t vy1 = geom_f_face_X[i_dev][f_p + 1*n_faces_a[i_dev]];
+					ufloat_g_t vz1 = geom_f_face_X[i_dev][f_p + 2*n_faces_a[i_dev]];
+					ufloat_g_t vx2 = geom_f_face_X[i_dev][f_p + 3*n_faces_a[i_dev]];
+					ufloat_g_t vy2 = geom_f_face_X[i_dev][f_p + 4*n_faces_a[i_dev]];
+					ufloat_g_t vz2 = geom_f_face_X[i_dev][f_p + 5*n_faces_a[i_dev]];
+					ufloat_g_t vx3 = geom_f_face_X[i_dev][f_p + 6*n_faces_a[i_dev]];
+					ufloat_g_t vy3 = geom_f_face_X[i_dev][f_p + 7*n_faces_a[i_dev]];
+					ufloat_g_t vz3 = geom_f_face_X[i_dev][f_p + 8*n_faces_a[i_dev]];
+					
+					// Draw the faces in the current bin.
+					if (N_DIM==2)
+						DebugDrawLineInMATLAB(out2D, vx1, vy1, vx2, vy2, c0, c1, c2);
+					else
+						DebugDrawTriangleInMATLAB(out2D, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, c0, c1, c2);
+				}
+			}
+		}
+	}
+	
+	// Close the file.
+	std::cout << "Finished drawing 3D bins..." << std::endl;
+	out2D.close();
+	out3D.close();
 	
 	return 0;
 }

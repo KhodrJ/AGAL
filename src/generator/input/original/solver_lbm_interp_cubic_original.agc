@@ -41,8 +41,6 @@ ROUTINE_TEMPLATE_ARGS mesh->n_ids[i_dev][L]>0 && var==V_INTERP_ADDED
 # Kernel definition.
 #
 
-REG constexpr int Nqx = AP->Nqx;
-REG constexpr int M_TBLOCK = AP->M_TBLOCK;
 REG constexpr int M_CBLOCK = AP->M_CBLOCK;
 REG constexpr int M_LBLOCK = AP->M_LBLOCK;
 REG int kap = blockIdx.x*M_LBLOCK + threadIdx.x;

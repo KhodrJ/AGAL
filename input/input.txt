@@ -13,14 +13,14 @@ Nx                              256
 N_ITER_TOTAL                    150*Nx
 
 # GEOMETRY
-G_FILENAME                      bunny.stl
+G_FILENAME                      bunny_ascii.stl
 G_LOADTYPE                      1
 G_PRINT                         1
 G_NEAR_WALL_DISTANCE            0.1
 G_BIN_OVERLAP                   10
-G_BIN_DENSITY                   128
-G_BIN_FRAC                      16
-G_BIN_APPROACH                  0
+G_BIN_DENSITY                   32
+G_BIN_FRAC                      1
+G_BIN_APPROACH                  1
 
 # SOLVER
 v0                              0.000015625

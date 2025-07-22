@@ -98,8 +98,11 @@ class Geometry
 	//! Array of face indices.
 	int             **geom_ID_face = new int*[N_DEV];
 	
-	//! Array of face vertices.
+	//! Array of face data.
 	ufloat_g_t      **geom_f_face_X = new ufloat_g_t*[N_DEV];
+	
+	//! Array of face data but transposed.
+	ufloat_g_t      **geom_f_face_Xt = new ufloat_g_t*[N_DEV];
 	
 	//! Array of geometry face attributes attributes.
 	ufloat_g_t      **geom_ID_face_attr = new ufloat_g_t*[N_DEV];
@@ -150,6 +153,9 @@ class Geometry
 	
 	//! GPU counterpart of @ref geom_f_face_X.
 	ufloat_g_t      **c_geom_f_face_X = new ufloat_g_t*[N_DEV];
+	
+	//! GPU counterpart of @ref geom_f_face_X but transposed.
+	ufloat_g_t      **c_geom_f_face_Xt = new ufloat_g_t*[N_DEV];
 	
 	//! GPU counterpart of @ref geom_ID_face_attr.
 	ufloat_g_t      **c_geom_ID_face_attr = new ufloat_g_t*[N_DEV];

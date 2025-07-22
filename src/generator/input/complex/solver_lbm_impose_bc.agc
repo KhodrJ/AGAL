@@ -46,11 +46,9 @@ KERNEL_REQUIRE const int bc_type                             | S_BC_TYPE
 # Kernel definition.
 #
 
-REG constexpr int Nqx = AP->Nqx;
 REG constexpr int M_TBLOCK = AP->M_TBLOCK;
 REG constexpr int M_CBLOCK = AP->M_CBLOCK;
 REG constexpr int M_LBLOCK = AP->M_LBLOCK;
-REG constexpr int N_DIM = AP->N_DIM;
 REG constexpr int N_Q_max = AP->N_Q_max;
 
 REG __shared__ int s_ID_cblock[M_TBLOCK];
@@ -69,7 +67,6 @@ REG ufloat_t x __attribute__((unused)) = (ufloat_t)(0.0);
 REG ufloat_t y __attribute__((unused)) = (ufloat_t)(0.0);
 REG ufloat_t z __attribute__((unused)) = (ufloat_t)(0.0);
 REG int i_kap_b = -1;
-REG int i_kap_bc = -1;
 REG int nbr_kap_b = -1;
 REG int nbr_kap_c = -1;
 REG int valid_block = -1;
@@ -87,7 +84,7 @@ REG ufloat_t ub = (ufloat_t)(0.0);
 REG ufloat_t vb = (ufloat_t)(0.0);
 REG ufloat_t wb = (ufloat_t)(0.0);
 REG ufloat_t cdotu = (ufloat_t)(0.0);
-REG ufloat_t udotu = (ufloat_t)(0.0);
+REG ufloat_t udotu __attribute__((unused)) = (ufloat_t)(0.0);
 
 
 

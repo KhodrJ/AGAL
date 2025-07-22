@@ -101,11 +101,13 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForcesLBM(int i_dev, int L, i
 		// Synchronize GPU.
 		cudaDeviceSynchronize();
 		
+		// Identify the time step to use in the denominator.
 		double factor = 1.0;
 		if (S_FORCE_TYPE==0) factor = 1.0/dxf_vec[MAX_LEVELS-1];
 		if (S_FORCE_TYPE==1) factor = 1.0/dxf_vec[N_LEVEL_START];
-		int cblocks_id_max = mesh->id_max[i_dev][MAX_LEVELS];
 		
+		// Perform reductions using Thrust.
+		int cblocks_id_max = mesh->id_max[i_dev][MAX_LEVELS];
 		double Fpx = thrust::reduce(
 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][0*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][0*n_maxcblocks] + cblocks_id_max, 0.0
 		);
@@ -118,15 +120,15 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForcesLBM(int i_dev, int L, i
 		double Fmy = thrust::reduce(
 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][3*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][3*n_maxcblocks] + cblocks_id_max, 0.0
 		);
-		double Fpz = thrust::reduce(
-			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks] + cblocks_id_max, 0.0
-		);
-		double Fmz = thrust::reduce(
-			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks] + cblocks_id_max, 0.0
-		);
+// 		double Fpz = thrust::reduce(
+// 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks] + cblocks_id_max, 0.0
+// 		);
+// 		double Fmz = thrust::reduce(
+// 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks] + cblocks_id_max, 0.0
+// 		);
 		double Fx = factor*(Fpx - Fmx);
 		double Fy = factor*(Fpy - Fmy);
-		double Fz = factor*(Fpz - Fmz);
+// 		double Fz = factor*(Fpz - Fmz);
 		double Dp = 1.0/32.0;
 		double uin = 0.05;
 		std::cout << "Report:" << std::endl;
