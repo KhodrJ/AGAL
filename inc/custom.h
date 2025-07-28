@@ -65,10 +65,10 @@ void Cu_ComputeIC(ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, ufloat_t
 
 template <typename ufloat_t>
 __device__
-void Cu_ImposeBC
+ufloat_t Cu_ImposeBC
 (
-	int nbr_id, ufloat_t &f, ufloat_t rho, ufloat_t u, ufloat_t v, ufloat_t w, ufloat_t x, ufloat_t y, ufloat_t z,
-	ufloat_t wp, ufloat_t cxp, ufloat_t cyp, ufloat_t czp, ufloat_t &cdotu
+	int nbr_id, ufloat_t f, ufloat_t rho, ufloat_t u, ufloat_t v, ufloat_t w, ufloat_t x, ufloat_t y, ufloat_t z,
+	ufloat_t wp, ufloat_t cxp, ufloat_t cyp, ufloat_t czp
 )
 {
 	// --- HERE ---
@@ -83,42 +83,47 @@ void Cu_ImposeBC
 	// LDC (2D).
 // 	if (nbr_id == -4)
 // 	{
-// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
+// 		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		return f - (ufloat_t)(2.0)*wp*cdotu;
 // 	}
 	
 	// FPSC (2D).
 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
 	{
-		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-		f = f - (ufloat_t)(2.0)*wp*cdotu;
+		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+		return f - (ufloat_t)(2.0)*wp*cdotu;
 	}
 	if (nbr_id == -2)
 	{
-		cdotu = cxp*u + cyp*v + czp*w;
+		ufloat_t cdotu = cxp*u + cyp*v + czp*w;
 		cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
-		f = -f + (ufloat_t)(2.0)*wp*cdotu;
+		return -f + (ufloat_t)(2.0)*wp*cdotu;
 	}
 	
 	// LDC (3D).
 // 	if (nbr_id == -6)
 // 	{
-// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
+// 		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		return f - (ufloat_t)(2.0)*wp*cdotu;
 // 	}
 	
 	// FPSC (3D).
 // 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
 // 	{
-// 		cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		f = f - (ufloat_t)(2.0)*wp*cdotu;
+// 		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		return f - (ufloat_t)(2.0)*wp*cdotu;
 // 	}
 // 	if (nbr_id == -2)
 // 	{
-// 		cdotu = cxp*u + cyp*v + czp*w;
+// 		ufloat_t cdotu = cxp*u + cyp*v + czp*w;
 // 		cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
-// 		f = -f + (ufloat_t)(2.0)*wp*cdotu;
+// 		return -f + (ufloat_t)(2.0)*wp*cdotu;
 // 	}
+
+
+
+	// If nothing defined, return a value of -1.
+	return (ufloat_t)(-1.0);
 }
 
 #endif

@@ -25,8 +25,10 @@ constexpr int V_INTERP_ADDED                 = 1;    ///< Interpolate to newly-a
 constexpr int V_AVERAGE_INTERFACE            = 0;    ///< Average involves interface cells only.
 constexpr int V_AVERAGE_BLOCK                = 1;    ///< Average involves whole masked block.
 constexpr int V_AVERAGE_GRID                 = 2;    ///< Average involves whole grid.
+
+// Mesh-geometry interaction.
 constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
-constexpr int V_CELLMASK_SOLIDA              = -2;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
+constexpr int V_CELLMASK_BOUNDARY            = -2;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
 constexpr int V_BLOCKMASK_REGULAR            = 0;    ///< Default state of a cell-block.
 constexpr int V_BLOCKMASK_INTERFACE          = 1;    ///< This cell-block participates in the grid communication routines.
 constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies entirely within a solid object.
@@ -48,6 +50,10 @@ constexpr int V_MESH_RESTART_LOAD            = 1;    ///< Load mesh data from pr
 constexpr int V_SOLVER_LBM_BGK               = 0;
 constexpr int V_SOLVER_LBM_TRT               = 1;
 constexpr int V_SOLVER_LBM_MRT               = 2;
+
+__constant__ int V_CONN_ID[81];
+__constant__ int V_CONN_MAP[27];
+
 
 #include "structs.h"
 #include "custom.h"
@@ -182,7 +188,6 @@ class Mesh
 	int mesh_init = 0;
 	int geometry_init = 0;
 	int solver_init = 0;
-	int enable_aux_data = 0;
 	int bdata_init = 0;
 	Geometry<ufloat_t,ufloat_g_t,AP> *geometry;
 	Solver<ufloat_t,ufloat_g_t,AP> *solver;
@@ -299,10 +304,6 @@ class Mesh
 	///< Stores the numerical solution in a structured of arrays format (i.e. f0: c0, c1, c2,..., f1: c0, c1, c2,... and so on).
 	ufloat_t 	**cells_f_F = new ufloat_t*[N_DEV];
 	
-	//! Optional auxilliary solution array.
-	///< Stores auxilliary data.
-	ufloat_t 	**cells_f_F_aux = new ufloat_t*[N_DEV];
-	
 	//! Probed solution field at tn.
 	//! Stores the coarse solution at probed locations according to the specified @ref N_PROBE_DENSITY.
 	ufloat_t	**cells_f_U_probed_tn = new ufloat_t*[N_DEV];
@@ -322,6 +323,9 @@ class Mesh
 	//! Array of cell-block neighbor IDs.
 	//! Stores the IDs of neighbor cell-blocks in a structure of arrays format (i.e. ID of neighbor 0: cb0, cb1, cb2,..., ID of neighbor 1: cb0, cb1, cb2,... and so on). Directions of the neighbors are designed to match the discrete particle velocity set selected at compile time. IDs can take non-negative values (indicating valid neighbor cell-blocks) and negative values (indicating a boundary where the neighbor would normally be if not equal to @ref N_SKIPID, otherwise indicating that a neighbor does not exist but points to the interior).
 	int 		**cblock_ID_nbr = new int*[N_DEV];
+	
+	//! Array of cell-block neighbor IDs in Array of Structures format.
+	int 		**cblock_ID_nbr_aos = new int*[N_DEV];
 	
 	//! Array of cell-block neighbor's child IDs.
 	//! Stores the IDs of the first child (of zero-child-index) of neighboring cell-blocks in a structure of arrays format (i.e. ID of child 0: cb0, cb1, cb2,..., ID of child 1: cb0, cb1, cb2,... and so on). Non-negative values indicate a valid child cell-block. Values equal to @ref N_SKIPID indicate that a process involving this (non-existant) child should be skipped.
@@ -415,9 +419,6 @@ class Mesh
 	//! GPU counterpart of @ref cells_f_F.
 	ufloat_t 	**c_cells_f_F = new ufloat_t*[N_DEV];
 	
-	//! GPU counterpart of @ref cells_f_F_aux.
-	ufloat_t 	**c_cells_f_F_aux = new ufloat_t*[N_DEV];
-	
 	//! GPU counterpart of @ref cblock_f_X.
 	ufloat_t 	**c_cblock_f_X = new ufloat_t*[N_DEV];
 	
@@ -426,6 +427,9 @@ class Mesh
 	
 	//! GPU counterpart of @ref cblock_ID_nbr.
 	int 		**c_cblock_ID_nbr = new int*[N_DEV];
+	
+	//! GPU counterpart of @ref cblock_ID_nbr_aos.
+	int 		**c_cblock_ID_nbr_aos = new int*[N_DEV];
 	
 	//! GPU counterpart of @ref cblock_ID_nbr_child.
 	int 		**c_cblock_ID_nbr_child = new int*[N_DEV];
@@ -672,10 +676,8 @@ class Mesh
 		std::map<std::string, int> params_int,
 		std::map<std::string, double> params_dbl,
 		std::map<std::string, std::string> params_str,
-		int N_Q_,
-		int enable_aux_data_=0, int N_U_=0
-	) : N_Q(N_Q_),
-	    enable_aux_data(enable_aux_data_), N_U(N_U_)
+		int N_Q_
+	) : N_Q(N_Q_)
 	{
 		M_Init(params_int, params_dbl, params_str);
 		std::cout << "[-] Finished making mesh object." << std::endl << std::endl;
@@ -698,5 +700,29 @@ class Mesh
 		std::cout << "[-] Finished deleting mesh object." << std::endl << std::endl;
 	}
 };
+
+template <int N_DIM>
+__device__ __forceinline__
+int Cu_NbrMap(int I, int J, int K)
+{
+	int S = 0;
+	
+	//if (I == -1) S = 0;
+	if (I == 4) S = 2;
+	if (I >= 0 && I < 4) S = 1;
+	
+	//if (J == -1) S += 3*(0);
+	if (J == 4) S += 3*(2);
+	if (J >= 0 && J < 4) S += 3*(1);
+	
+	if (N_DIM==3)
+	{
+		//if (K == -1) S += 9*(0);
+		if (K == 4) S += 9*(2);
+		if (K >= 0 && K < 4) S += 9*(1);
+	}
+	
+	return S;
+}
 
 #endif

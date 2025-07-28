@@ -24,8 +24,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 	{
 		delete[] cells_ID_mask[i_dev];
 		delete[] cells_f_F[i_dev];
-		if (enable_aux_data)
-			delete[] cells_f_F_aux[i_dev];
 		delete[] cblock_f_X[i_dev];
 		delete[] cblock_ID_mask[i_dev];
 		delete[] cblock_ID_nbr[i_dev];
@@ -33,10 +31,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 		delete[] cblock_ID_onb[i_dev];
 		delete[] cblock_ID_ref[i_dev];
 		delete[] cblock_level[i_dev];
-#if (N_CASE==2)
-		delete[] cblock_ID_face_count[i_dev];
-		delete[] cblock_ID_face[i_dev];
-#endif
 		
 		delete[] tmp_1[i_dev];
 		delete[] tmp_2[i_dev];
@@ -68,12 +62,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 		// Cell data.
 		gpuErrchk( cudaFree(c_cells_ID_mask[i_dev]) );
 		gpuErrchk( cudaFree(c_cells_f_F[i_dev]) );
-		if (enable_aux_data)
-			gpuErrchk( cudaFree(c_cells_f_F_aux[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_f_X[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_f_Ff[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_mask[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_nbr[i_dev]) );
+		gpuErrchk( cudaFree(c_cblock_ID_nbr_aos[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_nbr_child[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_onb[i_dev]) );
 		gpuErrchk( cudaFree(c_cblock_ID_ref[i_dev]) );

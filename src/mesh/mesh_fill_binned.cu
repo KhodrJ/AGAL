@@ -7,10 +7,10 @@
 
 #include "mesh.h"
 
-/*
+
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_FillBinned
+void Cu_FillBinned_V1
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -25,6 +25,7 @@ void Cu_FillBinned
 	const int n_faces,
 	const int n_faces_a,
 	const ufloat_g_t *__restrict__ geom_f_face_X,
+	const ufloat_g_t *__restrict__ geom_f_face_Xt,
 	const int *__restrict__ binned_face_ids_n,
 	const int *__restrict__ binned_face_ids_N,
 	const int *__restrict__ binned_face_ids,
@@ -188,11 +189,10 @@ void Cu_FillBinned
 		}
 	}
 }
-*/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_FillBinned
+void Cu_FillBinned_V2
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -207,6 +207,7 @@ void Cu_FillBinned
 	const int n_faces,
 	const int n_faces_a,
 	const ufloat_g_t *__restrict__ geom_f_face_X,
+	const ufloat_g_t *__restrict__ geom_f_face_Xt,
 	const int *__restrict__ binned_face_ids_n,
 	const int *__restrict__ binned_face_ids_N,
 	const int *__restrict__ binned_face_ids,
@@ -219,24 +220,34 @@ void Cu_FillBinned
 	constexpr int M_LBLOCK = AP->M_LBLOCK;
 	__shared__ int s_ID_cblock[M_TBLOCK];
 	__shared__ int s_D[M_TBLOCK];
+	__shared__ int s_fI[M_TBLOCK];
+	__shared__ ufloat_g_t s_fD[16];
 	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
 	int i_kap_b;
 	int global_bin_id;
+	int plim = M_TBLOCK;
 	ufloat_g_t vxp = (ufloat_g_t)0.0;
 	ufloat_g_t vyp = (ufloat_g_t)0.0;
 	ufloat_g_t vzp = (ufloat_g_t)0.0;
 	ufloat_g_t vx = (ufloat_g_t)0.0;
 	ufloat_g_t vy = (ufloat_g_t)0.0;
-	ufloat_g_t vz = (ufloat_g_t)0.0;
+	ufloat_g_t vz __attribute__((unused)) = (ufloat_g_t)0.0;
+	ufloat_g_t vx2 = (ufloat_g_t)0.0;
+	ufloat_g_t vy2 = (ufloat_g_t)0.0;
+	ufloat_g_t vz2 __attribute__((unused)) = (ufloat_g_t)0.0;
 	ufloat_g_t nx = (ufloat_g_t)0.0;
 	ufloat_g_t ny = (ufloat_g_t)0.0;
-	ufloat_g_t nz = (ufloat_g_t)0.0;
+	ufloat_g_t nz __attribute__((unused)) = (ufloat_g_t)0.0;
+	ufloat_g_t sx __attribute__((unused)) = (ufloat_g_t)0.0;
+	ufloat_g_t sy __attribute__((unused)) = (ufloat_g_t)0.0;
+	ufloat_g_t sz __attribute__((unused)) = (ufloat_g_t)0.0;
 	ufloat_g_t tmp = (ufloat_g_t)0.0;
 	ufloat_g_t tmp2 = (ufloat_g_t)0.0;
 	int intersect_counter = 0;
-	bool C;
+	bool C = true;
 	
 	s_ID_cblock[threadIdx.x] = -1;
+	s_fI[threadIdx.x] = -1;
 	if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
 	{
 		s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
@@ -262,90 +273,118 @@ void Cu_FillBinned
 			global_bin_id = ((int)(vyp*G_BIN_DENSITY)) + G_BIN_DENSITY*((int)(vzp*G_BIN_DENSITY));
 			
 			// Now find the total number of intersections a ray makes in the direction with the smallest number of bins.
+			//s_fI[threadIdx.x] = binned_face_ids[global_bin_id+threadIdx.x];
 			int n_f = binned_face_ids_n[global_bin_id];
 			int N_f = 0;
 			if (n_f > 0)
-				N_f = binned_face_ids_N[global_bin_id];
-			for (int p = 0; p < n_f; p++)
 			{
-				int f_p = binned_face_ids[N_f+p];
-				
-				if (N_DIM==2)
+				N_f = binned_face_ids_N[global_bin_id];
+				for (int k = 0; k < n_f/M_TBLOCK+1; k++)
 				{
-					// Load normal.
-					nx = geom_f_face_X[f_p + 9*n_faces_a];
-					ny = geom_f_face_X[f_p + 10*n_faces_a];
+					// Read the next M_TBLOCK faces.
+					plim = M_TBLOCK;
+					if ((k+1)*M_TBLOCK >= n_f)
+						plim = M_TBLOCK - ((k+1)*M_TBLOCK - n_f);
+					if (threadIdx.x < plim)
+						s_fI[threadIdx.x] = binned_face_ids[N_f + k*M_TBLOCK + threadIdx.x];
+					__syncthreads();
 					
-					// Load vertices 1 and 2.
-					vx = geom_f_face_X[f_p + 0*n_faces_a];
-					vy = geom_f_face_X[f_p + 1*n_faces_a];
-					
-					// Find the distance along a ray with direction [1,0].
-					tmp = (vx-vxp) + (vy-vyp)*(ny/nx);
-					if (tmp > 0)
+					for (int p = 0; p < plim; p++)
+					//for (int p = 0; p < n_f; p++)
 					{
-						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+						//int f_p = binned_face_ids[N_f+p];
+						int f_p = s_fI[p];
 						
-						// First check if point is inside the line.
-						nx = geom_f_face_X[f_p + 12*n_faces_a]; // nx stores edge now.
-						ny = geom_f_face_X[f_p + 13*n_faces_a];
-						C = -( ((vx-tmp2)*nx)+((vy-vyp)*ny) ) > 0;
+						// Load face data.
+						if (threadIdx.x < 16)
+							s_fD[threadIdx.x] = geom_f_face_Xt[threadIdx.x + f_p*16];
+						__syncthreads();
 						
-						// Second check if point is inside the line.
-						vx = geom_f_face_X[f_p + 3*n_faces_a];
-						vy = geom_f_face_X[f_p + 4*n_faces_a];
-						C = C && ( ((vx-tmp2)*nx)+((vy-vyp)*ny) ) > 0;
+						if (N_DIM==2)
+						{
+							// Load normal.
+							nx = s_fD[9];
+							ny = s_fD[10];
+							
+							// Load vertices 1 and 2.
+							vx = s_fD[0];
+							vy = s_fD[1];
+							vx2 = s_fD[3];
+							vy2 = s_fD[4];
+							
+							// Find the distance along a ray with direction [1,0].
+							tmp = (vx-vxp) + (vy-vyp)*(ny/nx);
+							if (tmp > 0)
+							{
+								tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+								
+								// First check if point is inside the line.
+								C = -( ((vx-tmp2)*(vx2-vx))+((vy-vyp)*(vy2-vy)) ) > 0;
+								
+								// Second check if point is inside the line.
+								C = C && ( ((vx2-tmp2)*(vx2-vx))+((vy2-vyp)*(vy2-vy)) ) > 0;
+								
+								if (C)
+									intersect_counter++;
+							}
+						}
+						else
+						{
+							// Load normal.
+							nx = s_fD[9];
+							ny = s_fD[10];
+							nz = s_fD[11];
+							
+							// Load vertex 1.
+							vx = s_fD[0];
+							vy = s_fD[1];
+							vz = s_fD[2];
+							
+							// Find the distance along a ray with direction [1,0,0].
+							tmp = (vx-vxp) + (vy-vyp)*(ny/nx) + (vz-vzp)*(nz/nx);
+							if (tmp > 0)
+							{
+								tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+								
+								// First check that point is inside the triangle.
+								vx2 = s_fD[3] - vx; // vx2 stores x-comp. of edge 1: vx2-vx1.
+								vy2 = s_fD[4] - vy; // I don't need real vx2 individually.
+								vz2 = s_fD[5] - vz;
+								sx = vy2*nz - vz2*ny;
+								sy = vz2*nx - vx2*nz;
+								sz = vx2*ny - vy2*nx;
+								C = (vx-tmp2)*sx + (vy-vyp)*sy + (vz-vzp)*sz > 0;
+								
+								// Second check that point is inside the triangle.
+								vx += vx2; // Recover vertex 2.
+								vy += vy2;
+								vz += vz2;
+								vx2 = s_fD[6] - vx; // vx2 stores x-comp. of edge 2: vx3-vx2.
+								vy2 = s_fD[7] - vy; // I don't need real vx2 individually.
+								vz2 = s_fD[8] - vz;
+								sx = vy2*nz - vz2*ny;
+								sy = vz2*nx - vx2*nz;
+								sz = vx2*ny - vy2*nx;
+								C = C && (vx-tmp2)*sx + (vy-vyp)*sy + (vz-vzp)*sz > 0;
+								
+								// Second check that point is inside the triangle.
+								vx += vx2; // Recover vertex 3.
+								vy += vy2;
+								vz += vz2;
+								vx2 = s_fD[0] - vx; // vx2 stores x-comp. of edge 3: vx1-vx3.
+								vy2 = s_fD[1] - vy; // I don't need real vx2 individually.
+								vz2 = s_fD[2] - vz;
+								sx = vy2*nz - vz2*ny;
+								sy = vz2*nx - vx2*nz;
+								sz = vx2*ny - vy2*nx;
+								C = C && (vx-tmp2)*sx + (vy-vyp)*sy + (vz-vzp)*sz > 0;
+								
+								if (C)
+									intersect_counter++;
+							}
+						}
 						
-						//C = CheckPointInLine(tmp2, vyp, vx1, vy1, vx2, vy2);
-						if (C)
-							intersect_counter++;
-					}
-				}
-				else
-				{
-					// Load normal.
-					nx = geom_f_face_X[f_p + 9*n_faces_a];
-					ny = geom_f_face_X[f_p + 10*n_faces_a];
-					nz = geom_f_face_X[f_p + 11*n_faces_a];
-					
-					// Load vertex 1.
-					vx = geom_f_face_X[f_p + 0*n_faces_a];
-					vy = geom_f_face_X[f_p + 1*n_faces_a];
-					vz = geom_f_face_X[f_p + 2*n_faces_a];
-					
-					// Find the distance along a ray with direction [1,0,0].
-					tmp = (vx-vxp) + (vy-vyp)*(ny/nx) + (vz-vzp)*(nz/nx);
-					if (tmp > 0)
-					{
-						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
-						
-						// First check that point is inside the triangle.
-						nx = geom_f_face_X[f_p + 21*n_faces_a]; // nx stores edge normal now.
-						ny = geom_f_face_X[f_p + 22*n_faces_a];
-						nz = geom_f_face_X[f_p + 23*n_faces_a];
-						C = (vx-tmp2)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
-						
-						// Second check that point is inside the triangle.
-						vx = geom_f_face_X[f_p + 3*n_faces_a];
-						vy = geom_f_face_X[f_p + 4*n_faces_a];
-						vz = geom_f_face_X[f_p + 5*n_faces_a];
-						nx = geom_f_face_X[f_p + 24*n_faces_a]; // nx stores edge normal now.
-						ny = geom_f_face_X[f_p + 25*n_faces_a];
-						nz = geom_f_face_X[f_p + 26*n_faces_a];
-						C = C && (vx-tmp2)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
-						
-						// Second check that point is inside the triangle.
-						vx = geom_f_face_X[f_p + 6*n_faces_a];
-						vy = geom_f_face_X[f_p + 7*n_faces_a];
-						vz = geom_f_face_X[f_p + 8*n_faces_a];
-						nx = geom_f_face_X[f_p + 27*n_faces_a]; // nx stores edge normal now.
-						ny = geom_f_face_X[f_p + 28*n_faces_a];
-						nz = geom_f_face_X[f_p + 29*n_faces_a];
-						C = C && (vx-tmp2)*nx + (vy-vyp)*ny + (vz-vzp)*nz > 0;
-						
-						//C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
-						if (C)
-							intersect_counter++;
+						__syncthreads();
 					}
 				}
 			}
@@ -380,7 +419,19 @@ void Cu_FillBinned
 	}
 }
 
-// TODO: Update comments describing the logic behind access.
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_MarkBlocks_S1 ]=========================================================  */
+/*                                                                                    */
+/*  This kernel traverses the cell-blocks according to the 'secondary' mode of        */
+/*  access, where threads are assigned to individual cell-blocks and access data      */
+/*  from arrays arranged according to the Structure of Arrays format, in order to     */
+/*  determine which cell-blocks are adjacent to entirely solid-blocks. These          */
+/*  indicate a sort of boundary around the geometry at the block level (the Ids       */
+/*  updated in cells_ID_mask indicates this boundary at the cell level according to   */
+/*  Cu_FillBins).                                                                     */
+/*                                                                                    */
+/**************************************************************************************/
 
 template <const ArgsPack *AP>
 __global__
@@ -410,7 +461,6 @@ void Cu_MarkBlocks_Alt_S1
 		
 		// First, read neighbor Ids and place in shared memory. Arrange for contiguity.
 		if (kap < id_max_curr && cblock_level[kap] == L && mask_kap == V_BLOCKMASK_SOLID)
-		//if (kap < id_max_curr && mask_kap < 0)
 		{
 			for (int p = 0; p < 9; p++)
 				s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
@@ -470,74 +520,194 @@ void Cu_MarkBlocks_Alt_S1
 	}
 }
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_MarkBlocks_GetMasks ]===================================================  */
+/*                                                                                    */
+/*  This kernel identifies the boundary cells (contained within the interior of the   */
+/*  domain) that are adjacent to solid cells. The cell masks of each block are        */
+/*  placed in shared memory along with a one-cell surrounding halo. Since cells       */
+/*  will consider all possible directions, placement in shared memory prevents        */
+/*  searching through the same data over and over again from global memory.           */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_Alt_S1A
+void Cu_MarkBlocks_GetMasks_V2
 (
-	int id_max_curr, int n_maxcblocks, bool hit_max,
-	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr
+	const int n_ids_idev_L,
+	const int *__restrict__ id_set_idev_L,
+	const int n_maxcblocks,
+	int *__restrict__ cells_ID_mask,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_nbr_child,
+	int *__restrict__ cblock_ID_onb,
+	int *tmp_1
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
-	constexpr int M_BLOCK = AP->M_BLOCK;
-	//constexpr int N_Q_max = AP->N_Q_max;
-	__shared__ int s_ID_nbr[M_BLOCK*9];
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	bool mark_near_solid_boundary = false;
-	//bool eligible = true;
+	constexpr int N_Q_max = AP->N_Q_max;
+	constexpr int M_TBLOCK = AP->M_TBLOCK;
+	constexpr int M_CBLOCK = AP->M_CBLOCK;
+	constexpr int M_LBLOCK = AP->M_LBLOCK;
+	constexpr int M_HBLOCK = AP->M_HBLOCK;
+	__shared__ int s_ID_cblock[M_TBLOCK];
+	__shared__ int s_D[M_TBLOCK];
+	__shared__ int s_ID_nbr[27];
+	__shared__ int s_ID_mask[M_HBLOCK];
+	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
+	int i_kap_b = -1;
+	int I = threadIdx.x % 4;
+	int J = (threadIdx.x / 4) % 4;
+	int K = 0;
+	if (N_DIM==3)
+		K = (threadIdx.x / 4) / 4;
+	bool near_a_solid_cell = false;
 	
-	for (int p = 0; p < 9; p++)
-		s_ID_nbr[p + threadIdx.x*9] = -1;
+	s_ID_cblock[threadIdx.x] = -1;
+	if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
+	{
+		s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
+	}
+	for (int k = 0; k < M_HBLOCK/M_TBLOCK+1; k++)
+	{
+		if (k*M_TBLOCK + threadIdx.x < M_HBLOCK)
+			s_ID_mask[k*M_TBLOCK + threadIdx.x] = N_SKIPID;
+	}
 	__syncthreads();
 	
-	for (int k = 0; k < (N_DIM==2?1:3); k++)
+	// Loop over block Ids.
+	for (int k = 0; k < M_LBLOCK; k += 1)
 	{
-		// First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-		if (kap < id_max_curr && cblock_ID_mask[kap] == V_BLOCKMASK_REGULAR)
+		i_kap_b = s_ID_cblock[k];
+
+		// Latter condition is added only if n>0.
+		if (i_kap_b > -1 && cblock_ID_nbr_child[i_kap_b] < 0 && (cblock_ID_mask[i_kap_b]<0 && cblock_ID_mask[i_kap_b] != V_BLOCKMASK_SOLID))
 		{
-			for (int p = 0; p < 9; p++)
-				s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
-		}
-		__syncthreads();
-		
-		// Replace neighbor Ids with their respective marks.
-		for (int p = 0; p < 9; p++)
-		{
-			int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-			if (i_p > -1 && cblock_ID_mask[i_p] < 0)
-				s_ID_nbr[threadIdx.x + p*M_BLOCK] = 1;
-			else
-				s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
-		}
-		__syncthreads();
-		
-		// Run again and check if any of the masks indicated adjacency to regular blocks.
-		if (kap < id_max_curr)
-		{
-			for (int p = 0; p < 9; p++)
+			// Load neighbor-block indices into shared memory.
+			if (threadIdx.x==0)
 			{
-				if (s_ID_nbr[p + threadIdx.x*9] == 1)
-					mark_near_solid_boundary = true;
+				//#pragma unroll
+				for (int p = 0; p < N_Q_max; p++)
+				{
+					s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
+					//if (i_kap_b == 25099)
+					//	printf("C%i=[%i %i %i]\n", p, V_CONN_ID[p + 0*27], V_CONN_ID[p + 1*27], V_CONN_ID[p + 2*27]);
+				}
 			}
-		}
-		
-		if (N_DIM==3)
-		{
 			__syncthreads();
 			
-			for (int p = 0; p < 9; p++)
-				s_ID_nbr[p + threadIdx.x*9] = -1;
+			// Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
+			for (int p = 0; p < N_Q_max; p++)
+			{
+				// nbr_kap_b is the index of the neighboring block w.r.t the current cell.
+				// nbr_kap_c is the index of the cell in that neighboring block.
+				// nbr_kap_h is the index of the halo to store that value.
+				
+				// First, increment indices along pth direction. Store the resulting halo index.
+				int Ip = I + V_CONN_ID[p + 0*27];
+				int Jp = J + V_CONN_ID[p + 1*27];
+				int Kp = 0;
+				if (N_DIM==3)
+					Kp = K + V_CONN_ID[p + 2*27];
+				int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+				if (N_DIM==3)
+					nbr_kap_h += 36*(Kp+1);
+				
+				// Then, identify the appropriate neighbor block to store the retrieved cell masks.
+				int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+				Ip = (4 + (Ip % 4)) % 4;
+				Jp = (4 + (Jp % 4)) % 4;
+				if (N_DIM==3)
+					Kp = (4 + (Kp % 4)) % 4;
+				int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+				
+				// Write cell mask to the halo.
+				bool changed = (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
+				if (changed && nbr_kap_b > -1)
+					s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
+			}
+			int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+			s_ID_mask[(I+1)+6*(J+1)+36*(K+1)] = curr_mask;
 			__syncthreads();
+			
+			// Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
+			for (int p = 0; p < N_Q_max; p++)
+			{
+				// First, increment indices along pth direction. Store the resulting halo index.
+				int Ip = I + V_CONN_ID[p + 0*27];
+				int Jp = J + V_CONN_ID[p + 1*27];
+				int Kp = 0;
+				if (N_DIM==3)
+					Kp = K + V_CONN_ID[p + 2*27];
+				int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+				if (N_DIM==3)
+					nbr_kap_h += 36*(Kp+1);
+				
+				// Now, check the neighboring cell mask for all cells using values stored in shared memory.
+				if (s_ID_mask[nbr_kap_h] == V_CELLMASK_SOLID)
+					near_a_solid_cell = true;
+			}
+			
+			
+			
+			// [DEPRECATED]
+			// Each cell checks the mask of its neighboring cell, if it exists.
+			// If at least one is a solid cell, then mark this as 'on the boundary'.
+			/*
+			int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+			for (int p = 0; p < N_Q_max; p++)
+			{
+				int Ip = I + V_CONN_ID[p + 0*27];
+				int Jp = J + V_CONN_ID[p + 1*27];
+				int Kp = 0;
+				if (N_DIM==3)
+					Kp = K + V_CONN_ID[p + 2*27];
+				
+				int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+				Ip = (4 + (Ip % 4)) % 4;
+				Jp = (4 + (Jp % 4)) % 4;
+				if (N_DIM==3)
+					Kp = (4 + (Kp % 4)) % 4;
+				int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+				
+				if (nbr_kap_b >= 0 && cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c] == V_CELLMASK_SOLID)
+					near_a_solid_cell = true;
+			}
+			*/
+			
+			
+			
+			s_D[threadIdx.x] = 0;
+			if (near_a_solid_cell && curr_mask != V_CELLMASK_SOLID)
+			{
+				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_BOUNDARY;
+				s_D[threadIdx.x] = 1;
+			}
+			__syncthreads();
+			
+			// Block reduction for sum.
+			for (int s=blockDim.x/2; s>0; s>>=1)
+			{
+				if (threadIdx.x < s)
+				{
+					s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
+				}
+				__syncthreads();
+			}
+			
+			if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
+			{
+				tmp_1[i_kap_b] = s_D[threadIdx.x];
+				cblock_ID_onb[i_kap_b] = 1;
+			}
 		}
-	}
-	
-	// If near at least one regular block, this block is on the boundary of the solid.
-	if (kap < id_max_curr && mark_near_solid_boundary)
-	{
-		cblock_ID_mask[kap] = V_BLOCKMASK_INDETERMINATE;
 	}
 }
 
+/*
 template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_GetMasks
@@ -1571,6 +1741,7 @@ void Cu_MarkBlocks_GetMasks
 		}
 	}
 }
+*/
 
 template <const ArgsPack *AP>
 __global__
@@ -1760,10 +1931,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		//int Nprop = pow(2.0,(double)L)+2;
 		std::cout << "Level " << L << ": " << Nprop << " propagations.\n";
 		
-		Cu_FillBinned<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		Cu_FillBinned_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
-			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev],
+			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
 			geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY
 		);
 		
@@ -1800,11 +1971,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
 		
 		// Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
-		Cu_MarkBlocks_GetMasks<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		Cu_MarkBlocks_GetMasks_V2<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
 			c_tmp_1[i_dev]
 		);
+		cudaDeviceSynchronize();
 	}
 	
 	return 0;

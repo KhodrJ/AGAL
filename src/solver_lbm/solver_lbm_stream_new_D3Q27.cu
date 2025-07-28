@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Mon Jul 14 23:00:25 2025                                            */
+/*  Last Updated: Sun Jul 27 18:28:18 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -11,7 +11,22 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_Stream_Original_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int n_maxcells_b,int *__restrict__ id_set_idev_L,int *__restrict__ cells_ID_mask,ufloat_t *__restrict__ cells_f_F,ufloat_g_t *__restrict__ cells_f_X_b,int *__restrict__ cblock_ID_nbr,int *__restrict__ cblock_ID_nbr_child,int *__restrict__ cblock_ID_mask,int *__restrict__ cblock_ID_onb_solid,bool geometry_init)
+void Cu_Stream_Original_D3Q27
+(
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const int n_maxcells_b,
+	const int *__restrict__ id_set_idev_L,
+	const int *__restrict__ cells_ID_mask,
+	ufloat_t *__restrict__ cells_f_F,
+	const ufloat_g_t *__restrict__ cells_f_X_b,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_nbr_child,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_onb_solid,
+	const bool geometry_init
+)
 {
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;

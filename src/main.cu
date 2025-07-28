@@ -143,7 +143,8 @@ int main(int argc, char *argv[])
 	
 	// Create a mesh.
 	int enable_aux_data = 1;
-	Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, LPc.N_Q, enable_aux_data, APc.N_DIM+1+1);
+	const int N_U = LPc.N_Q + (N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
+	Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, N_U);
 	mesh.M_AddGeometry(&geometry);
 	
 	// Create a solver.
@@ -153,7 +154,7 @@ int main(int argc, char *argv[])
 	// Solver loop (includes rendering and printing).
 	//mesh.M_AdvanceLoop();
 	mesh.M_Advance_RefineNearWall();
-	mesh.M_Print_VTHB(0, 0);
+	mesh.M_Advance_PrintData(0,0);
 	
 	return 0;
 }

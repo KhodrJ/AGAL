@@ -74,7 +74,7 @@ NVCC = nvcc
 #|
 CPPFLAGS = 
 CXXFLAGS = -g -Wno-unused-variable
-#NVCCFLAGS = -lineinfo -Xptxas -v -O3 -arch=sm_70 -Xcompiler=\"-Wno-unused-variable\"
+NVCCFLAGSPTX = -lineinfo -Xptxas "-v" -arch=sm_70 -Xcompiler=\"-Wno-unused-variable\"
 NVCCFLAGS = -lineinfo -O3 -Xcompiler=\"-Wno-unused-variable\"
 LDFLAGS = 
 #|
@@ -192,13 +192,18 @@ $(VSET_STAMP):
 OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER_LBM) $(OBJ_MAIN)
 SRC = $(SRC_GEOMETRY) $(SRC_MESH) $(SRC_SOLVER_LBM) $(SRC_MAIN)
 a.out: main.cu $(VSET_STAMP) $(OBJ_MAIN) $(SRC) $(INC_MAIN)
-	#$(NVCC) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@ $(NVCCFLAGS)
 	$(NVCC) -DUSE$(VSET) $(NVCCFLAGS) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 
 geometry: $(OBJ_GEOMETRY)
 mesh: $(OBJ_MESH)
 solver_lbm: $(OBJ_SOLVER_LBM)
+pxtas:
+	$(NVCC) -DUSE$(VSET) $(NVCCFLAGSPTX) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 clean:
 	$(RM) $(OBJ) vset_*
 
-.PHONY: clean all geometry mesh solver_lbm
+.PHONY: clean pxtas all geometry mesh solver_lbm
+
+
+
+#make VSET=D3Q19 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas

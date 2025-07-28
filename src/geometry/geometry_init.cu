@@ -97,10 +97,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 		
 		for (int j = 0; j < n_faces_a[i_dev]; j++)
 		{
-			for (int p = 0; p < 16; p++)
-				geom_f_face_X[i_dev][j + p*n_faces_a[i_dev]] = 0.0;
-			for (int p = 0; p < 16; p++)
-				geom_f_face_Xt[i_dev][p + j*16] = 0.0;
+			for (int p = 0; p < 16; p++) geom_f_face_X[i_dev][j + p*n_faces_a[i_dev]] = 0.0;
+			for (int p = 0; p < 16; p++) geom_f_face_Xt[i_dev][p + j*16] = 0.0;
 			if (j < n_faces[i_dev])
 			{
 				// Load vertices from vectors.
@@ -310,7 +308,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t)) );
 		gpuErrchk( cudaMemcpy(c_geom_f_face_X[i_dev], geom_f_face_X[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
-		gpuErrchk( cudaMemcpy(c_geom_f_face_Xt[i_dev], geom_f_face_Xt[i_dev], 16*n_faces[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+		gpuErrchk( cudaMemcpy(c_geom_f_face_Xt[i_dev], geom_f_face_Xt[i_dev], 16*n_faces_a[i_dev]*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
 		std::cout << "[-] Finished copying the coords list array to the GPU..." << std::endl;
 		cudaDeviceSynchronize();
 	}

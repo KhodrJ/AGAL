@@ -26,6 +26,9 @@ constexpr int GetLBMSize(int VS)
 	}
 }
 
+__constant__ int LBMw[27];
+__constant__ int LBMpb[27];
+
 struct LBMPack
 {
 	const ArgsPack AP;

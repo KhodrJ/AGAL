@@ -446,6 +446,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 		std::vector<int> bins_f_b;
 		int Npv = 0;
 		int Npb = 0;
+		const int PADDING = 4;
 		for (int p = 0; p < n_bins_v; p++)
 		{
 			int npv = bins_a_2D[p].size();
@@ -456,9 +457,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 				for (int k = 0; k < npv; k++)
 					bins_f_v.push_back(bins_a_2D[p][k]);
 				
-				int rem = 4-npv%4;
+				int rem = PADDING-npv%PADDING;
 				for (int k = 0; k < rem; k++)
-					bins_f_v.push_back(0);
+					bins_f_v.push_back(-1);
 				
 				Npv += npv + rem;
 			}
@@ -473,9 +474,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 				for (int k = 0; k < npb; k++)
 					bins_f_b.push_back(bins_a_3D[p][k]);
 				
-				int rem = 4-npb%4;
+				int rem = PADDING-npb%PADDING;
 				for (int k = 0; k < rem; k++)
-					bins_f_b.push_back(0);
+					bins_f_b.push_back(-1);
 				
 				Npb += npb + rem;
 			}

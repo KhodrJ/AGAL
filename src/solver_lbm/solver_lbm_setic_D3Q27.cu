@@ -2,7 +2,7 @@
 /*                                                                                    */
 /*  Author: Khodr Jaber                                                               */
 /*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*  Last Updated: Mon Jul 14 23:00:25 2025                                            */
+/*  Last Updated: Sun Jul 27 18:28:19 2025                                            */
 /*                                                                                    */
 /**************************************************************************************/
 
@@ -12,7 +12,19 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_SetInitialConditions_D3Q27(int n_ids_idev_L,long int n_maxcells,int n_maxcblocks,int *id_set_idev_L,int *cells_ID_mask,ufloat_t *cells_f_F,ufloat_t *cblock_f_X,int *cblock_ID_mask,int *cblock_ID_onb,ufloat_t dx_L)
+void Cu_SetInitialConditions_D3Q27
+(
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const int *__restrict__ id_set_idev_L,
+	const int *__restrict__ cells_ID_mask,
+	ufloat_t *__restrict__ cells_f_F,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_onb,
+	const ufloat_t dx_L
+)
 {
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;

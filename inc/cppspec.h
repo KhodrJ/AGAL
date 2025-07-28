@@ -291,35 +291,46 @@ int DebugPrintDeviceArray(int N, T *d_arr)
 
 template <typename T, int M, int PER, int BSZ>
 __global__
-void Cu_SoA2AoS(const T *__restrict__ in, T *__restrict__ out, const int N)
+void Cu_SoA2AoS(const T *__restrict__ in, T *__restrict__ out, int N)
 {
 	int kap = blockIdx.x * blockDim.x + threadIdx.x;
 
-	__shared__ T s_d[PER * (BSZ+0)]; // Stores arranged data.
-	__shared__ T s_I[BSZ];       // Stores current indices.
+	__shared__ T s_d[PER*BSZ];       // Stores arranged data.
+	__shared__ T s_I[BSZ];           // Stores current indices.
+	__shared__ int s_i[PER*BSZ];     // Stores indicator.
 
-	for (int K = 0; K < M/PER; K++)
+	for (int K = 0; K < M/PER+1; K++)
 	{
 		if (kap < N)
 		{
 			#pragma unroll
-			for (int i = 0; i < PER; ++i)
+			for (int i = 0; i < PER; i++)
 			{
-				T val = in[kap + (i+PER*K)*N];
-				s_d[i + PER*threadIdx.x] = val;
+				s_i[i + PER*threadIdx.x] = -1;
+				if ((i+PER*K) < M)
+				{
+					T val = in[kap + (i+PER*K)*N];
+					s_d[i + PER*threadIdx.x] = val;
+					s_i[i + PER*threadIdx.x] = 1;
+				}
 			}
 			s_I[threadIdx.x] = kap;
-			__syncthreads();
+		}
+		__syncthreads();
 			
+		if (kap < N)
+		{
 			#pragma unroll
 			for (int k = 0; k < PER; k++)
 			{
-				int id = s_I[threadIdx.x/PER + k*(BSZ/PER)];
+				size_t id = s_I[threadIdx.x/PER + k*(BSZ/PER)];
+				int ind = s_i[threadIdx.x + BSZ*k];
 				T val = s_d[threadIdx.x + BSZ*k];
-				out[threadIdx.x%PER + PER*K + M*id] = val;
+				if (ind == 1 && threadIdx.x%PER + PER*K < N)
+					out[threadIdx.x%PER + PER*K + M*id] = val;
 			}
-                        __syncthreads();
 		}
+		__syncthreads();
 	}
 }
 
