@@ -347,10 +347,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
 	std::cout << "Printing after iteration " << i << " (t = " << i*dxf_vec[N_LEVEL_START] << ")..." << std::endl;
 	
 	// Ensure data is valid on all cells. Global average, then interpolate to ghost cells.
-	for (int L = MAX_LEVELS-2; L >= 0; L--)
-		solver->S_Average(0,L,V_AVERAGE_GRID);
-	for (int L = 0; L < MAX_LEVELS-1; L++)
-		solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+	if (MAX_LEVELS > 1)
+	{
+		for (int L = MAX_LEVELS-2; L >= 0; L--)
+			solver->S_Average(0,L,V_AVERAGE_GRID);
+		for (int L = 0; L < MAX_LEVELS-1; L++)
+			solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+	}
 	
 	// Retrieve data from the GPU.
 	M_RetrieveFromGPU();
@@ -418,7 +421,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 	// Parameters.
 	int           iter_mult          = pow(2.0, (double)N_LEVEL_START);
 	int           iter_s             = 0;
-	int           N_iters_ave        = 0;
+	//int           N_iters_ave        = 0;
 	
 	
 	// o====================================================================================
@@ -446,6 +449,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_AdvanceLoop()
 	// Primary loop. Total of N_PRINT*P_PRINT iterations (number of prints x number of iterations per print, scaled depending on value of N_LEVEL_START).
 	for (int i = iter_s; i < iter_s + N_ITER_TOTAL; i++)
 	{
+		// If only one iteration, print out the initial conditions. Don't proceed further.
+		if (N_ITER_TOTAL==1)
+		{
+			solver->S_SetIC(0,0);
+			M_Advance_PrintData(0, 0);
+			break;
+		}
+		
+		
 		// Print iteration.
 		M_Advance_PrintIter(i, iter_s);
 		

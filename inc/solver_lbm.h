@@ -26,7 +26,7 @@ constexpr int GetLBMSize(int VS)
 	}
 }
 
-__constant__ int LBMw[27];
+__constant__ double LBMw[27];
 __constant__ int LBMpb[27];
 
 struct LBMPack
@@ -90,6 +90,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	const int VS         = LP->VS;
 	const int CM         = LP->CM;
 	const int IM         = LP->IM;
+	const int N_Q        = LP->N_Q;
 	
 	// o====================================================================================
 	// | LBM solver parameters and routines.
@@ -152,10 +153,12 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_SetInitialConditions_D2Q9(int i_dev, int L);
 	int S_SetInitialConditions_D3Q19(int i_dev, int L);
 	int S_SetInitialConditions_D3Q27(int i_dev, int L);
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D2Q9(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q19(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q27(i_dev, L); return 0; }
-	int S_SetIC(int i_dev, int L) { S_SetICW(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D2Q9(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q19(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_SetICW(int i_dev, int L) { S_SetInitialConditions_D3Q27(i_dev, L); return 0; }
+	//int S_SetIC(int i_dev, int L) { S_SetICW(i_dev, L); return 0; }
+	int S_SetInitialConditions_V(int i_dev, int L);
+	int S_SetIC(int i_dev, int L) { S_SetInitialConditions_V(i_dev, L); return 0; }
 	
 	// Collision.
 	int S_Collide_BGK_D2Q9(int i_dev, int L);
@@ -173,20 +176,22 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Collision_New_D2Q9(int i_dev, int L);
 	int S_Collision_New_D3Q19(int i_dev, int L);
 	int S_Collision_New_D3Q27(int i_dev, int L);
-// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D2Q9(i_dev, L); return 0; }
-// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q19(i_dev, L); return 0; }
-// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_Original_D3Q27(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D2Q9(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q19(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q27(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D2Q9(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q19(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Collide(int i_dev, int L) { S_Collision_New_D3Q27(i_dev, L); return 0; }
+	int S_Collision_V(int i_dev, int L);
+	int S_Collide(int i_dev, int L) { S_Collision_V(i_dev, L); return 0; }
+	
 	
 	// Imposing boundary conditions.
 	int S_ImposeBC_D2Q9(int i_dev, int L);
 	int S_ImposeBC_D3Q19(int i_dev, int L);
 	int S_ImposeBC_D3Q27(int i_dev, int L);
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D2Q9(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q19(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q27(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D2Q9(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q19(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ImposeBC(int i_dev, int L) { S_ImposeBC_D3Q27(i_dev, L); return 0; }
+	int S_ImposeBC_V(int i_dev, int L);
+	int S_ImposeBC(int i_dev, int L) { S_ImposeBC_V(i_dev, L); return 0; }
 	
 	// Streaming.
 	int S_Stream_D2Q9(int i_dev, int L);
@@ -195,9 +200,11 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_Stream_Original_D2Q9(int i_dev, int L);
 	int S_Stream_Original_D3Q19(int i_dev, int L);
 	int S_Stream_Original_D3Q27(int i_dev, int L);
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D2Q9(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q19(i_dev, L); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q27(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D2Q9(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q19(i_dev, L); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Stream(int i_dev, int L) { S_Stream_Original_D3Q27(i_dev, L); return 0; }
+	int S_Stream_V(int i_dev, int L);
+	int S_Stream(int i_dev, int L) { S_Stream_V(i_dev, L); return 0; }
 	
 	// Interpolation.
 	int S_Interpolate_Linear_D2Q9(int i_dev, int L, int var);

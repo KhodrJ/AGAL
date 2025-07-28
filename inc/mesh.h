@@ -214,7 +214,6 @@ class Mesh
 	const int M_BLOCK                   = AP->M_BLOCK;          ///< Number of threads per thread-block in secondary-mode.
 	const int M_RNDOFF                  = AP->M_RNDOFF;         ///< Round-off constant for memory alignment.
 	const int N_Q;
-	const int N_U;
 	
 	// Domain size.
 	float           Lx                      = 1.0F;         ///< Length of domain in x-axis (in meters).
@@ -676,7 +675,7 @@ class Mesh
 		std::map<std::string, int> params_int,
 		std::map<std::string, double> params_dbl,
 		std::map<std::string, std::string> params_str,
-		int N_Q_
+		const int N_Q_
 	) : N_Q(N_Q_)
 	{
 		M_Init(params_int, params_dbl, params_str);

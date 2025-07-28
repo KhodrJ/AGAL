@@ -74,7 +74,7 @@ NVCC = nvcc
 #|
 CPPFLAGS = 
 CXXFLAGS = -g -Wno-unused-variable
-NVCCFLAGSPTX = -lineinfo -Xptxas "-v" -arch=sm_70 -Xcompiler=\"-Wno-unused-variable\"
+NVCCFLAGSPTX = -lineinfo -Xptxas "-v" -arch=sm_50 -Xcompiler=\"-Wno-unused-variable\"
 NVCCFLAGS = -lineinfo -O3 -Xcompiler=\"-Wno-unused-variable\"
 LDFLAGS = 
 #|
@@ -159,6 +159,7 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_stream_new_D2Q9.cu\
 	solver_lbm_stream_new_D3Q19.cu\
 	solver_lbm_stream_new_D3Q27.cu\
+	solver_lbm_kernels.cu\
 	solver_lbm_interp_linear_original_D2Q9.cu\
 	solver_lbm_interp_linear_original_D3Q19.cu\
 	solver_lbm_interp_linear_original_D3Q27.cu\

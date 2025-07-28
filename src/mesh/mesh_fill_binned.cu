@@ -223,28 +223,7 @@ void Cu_FillBinned_V2
 	__shared__ int s_fI[M_TBLOCK];
 	__shared__ ufloat_g_t s_fD[16];
 	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-	int i_kap_b;
-	int global_bin_id;
-	int plim = M_TBLOCK;
-	ufloat_g_t vxp = (ufloat_g_t)0.0;
-	ufloat_g_t vyp = (ufloat_g_t)0.0;
-	ufloat_g_t vzp = (ufloat_g_t)0.0;
-	ufloat_g_t vx = (ufloat_g_t)0.0;
-	ufloat_g_t vy = (ufloat_g_t)0.0;
-	ufloat_g_t vz __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vx2 = (ufloat_g_t)0.0;
-	ufloat_g_t vy2 = (ufloat_g_t)0.0;
-	ufloat_g_t vz2 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t nx = (ufloat_g_t)0.0;
-	ufloat_g_t ny = (ufloat_g_t)0.0;
-	ufloat_g_t nz __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t sx __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t sy __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t sz __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t tmp = (ufloat_g_t)0.0;
-	ufloat_g_t tmp2 = (ufloat_g_t)0.0;
 	int intersect_counter = 0;
-	bool C = true;
 	
 	s_ID_cblock[threadIdx.x] = -1;
 	s_fI[threadIdx.x] = -1;
@@ -257,20 +236,21 @@ void Cu_FillBinned_V2
 	// Loop over block Ids.
 	for (int k = 0; k < M_LBLOCK; k += 1)
 	{
-		i_kap_b = s_ID_cblock[k];
+		int i_kap_b = s_ID_cblock[k];
 
 		// Latter condition is added only if n>0.
 		if (i_kap_b > -1)
 		{
 			// Compute cell-center coordinates.
-			vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + (threadIdx.x % 4)*dx_L + 0.5*dx_L;
-			vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + ((threadIdx.x / 4) % 4)*dx_L + 0.5*dx_L;
+			ufloat_g_t vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + (threadIdx.x % 4)*dx_L + 0.5*dx_L;
+			ufloat_g_t vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + ((threadIdx.x / 4) % 4)*dx_L + 0.5*dx_L;
+			ufloat_g_t vzp = (ufloat_g_t)0.0;
 			if (N_DIM==3)
 				vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + ((threadIdx.x / 4) / 4)*dx_L + 0.5*dx_L;
 			
 			// For each face, check if the current cell is within the appropriate bounds. If at least
 			// one condition is satisfied, exit the loop and make a note.
-			global_bin_id = ((int)(vyp*G_BIN_DENSITY)) + G_BIN_DENSITY*((int)(vzp*G_BIN_DENSITY));
+			int global_bin_id = ((int)(vyp*G_BIN_DENSITY)) + G_BIN_DENSITY*((int)(vzp*G_BIN_DENSITY));
 			
 			// Now find the total number of intersections a ray makes in the direction with the smallest number of bins.
 			//s_fI[threadIdx.x] = binned_face_ids[global_bin_id+threadIdx.x];
@@ -282,7 +262,7 @@ void Cu_FillBinned_V2
 				for (int k = 0; k < n_f/M_TBLOCK+1; k++)
 				{
 					// Read the next M_TBLOCK faces.
-					plim = M_TBLOCK;
+					int plim = M_TBLOCK;
 					if ((k+1)*M_TBLOCK >= n_f)
 						plim = M_TBLOCK - ((k+1)*M_TBLOCK - n_f);
 					if (threadIdx.x < plim)
@@ -303,23 +283,23 @@ void Cu_FillBinned_V2
 						if (N_DIM==2)
 						{
 							// Load normal.
-							nx = s_fD[9];
-							ny = s_fD[10];
+							ufloat_g_t nx = s_fD[9];
+							ufloat_g_t ny = s_fD[10];
 							
 							// Load vertices 1 and 2.
-							vx = s_fD[0];
-							vy = s_fD[1];
-							vx2 = s_fD[3];
-							vy2 = s_fD[4];
+							ufloat_g_t vx = s_fD[0];
+							ufloat_g_t vy = s_fD[1];
+							ufloat_g_t vx2 = s_fD[3];
+							ufloat_g_t vy2 = s_fD[4];
 							
 							// Find the distance along a ray with direction [1,0].
-							tmp = (vx-vxp) + (vy-vyp)*(ny/nx);
+							ufloat_g_t tmp = (vx-vxp) + (vy-vyp)*(ny/nx);
 							if (tmp > 0)
 							{
-								tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+								ufloat_g_t tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
 								
 								// First check if point is inside the line.
-								C = -( ((vx-tmp2)*(vx2-vx))+((vy-vyp)*(vy2-vy)) ) > 0;
+								bool C = -( ((vx-tmp2)*(vx2-vx))+((vy-vyp)*(vy2-vy)) ) > 0;
 								
 								// Second check if point is inside the line.
 								C = C && ( ((vx2-tmp2)*(vx2-vx))+((vy2-vyp)*(vy2-vy)) ) > 0;
@@ -331,29 +311,29 @@ void Cu_FillBinned_V2
 						else
 						{
 							// Load normal.
-							nx = s_fD[9];
-							ny = s_fD[10];
-							nz = s_fD[11];
+							ufloat_g_t nx = s_fD[9];
+							ufloat_g_t ny = s_fD[10];
+							ufloat_g_t nz = s_fD[11];
 							
 							// Load vertex 1.
-							vx = s_fD[0];
-							vy = s_fD[1];
-							vz = s_fD[2];
+							ufloat_g_t vx = s_fD[0];
+							ufloat_g_t vy = s_fD[1];
+							ufloat_g_t vz = s_fD[2];
 							
 							// Find the distance along a ray with direction [1,0,0].
-							tmp = (vx-vxp) + (vy-vyp)*(ny/nx) + (vz-vzp)*(nz/nx);
+							ufloat_g_t tmp = (vx-vxp) + (vy-vyp)*(ny/nx) + (vz-vzp)*(nz/nx);
 							if (tmp > 0)
 							{
-								tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+								ufloat_g_t tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
 								
 								// First check that point is inside the triangle.
-								vx2 = s_fD[3] - vx; // vx2 stores x-comp. of edge 1: vx2-vx1.
-								vy2 = s_fD[4] - vy; // I don't need real vx2 individually.
-								vz2 = s_fD[5] - vz;
-								sx = vy2*nz - vz2*ny;
-								sy = vz2*nx - vx2*nz;
-								sz = vx2*ny - vy2*nx;
-								C = (vx-tmp2)*sx + (vy-vyp)*sy + (vz-vzp)*sz > 0;
+								ufloat_g_t vx2 = s_fD[3] - vx; // vx2 stores x-comp. of edge 1: vx2-vx1.
+								ufloat_g_t vy2 = s_fD[4] - vy; // I don't need real vx2 individually.
+								ufloat_g_t vz2 = s_fD[5] - vz;
+								ufloat_g_t sx = vy2*nz - vz2*ny;
+								ufloat_g_t sy = vz2*nx - vx2*nz;
+								ufloat_g_t sz = vx2*ny - vy2*nx;
+								ufloat_g_t C = (vx-tmp2)*sx + (vy-vyp)*sy + (vz-vzp)*sz > 0;
 								
 								// Second check that point is inside the triangle.
 								vx += vx2; // Recover vertex 2.
@@ -1931,7 +1911,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		//int Nprop = pow(2.0,(double)L)+2;
 		std::cout << "Level " << L << ": " << Nprop << " propagations.\n";
 		
-		Cu_FillBinned_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		Cu_FillBinned_V2<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],

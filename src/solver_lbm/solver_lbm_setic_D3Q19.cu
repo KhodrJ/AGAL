@@ -10,7 +10,7 @@
 #include "solver_lbm.h"
 #include "mesh.h"
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
 void Cu_SetInitialConditions_D3Q19
 (
@@ -29,41 +29,13 @@ void Cu_SetInitialConditions_D3Q19
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
+    constexpr int N_Q = LP->VS;
     __shared__ int s_ID_cblock[M_TBLOCK];
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    int i_kap_b = -1;
     int I = threadIdx.x % 4;
     int J = (threadIdx.x / 4) % 4;
     int K = (threadIdx.x / 4) / 4;
-    ufloat_t f_0 = (ufloat_t)(-1.0);
-    ufloat_t f_1 = (ufloat_t)(-1.0);
-    ufloat_t f_2 = (ufloat_t)(-1.0);
-    ufloat_t f_3 = (ufloat_t)(-1.0);
-    ufloat_t f_4 = (ufloat_t)(-1.0);
-    ufloat_t f_5 = (ufloat_t)(-1.0);
-    ufloat_t f_6 = (ufloat_t)(-1.0);
-    ufloat_t f_7 = (ufloat_t)(-1.0);
-    ufloat_t f_8 = (ufloat_t)(-1.0);
-    ufloat_t f_9 = (ufloat_t)(-1.0);
-    ufloat_t f_10 = (ufloat_t)(-1.0);
-    ufloat_t f_11 = (ufloat_t)(-1.0);
-    ufloat_t f_12 = (ufloat_t)(-1.0);
-    ufloat_t f_13 = (ufloat_t)(-1.0);
-    ufloat_t f_14 = (ufloat_t)(-1.0);
-    ufloat_t f_15 = (ufloat_t)(-1.0);
-    ufloat_t f_16 = (ufloat_t)(-1.0);
-    ufloat_t f_17 = (ufloat_t)(-1.0);
-    ufloat_t f_18 = (ufloat_t)(-1.0);
-    ufloat_t cdotu = (ufloat_t)0.0;
-    ufloat_t udotu = (ufloat_t)0.0;
-    ufloat_t rho = (ufloat_t)1.0;
-    ufloat_t u = (ufloat_t)0.0;
-    ufloat_t v = (ufloat_t)0.0;
-    ufloat_t x = (ufloat_t)0.0;
-    ufloat_t y = (ufloat_t)0.0;
-    ufloat_t w = (ufloat_t)0.0;
-    ufloat_t z = (ufloat_t)0.0;
-    
+
     s_ID_cblock[threadIdx.x] = -1;
     if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
     {
@@ -74,98 +46,31 @@ void Cu_SetInitialConditions_D3Q19
     // Loop over block Ids.
     for (int k = 0; k < M_LBLOCK; k += 1)
     {
-        i_kap_b = s_ID_cblock[k];
+        int i_kap_b = s_ID_cblock[k];
         
         // Latter condition is added only if n>0.
         if ((i_kap_b>-1))
         {
-            //<Compute macroscopic properties.
-            f_0 = (ufloat_t)(-1.0);
-            f_1 = (ufloat_t)(-1.0);
-            f_2 = (ufloat_t)(-1.0);
-            f_3 = (ufloat_t)(-1.0);
-            f_4 = (ufloat_t)(-1.0);
-            f_5 = (ufloat_t)(-1.0);
-            f_6 = (ufloat_t)(-1.0);
-            f_7 = (ufloat_t)(-1.0);
-            f_8 = (ufloat_t)(-1.0);
-            f_9 = (ufloat_t)(-1.0);
-            f_10 = (ufloat_t)(-1.0);
-            f_11 = (ufloat_t)(-1.0);
-            f_12 = (ufloat_t)(-1.0);
-            f_13 = (ufloat_t)(-1.0);
-            f_14 = (ufloat_t)(-1.0);
-            f_15 = (ufloat_t)(-1.0);
-            f_16 = (ufloat_t)(-1.0);
-            f_17 = (ufloat_t)(-1.0);
-            f_18 = (ufloat_t)(-1.0);
-            if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != -1 )
-            {
-                x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
-                y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
-                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
-                Cu_ComputeIC<ufloat_t>(rho, u, v, w, x, y, z);
-                udotu = u*u + v*v + w*w;
-                cdotu = (ufloat_t)(0.0);
-                f_0 = rho*(ufloat_t)0.333333333333333*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (u);
-                f_1 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(u);
-                f_2 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (v);
-                f_3 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(v);
-                f_4 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (w);
-                f_5 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(w);
-                f_6 = rho*(ufloat_t)0.055555555555556*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (u+v);
-                f_7 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(u+v);
-                f_8 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (u+w);
-                f_9 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(u+w);
-                f_10 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (v+w);
-                f_11 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = -(v+w);
-                f_12 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (u)-(v);
-                f_13 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (v)-(u);
-                f_14 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (u)-(w);
-                f_15 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (w)-(u);
-                f_16 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (v)-(w);
-                f_17 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                cdotu = (w)-(v);
-                f_18 = rho*(ufloat_t)0.027777777777778*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-            }
+            // Compute cell coordinates. Obtain the initial conditions from the custom routine.
+            ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t z __attribute__((unused)) = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t rho;
+            ufloat_t u;
+            ufloat_t v;
+            ufloat_t w;
+            Cu_ComputeIC<ufloat_t>(rho, u, v, w, x, y, z);
+            ufloat_t udotu = u*u + v*v + w*w;
             
-            // Write DDFs in proper index.
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 0*n_maxcells] = f_0;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 2*n_maxcells] = f_1;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 1*n_maxcells] = f_2;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 4*n_maxcells] = f_3;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 3*n_maxcells] = f_4;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 6*n_maxcells] = f_5;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 5*n_maxcells] = f_6;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells] = f_7;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 7*n_maxcells] = f_8;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 10*n_maxcells] = f_9;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 9*n_maxcells] = f_10;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 12*n_maxcells] = f_11;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 11*n_maxcells] = f_12;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 14*n_maxcells] = f_13;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 13*n_maxcells] = f_14;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 16*n_maxcells] = f_15;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 15*n_maxcells] = f_16;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 18*n_maxcells] = f_17;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 17*n_maxcells] = f_18;
+            // Compute equilibrium distributions from initial macroscopic conditions.
+            #pragma unroll
+            for (int p = 0; p < N_Q; p++)
+            {
+                ufloat_t cdotu = (ufloat_t)V_CONN_ID[0+p*27]*u + (ufloat_t)V_CONN_ID[1+p*27]*v + (ufloat_t)V_CONN_ID[2+p*27]*w;
+                ufloat_t f_p = rho*(ufloat_t)LBMw[p]*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
+                if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != V_CELLMASK_SOLID )
+                    cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells] = f_p;
+            }
         }
     }
 }
@@ -175,7 +80,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetInitialConditions_D3Q19(int i_de
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_SetInitialConditions_D3Q19<ufloat_t,ufloat_g_t,AP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->dxf_vec[L]);
+		Cu_SetInitialConditions_D3Q19<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->dxf_vec[L]);
 	}
 
 	return 0;

@@ -144,8 +144,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	N_bytes_pc = std::ceil( 
 		sizeof(int)*(1) +                           // Cell masks.
 		sizeof(ufloat_t)*(N_Q) +                    // Solution field.
+	(
+		sizeof(float)*(N_DIM) +                     // Spatial coordinates
 		sizeof(int)*(3*N_Q_max + 1+1+1) +           // Connectivity, ref Id., level
-		sizeof(int)*(1) + sizeof(int)*N_Q_max +     // 
 		sizeof(int)*(2*N_Q_max + 10)                // Intermediate arrays for mesh adaptation
 	)/(double)(M_CBLOCK));
 	n_maxcells = (long int)free_t*M_FRAC / N_bytes_pc;
@@ -267,7 +268,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		
 		// Value setting.
 			// Reset masks to 1.
-		Cu_ResetToValue<<<(M_BLOCK+n_maxcells-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells, c_cells_ID_mask[i_dev], 1);
+		Cu_ResetToValue<<<(M_BLOCK+n_maxcells-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells, c_cells_ID_mask[i_dev], 0);
 			// Reset active IDs to 0.
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_mask[i_dev], 0);
 			// Reset nbr IDs to N_SKIPID.

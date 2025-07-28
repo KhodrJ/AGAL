@@ -76,19 +76,20 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 	}
 	
 	// Load LBM data into constant memory.
-	ufloat_t LBMw_D2Q9[9] = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0};
-	ufloat_t LBMw_D3Q19[19] = {1.0/3.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0};
-	ufloat_t LBMw_D3Q27[27] = {8.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0};
-	if (VS==9) cudaMemcpyToSymbol(LBMw, LBMw_D2Q9, sizeof(ufloat_t)*9);
-	if (VS==19) cudaMemcpyToSymbol(LBMw, LBMw_D3Q19, sizeof(ufloat_t)*19);
-	if (VS==27) cudaMemcpyToSymbol(LBMw, LBMw_D3Q27, sizeof(ufloat_t)*27);
+	double LBMw_D2Q9[9] = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0};
+	double LBMw_D3Q19[19] = {1.0/3.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/18.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0};
+	double LBMw_D3Q27[27] = {8.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/54.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0};
+	if (N_Q==9) cudaMemcpyToSymbol(LBMw, LBMw_D2Q9, sizeof(double)*9);
+	if (N_Q==19) cudaMemcpyToSymbol(LBMw, LBMw_D3Q19, sizeof(double)*19);
+	if (N_Q==27) cudaMemcpyToSymbol(LBMw, LBMw_D3Q27, sizeof(double)*27);
 	
 	int LBMpb_D2Q9[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
 	int LBMpb_D3Q19[19] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
 	int LBMpb_D3Q27[27] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25};
-	if (VS==9) cudaMemcpyToSymbol(LBMpb, LBMpb_D2Q9, sizeof(int)*9);
-	if (VS==19) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q19, sizeof(int)*19);
-	if (VS==27) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q27, sizeof(int)*27);
+	if (N_Q==9) cudaMemcpyToSymbol(LBMpb, LBMpb_D2Q9, sizeof(int)*9);
+	if (N_Q==19) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q19, sizeof(int)*19);
+	if (N_Q==27) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q27, sizeof(int)*27);
+	std::cout << "Solver N_Q=" << N_Q << std::endl;
 	
 	// Update modes of interpolation and averaging in advance routine.
 	V_INTERP_ADVANCE = V_INTERP_INTERFACE;

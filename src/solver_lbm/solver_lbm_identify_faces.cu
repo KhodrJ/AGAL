@@ -10,6 +10,176 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int VS>
 __global__
+void Cu_IdentifyFaces_V2
+(
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const int n_maxcells_b,
+	const int n_maxblocks_b,
+	const ufloat_t dx_L,
+	const int *__restrict__ id_set_idev_L,
+	int *__restrict__ cells_ID_mask,
+	int *__restrict__ cells_ID_mask_b,
+	ufloat_g_t *__restrict__ cells_f_X_b,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_mask,
+	int *__restrict__ cblock_ID_onb_solid,
+	int *__restrict__ cblock_ID_face,
+	const int n_faces,
+	const int n_faces_a,
+	ufloat_g_t *geom_f_face_X,
+	const int *__restrict__ binned_face_ids_n,
+	const int *__restrict__ binned_face_ids_N,
+	const int *__restrict__ binned_face_ids,
+	const int G_BIN_DENSITY
+)
+{
+	constexpr int N_DIM = AP->N_DIM;
+	constexpr int M_TBLOCK = AP->M_TBLOCK;
+	constexpr int M_CBLOCK = AP->M_CBLOCK;
+	constexpr int M_LBLOCK = AP->M_LBLOCK;
+	constexpr int N_Q_max = AP->N_Q_max;
+	__shared__ int s_ID_cblock[M_TBLOCK];
+	int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
+	ufloat_g_t dQ[N_Q_max];
+	
+	s_ID_cblock[threadIdx.x] = -1;
+	if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
+	{
+		s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
+	}
+	__syncthreads();
+	
+	// Loop over block Ids.
+	for (int k = 0; k < M_LBLOCK; k += 1)
+	{
+		int i_kap_b = s_ID_cblock[k];
+		int valid_block = -1;
+
+		// Needed for condition.
+		if (i_kap_b>-1)
+		{
+			valid_block = cblock_ID_onb_solid[i_kap_b];
+		}
+
+		// Proceed only if the current cell-block is on a fluid-solid boundary.
+		if ((i_kap_b>-1)&&(valid_block>-1))
+		{
+			// Threads calculate and store cell coordinates.
+			ufloat_g_t vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + (threadIdx.x%4)*dx_L + (ufloat_g_t)(0.5)*dx_L;
+			ufloat_g_t vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + ((threadIdx.x/4)%4)*dx_L + (ufloat_g_t)(0.5)*dx_L;
+			ufloat_g_t vzp = (ufloat_g_t)(0.0);
+			if (N_DIM==3)
+				vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + ((threadIdx.x/4)/4)*dx_L + (ufloat_g_t)(0.5)*dx_L;
+			
+			// For each face, check if the current cell is within the appropriate bounds. If at least
+			// one condition is satisfied, exit the loop and make a note.
+			int bin_id_x = (int)(vxp*G_BIN_DENSITY);
+			int bin_id_y = (int)(vyp*G_BIN_DENSITY);
+			int bin_id_z = 0;
+			if (N_DIM==3)
+				bin_id_z = (int)(vzp*G_BIN_DENSITY);
+			
+			// Identify the correct bin, and start processing faces.
+			int global_bin_id = bin_id_x + G_BIN_DENSITY*bin_id_y + G_BIN_DENSITY*G_BIN_DENSITY*bin_id_z;
+			int n_f = binned_face_ids_n[global_bin_id];
+			int N_f = 0;
+			if (n_f > 0)
+				N_f = binned_face_ids_N[global_bin_id];
+			
+			// Initialize face-cell links.
+			for (int q = 0; q < N_Q_max; q++)
+				dQ[q] = -1;
+			//int b_id_p = -8;
+			
+			for (int p = 0; p < n_f; p++)
+			{
+				int f_p = binned_face_ids[N_f+p];
+				ufloat_g_t vx1 = geom_f_face_X[f_p + 0*n_faces_a];
+				ufloat_g_t vy1 = geom_f_face_X[f_p + 1*n_faces_a];
+				ufloat_g_t vz1 = geom_f_face_X[f_p + 2*n_faces_a];
+				ufloat_g_t vx2 = geom_f_face_X[f_p + 3*n_faces_a];
+				ufloat_g_t vy2 = geom_f_face_X[f_p + 4*n_faces_a];
+				ufloat_g_t vz2 = geom_f_face_X[f_p + 5*n_faces_a];
+				ufloat_g_t vx3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+				ufloat_g_t vy3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+				ufloat_g_t vz3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+				if (N_DIM==3)
+				{
+					vx3 = geom_f_face_X[f_p + 6*n_faces_a];
+					vy3 = geom_f_face_X[f_p + 7*n_faces_a];
+					vz3 = geom_f_face_X[f_p + 8*n_faces_a];
+				}
+				
+				if (N_DIM==2)
+				{
+					// Loop over all directions, update links for this face if applicable.
+					for (int q = 1; q < N_Q_max; q++)
+					{
+						ufloat_g_t nx = vy2-vy1;
+						ufloat_g_t ny = vx1-vx2;
+						ufloat_g_t tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ufloat_g_t)V_CONN_ID[0+q*27]*nx + (ufloat_g_t)V_CONN_ID[1+q*27]*ny);
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
+						{
+							ufloat_g_t tmpy = vyp + V_CONN_ID[1+q*27]*tmp;
+							ufloat_g_t tmpx = vxp + V_CONN_ID[0+q*27]*tmp;
+							
+							if (CheckPointInLine(tmpx, tmpy, vx1, vy1, vx2, vy2))
+							{
+								ufloat_g_t dist_q = dQ[q];
+								if (tmp < dist_q || dist_q < 0)
+									dQ[q] = tmp;
+							}
+						}
+					}
+				}
+				
+				if (N_DIM==3)
+				{
+					for (int q = 1; q < N_Q_max; q++)
+					{
+						ufloat_g_t ex1 = vx2-vx1;
+						ufloat_g_t ey1 = vy2-vy1;
+						ufloat_g_t ez1 = vz2-vz1;
+						ufloat_g_t ex2 = vx3-vx1;
+						ufloat_g_t ey2 = vy3-vy1;
+						ufloat_g_t ez2 = vz3-vz1;
+						ufloat_g_t nx = (ufloat_g_t)0.0;
+						ufloat_g_t ny = (ufloat_g_t)0.0;
+						ufloat_g_t nz = (ufloat_g_t)0.0;
+						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
+						ufloat_g_t tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
+						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ufloat_g_t)V_CONN_ID[0+q*27]*nx + (ufloat_g_t)V_CONN_ID[1+q*27]*ny + (ufloat_g_t)V_CONN_ID[2+q*27]*nz);
+						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
+						{
+							ufloat_g_t tmpy = vyp + V_CONN_ID[1+q*27]*tmp;
+							ufloat_g_t tmpz = vzp + V_CONN_ID[2+q*27]*tmp;
+							ufloat_g_t tmpx = vxp + V_CONN_ID[0+q*27]*tmp;
+							if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+							{
+								ufloat_g_t dist_q = dQ[q];
+								if (tmp < dist_q || dist_q < 0)
+									dQ[q] = tmp;
+							}
+						}
+					}
+				}
+			}
+			
+			// Write face-cell links to global memory.
+			for (int q = 1; q < N_Q_max; q++)
+			{
+				cells_ID_mask_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = -8; // This will be updated to read actual boundary Ids later.
+				cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = dQ[q];
+			}
+		}
+	}
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int VS>
+__global__
 void Cu_IdentifyFaces
 (
 	int n_ids_idev_L, long int n_maxcells, int n_maxcblocks, int n_maxcells_b, int n_maxblocks_b, ufloat_t dx_L,
@@ -1257,7 +1427,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_IdentifyFaces(int i_dev, int L)
 {
 	if (mesh->n_ids[i_dev][L] > 0)
 	{
-		Cu_IdentifyFaces<ufloat_t,ufloat_g_t,AP,LP->VS> <<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
+		Cu_IdentifyFaces_V2<ufloat_t,ufloat_g_t,AP,LP->VS> <<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
 			mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L],
 			&mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_ID_mask_b[i_dev], mesh->c_cells_f_X_b[i_dev],
 			mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_ID_face[i_dev],
