@@ -257,12 +257,14 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int S_ComputeForces_CV_D2Q9(int i_dev, int L, int var);
 	int S_ComputeForces_CV_D3Q19(int i_dev, int L, int var);
 	int S_ComputeForces_CV_D3Q27(int i_dev, int L, int var);
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D2Q9(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q19(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q27(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D2Q9(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q19(i_dev, L, var); return 0; }
-	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q27(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D2Q9(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q19(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesMEA(int i_dev, int L, int var) { S_ComputeForces_MEA_D3Q27(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D2Q9(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q19(i_dev, L, var); return 0; }
+// 	template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_ComputeForcesCV(int i_dev, int L, int var) { S_ComputeForces_CV_D3Q27(i_dev, L, var); return 0; }
+	int S_ComputeForcesCV(int i_dev, int L, int var);
+	int S_ComputeForcesMEA(int i_dev, int L, int var);
 	int S_ComputeForces(int i_dev, int L, int var) { S_ComputeForcesCV(i_dev, L, var); return 0; }
 	int S_ReportForces(int i_dev, int L, int i, double t, int START) { S_ReportForcesLBM(i_dev,L,i,t,START); return 0; }
 	

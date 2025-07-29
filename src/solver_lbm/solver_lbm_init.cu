@@ -89,7 +89,6 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init(std::map<std::string, int> par
 	if (N_Q==9) cudaMemcpyToSymbol(LBMpb, LBMpb_D2Q9, sizeof(int)*9);
 	if (N_Q==19) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q19, sizeof(int)*19);
 	if (N_Q==27) cudaMemcpyToSymbol(LBMpb, LBMpb_D3Q27, sizeof(int)*27);
-	std::cout << "Solver N_Q=" << N_Q << std::endl;
 	
 	// Update modes of interpolation and averaging in advance routine.
 	V_INTERP_ADVANCE = V_INTERP_INTERFACE;

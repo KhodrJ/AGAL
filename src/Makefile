@@ -75,7 +75,7 @@ NVCC = nvcc
 CPPFLAGS = 
 CXXFLAGS = -g -Wno-unused-variable
 NVCCFLAGSPTX = -lineinfo -Xptxas "-v" -arch=sm_50 -Xcompiler=\"-Wno-unused-variable\"
-NVCCFLAGS = -lineinfo -O3 -Xcompiler=\"-Wno-unused-variable\"
+NVCCFLAGS = -lineinfo -Xcompiler=\"-Wno-unused-variable\"
 LDFLAGS = 
 #|
 INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC) -I./geometry -I./mesh -I./solver_lbm
@@ -182,6 +182,11 @@ OBJ_MAIN = $(SRC_MAIN:.cu=.o)
 
 # Make a time stamp indicating the last choice of velocity set.
 VSET ?= D2Q9
+# Check if specified VSET is a valid choice.
+ifeq (,$(filter $(VSET),D2Q9 D3Q19 D3Q27))
+$(error MODE must be one of: D2Q9, D3Q19, D3Q27. Got '$(MODE)')
+endif
+#
 VSET_STAMP := vset_$(VSET)
 $(VSET_STAMP):
 	@echo "VSET changed to $(VSET)"
@@ -207,4 +212,4 @@ clean:
 
 
 
-#make VSET=D3Q19 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
+#make pxtas VSET=D2Q9 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas

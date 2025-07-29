@@ -9,8 +9,8 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              256
-N_ITER_TOTAL                    1
+Nx                              128
+N_ITER_TOTAL                    100
 
 # GEOMETRY
 G_FILENAME                      bunny_ascii.stl
@@ -23,7 +23,7 @@ G_BIN_FRAC                      1
 G_BIN_APPROACH                  1
 
 # SOLVER
-v0                              0.000015625
+v0                              5e-5
 s1                              1
 s2                              1
 s3                              1.7
@@ -36,7 +36,7 @@ S_INTERP_HYBRID                 0
 S_AVERAGE                       0
 S_CRITERION                     0
 S_FORCE_ORDER                   2
-S_FORCE_TYPE                    1
+S_FORCE_TYPE                    3
 S_BC_TYPE                       0
 S_FORCEVOLUME_Xm                0.1
 S_FORCEVOLUME_XM                1
@@ -69,7 +69,7 @@ P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  0
 N_PRINT_LEVELS_LEGACY           3
 N_OUTPUT_START                  0*Nx
-P_OUTPUT                        1
+P_OUTPUT                        100
 
 # RENDERING
 VOL_I_MIN                       0

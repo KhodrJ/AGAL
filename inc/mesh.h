@@ -724,4 +724,18 @@ int Cu_NbrMap(int I, int J, int K)
 	return S;
 }
 
+template <int N_DIM>
+__device__ __forceinline__
+int Cu_NbrCellId(int Ip, int Jp, int Kp)
+{
+	// I,J,K are incremented by direction, and can be in {-1,0,1,2,3,4}.
+	Ip = (4 + (Ip % 4)) % 4;
+	Jp = (4 + (Jp % 4)) % 4;
+	if (N_DIM==2)
+		Kp = 0;
+	if (N_DIM==3)
+		Kp = (4 + (Kp % 4)) % 4;
+	return Ip + 4*Jp + 16*Kp;
+}
+
 #endif

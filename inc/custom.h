@@ -24,24 +24,6 @@ bool Cu_RefineRegion
 }
 
 // o====================================================================================
-// | Specified force control-volume region.
-// o====================================================================================
-
-template <typename ufloat_t>
-__device__
-bool Cu_ForceRegion
-(
-	ufloat_t x, ufloat_t y, ufloat_t z
-)
-{
-	// --- HERE ---
-	// Define a custom control volume for the force calculation here.
-	// --- HERE ---
-	
-	return false;
-}
-
-// o====================================================================================
 // | Initial conditions.
 // o====================================================================================
 
@@ -81,11 +63,11 @@ ufloat_t Cu_ImposeBC
 	
 	
 	// LDC (2D).
-	if (nbr_id == -4)
-	{
-		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-		return f - (ufloat_t)(2.0)*wp*cdotu;
-	}
+// 	if (nbr_id == -4)
+// 	{
+// 		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+// 		return f - (ufloat_t)(2.0)*wp*cdotu;
+// 	}
 	
 	// FPSC (2D).
 // 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
@@ -101,11 +83,11 @@ ufloat_t Cu_ImposeBC
 // 	}
 	
 	// LDC (3D).
-// 	if (nbr_id == -6)
-// 	{
-// 		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-// 		return f - (ufloat_t)(2.0)*wp*cdotu;
-// 	}
+	if (nbr_id == -6)
+	{
+		ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+		return f - (ufloat_t)(2.0)*wp*cdotu;
+	}
 	
 	// FPSC (3D).
 // 	if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
@@ -123,7 +105,7 @@ ufloat_t Cu_ImposeBC
 
 
 	// If nothing defined, return a value of -1.
-	return (ufloat_t)(-1.0);
+	return f;
 }
 
 #endif
