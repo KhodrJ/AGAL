@@ -10,7 +10,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_FillBinned_V1
+void Cu_Voxelize_V1
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -89,6 +89,7 @@ void Cu_FillBinned_V1
 		// Latter condition is added only if n>0.
 		if (i_kap_b > -1)
 		{
+			// Compute cell coordinates.
 			vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I_kap*dx_L + 0.5*dx_L;
 			vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J_kap*dx_L + 0.5*dx_L;
 			if (N_DIM==3)
@@ -165,7 +166,7 @@ void Cu_FillBinned_V1
 			s_D[threadIdx.x] = 0;
 			if (intersect_counter%2 == 1)
 			{
-				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = -1;
+				cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID;
 				s_D[threadIdx.x] = 1;
 			}
 			__syncthreads();
@@ -192,7 +193,7 @@ void Cu_FillBinned_V1
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_FillBinned_V2
+void Cu_Voxelize_V2
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -401,7 +402,7 @@ void Cu_FillBinned_V2
 
 /**************************************************************************************/
 /*                                                                                    */
-/*  ===[ Cu_MarkBlocks_S1 ]=========================================================  */
+/*  ===[ Cu_MarkBlocks_MarkBoundary ]===============================================  */
 /*                                                                                    */
 /*  This kernel traverses the cell-blocks according to the 'secondary' mode of        */
 /*  access, where threads are assigned to individual cell-blocks and access data      */
@@ -415,7 +416,7 @@ void Cu_FillBinned_V2
 
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_Alt_S1
+void Cu_MarkBlocks_MarkBoundary
 (
 	int id_max_curr, int n_maxcblocks, bool hit_max, int L,
 	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr, int *cblock_level
@@ -494,15 +495,12 @@ void Cu_MarkBlocks_Alt_S1
 			if (eligible)
 				cblock_ID_ref[kap] = V_REF_ID_MARK_REFINE;
 		}
-		
-		//if (mask_kap == V_BLOCKMASK_SOLIDB)
-		//	cblock_ID_mask[kap] = V_BLOCKMASK_INDETERMINATE;
 	}
 }
 
 /**************************************************************************************/
 /*                                                                                    */
-/*  ===[ Cu_MarkBlocks_GetMasks ]===================================================  */
+/*  ===[ Cu_MarkBlocks_CheckMasks ]=================================================  */
 /*                                                                                    */
 /*  This kernel identifies the boundary cells (contained within the interior of the   */
 /*  domain) that are adjacent to solid cells. The cell masks of each block are        */
@@ -514,7 +512,7 @@ void Cu_MarkBlocks_Alt_S1
 
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_GetMasks_V2
+void Cu_MarkBlocks_CheckMasks_V2
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -571,11 +569,7 @@ void Cu_MarkBlocks_GetMasks_V2
 			{
 				//#pragma unroll
 				for (int p = 0; p < N_Q_max; p++)
-				{
 					s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
-					//if (i_kap_b == 25099)
-					//	printf("C%i=[%i %i %i]\n", p, V_CONN_ID[p + 0*27], V_CONN_ID[p + 1*27], V_CONN_ID[p + 2*27]);
-				}
 			}
 			__syncthreads();
 			
@@ -1723,9 +1717,19 @@ void Cu_MarkBlocks_GetMasks
 }
 */
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_MarkBlocks_MarkInterior ]===============================================  */
+/*                                                                                    */
+/*  Cell-blocks adjacent to those that lie on the boundary of the voxelized solid     */
+/*  are marked with this kernel. These cell-blocks contain at least one boundary      */
+/*  fluid cell that may require interaction with the solid.                           */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_Alt_S2
+void Cu_MarkBlocks_MarkInterior
 (
 	int id_max_curr, int n_maxcblocks, bool hit_max, int L,
 	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr, int *cblock_level
@@ -1805,9 +1809,26 @@ void Cu_MarkBlocks_Alt_S2
 	}
 }
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/*                                                                                    */
+/*                                                                                    */
+/*  ===[ Cu_MarkBlocks_Propagate ]==================================================  */
+/*                                                                                    */
+/*  Propagates the intermediate marks for refinement. Each unmarked cell-block that   */
+/*  is adjacent to at least one cell-block marked with an intermediate flag will      */
+/*  also be marked as such. This is performed a number of times Nprop that is         */
+/*  calculated using the specified near-wall distance refinement criterion and the    */
+/*  total length along one axis of the cell-blocks on the current grid level.         */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_Alt_S3
+void Cu_MarkBlocks_Propagate
 (
 	int id_max_curr, int n_maxcblocks, int L,
 	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr, int *cblock_level
@@ -1881,11 +1902,20 @@ void Cu_MarkBlocks_Alt_S3
 	}
 }
 
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_MarkBlocks_Finalize ]===================================================  */
+/*                                                                                    */
+/*  Finalize the previous intermediate marks for refinement by adjusting the flag.    */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_Alt_S4
+void Cu_MarkBlocks_Finalize
 (
-	int id_max_curr, int *cblock_ID_ref
+	const int id_max_curr,
+	int *__restrict__ cblock_ID_ref
 )
 {
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1904,36 +1934,42 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 {
 	if (n_ids[i_dev][L] > 0)
 	{
+		// Calculate constants.
 		ufloat_g_t R = geometry->G_NEAR_WALL_DISTANCE/pow(2.0,(ufloat_g_t)L);
 		int Nprop = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;
-		
 		bool hit_max = L==MAX_LEVELS-1;
-		//int Nprop = pow(2.0,(double)L)+2;
-		std::cout << "Level " << L << ": " << Nprop << " propagations.\n";
 		
-		Cu_FillBinned_V2<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		// Voxelize the solid, filling in all solid cells.
+		Cu_Voxelize_V2<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
 			geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY
 		);
 		
-		Cu_MarkBlocks_Alt_S1<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+		// Identify the cell-blocks on the boundary of the solid. Mark them for refinement, if eligible.
+		Cu_MarkBlocks_MarkBoundary<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 		);
-		Cu_MarkBlocks_Alt_S2<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+		
+		// Now, mark blocks adjacent to these solid-boundary cell-blocks for refinement if eligible as well.
+		Cu_MarkBlocks_MarkInterior<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 		);
+		
+		// Propagate these latter marks until the specified near-wall refinement criterion is approximately reached.
 		for (int j = 0; j < Nprop; j++)
 		{
-			Cu_MarkBlocks_Alt_S3<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+			Cu_MarkBlocks_Propagate<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 				id_max[i_dev][L], n_maxcblocks, L,
 				c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 			);
 		}
-		Cu_MarkBlocks_Alt_S4<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+		
+		// Finalize the intermediate marks for refinement.
+		Cu_MarkBlocks_Finalize<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], c_cblock_ID_ref[i_dev]
 		);
 	}
@@ -1951,12 +1987,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
 		
 		// Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
-		Cu_MarkBlocks_GetMasks_V2<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		Cu_MarkBlocks_CheckMasks_V2<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
 			c_tmp_1[i_dev]
 		);
-		cudaDeviceSynchronize();
 	}
 	
 	return 0;
@@ -1966,16 +2001,13 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 {
 	// Compute the number of solid-adjacent cells, and the number of blocks these cells occupy.
-	n_solida = thrust::reduce(
-		thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], 0
-	);
-	n_solidb = thrust::count_if(
-		thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], is_positive()
-	);
-	n_solidb = ((n_solidb + 32) / 32) * 32;
+	n_solida = thrust::reduce(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], 0);
+	n_solidb = thrust::count_if(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], is_positive());
+	n_solidb = ((n_solidb + 128) / 128) * 128;
 	n_maxcells_b = n_solidb*M_CBLOCK;
 	std::cout << "Counted " << n_solida << " cells adjacent to the solid boundary (" << (double)n_solida / (double)n_maxcells << ", in " << n_solidb << " blocks or " << n_maxcells_b << " cells)..." << std::endl;
 	
+	// If there were solid-adjacent cells, then allocate memory for face-cell linkages.
 	if (n_solidb > 0)
 	{
 		// Allocate memory for the solid cell linkage data.
@@ -1985,25 +2017,23 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 		gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask_b[i_dev], n_maxcells_b*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cells_f_X_b[i_dev], n_maxcells_b*N_Q_max*sizeof(ufloat_g_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb_solid[i_dev], n_maxcblocks*sizeof(int)) );
-// 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff_solid[i_dev], n_solidb*6*sizeof(double)) ); [DEPRECATED]
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_solidb*N_Q_max*sizeof(int)) );
 		
 		// Reset some arrays. Make a device pointer to the new cblock_ID_onb_solid array.
 		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb_solid[i_dev], -1);
-// 		Cu_ResetToValue<<<(M_BLOCK+(n_solidb*6)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*6, c_cblock_f_Ff_solid[i_dev], 0.0); [DEPRECATED]
 		Cu_ResetToValue<<<(M_BLOCK+(n_solidb*N_Q_max)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*N_Q_max, c_cblock_ID_face[i_dev], -1);
 		thrust::device_ptr<int> *c_cblock_ID_onb_solid_dptr = new thrust::device_ptr<int>[N_DEV];
 		c_cblock_ID_onb_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_ID_onb_solid[i_dev]);
-// 		c_cblock_f_Ff_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_f_Ff_solid[i_dev]); [DEPRECATED]
 		
 		// Now create the map from block Ids in their usual order to the correct region in the linkage data arrays.
-		// NOTE: Make sure c_tmp_1 still has the number of solid-adjacent cells for each block.
-		thrust::copy_if(
-			thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], c_tmp_1_dptr[i_dev], c_tmp_2_dptr[i_dev], is_positive()
-		);
-		thrust::scatter(
-			thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev]
-		);
+		// Note: Make sure c_tmp_1 still has the number of solid-adjacent cells for each block.
+		//
+		// Copy the indices of cell-blocks with a positive number of solid-adjacent cells so that they are contiguous.
+		thrust::copy_if(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], c_tmp_1_dptr[i_dev], c_tmp_2_dptr[i_dev], is_positive());
+		//
+		// Now scatter the addresses of these copied Ids so that cell-blocks know where to find the data of their solid-adjacent cells
+		// in the new arrays.
+		thrust::scatter(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev] );
 		
 		cudaMemGetInfo(&free_t, &total_t);
 		std::cout << "[-] After allocations:\n";
@@ -2016,21 +2046,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_IdentifyFaces(int i_dev, int L)
 {
+	// Use the solver-defined face-cell link calculation procedure (might move this back to the Mesh since it doesn't seem to depend on the solver).
 	if (n_solidb > 0)
-	{
-		if (L == N_LEVEL_START)
-		{
-			
-		}
-		
 		solver->S_IdentifyFaces(0,L);
-		
-		if (L == MAX_LEVELS_WALL-1)
-		{
-			// Copy the new solid-cell linkage data to CPU arrays. For now, these don't change since geometry is stationary.
-			
-		}
-	}
 	
 	return 0;
 }

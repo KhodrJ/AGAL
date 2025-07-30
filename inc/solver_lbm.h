@@ -101,7 +101,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 	int        S_LES;                   ///< Indicates the turbulence model to employ during collision.
 	int        S_FORCE_ORDER;           ///< Indicates the order of accuracy for the momentum exchange algorithm.
 	int        S_FORCE_TYPE;            ///< Indicates the type of force calculation approach [0: MEA, 1: CV].
-	int        S_BC_TYPE;               ///< Indicates the type of curved-boundary BC type to use [0: SBB, 2: IBB].
+	int        S_BC_TYPE;               ///< Indicates the type of curved-boundary BC type to use [0: SBB, 1: IBB].
 	int        S_CRITERION;             ///< Indicates refinement criterion (0 for |w|, 1 for Q).
 	int        V_INTERP_ADVANCE;        ///< Controls interpolation parameters.
 	int        V_AVERAGE_ADVANCE;       ///< Controls averaging parameters.

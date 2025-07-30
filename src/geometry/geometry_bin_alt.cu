@@ -307,25 +307,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsAltCPU(int i_dev)
 			if (j < n_faces[i_dev])
 			{
 				// Load face vertices from coordinate list.
-// 				ufloat_g_t vx1 = geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]];
-// 				ufloat_g_t vy1 = geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]];
-// 				ufloat_g_t vz1 = geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]];
-// 				ufloat_g_t vx2 = geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]];
-// 				ufloat_g_t vy2 = geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]];
-// 				ufloat_g_t vz2 = geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]];
-// 				ufloat_g_t vx3 = geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]];
-// 				ufloat_g_t vy3 = geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]];
-// 				ufloat_g_t vz3 = geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]];
-				//
-				ufloat_g_t vx1 = geom_f_face_Xt[i_dev][0 + j*16];
-				ufloat_g_t vy1 = geom_f_face_Xt[i_dev][1 + j*16];
-				ufloat_g_t vz1 = geom_f_face_Xt[i_dev][2 + j*16];
-				ufloat_g_t vx2 = geom_f_face_Xt[i_dev][3 + j*16];
-				ufloat_g_t vy2 = geom_f_face_Xt[i_dev][4 + j*16];
-				ufloat_g_t vz2 = geom_f_face_Xt[i_dev][5 + j*16];
-				ufloat_g_t vx3 = geom_f_face_Xt[i_dev][6 + j*16];
-				ufloat_g_t vy3 = geom_f_face_Xt[i_dev][7 + j*16];
-				ufloat_g_t vz3 = geom_f_face_Xt[i_dev][8 + j*16];
+				ufloat_g_t vx1 = geom_f_face_X[i_dev][j + 0*n_faces_a[i_dev]];
+				ufloat_g_t vy1 = geom_f_face_X[i_dev][j + 1*n_faces_a[i_dev]];
+				ufloat_g_t vz1 = geom_f_face_X[i_dev][j + 2*n_faces_a[i_dev]];
+				ufloat_g_t vx2 = geom_f_face_X[i_dev][j + 3*n_faces_a[i_dev]];
+				ufloat_g_t vy2 = geom_f_face_X[i_dev][j + 4*n_faces_a[i_dev]];
+				ufloat_g_t vz2 = geom_f_face_X[i_dev][j + 5*n_faces_a[i_dev]];
+				ufloat_g_t vx3 = geom_f_face_X[i_dev][j + 6*n_faces_a[i_dev]];
+				ufloat_g_t vy3 = geom_f_face_X[i_dev][j + 7*n_faces_a[i_dev]];
+				ufloat_g_t vz3 = geom_f_face_X[i_dev][j + 8*n_faces_a[i_dev]];
 				
 				if (N_DIM==2)
 				{

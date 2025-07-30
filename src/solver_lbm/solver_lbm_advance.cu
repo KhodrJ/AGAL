@@ -144,7 +144,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Advance(int i_dev, int L, double *t
 		TIMER( S_ImposeBC(i_dev, L); ,                        tmp[5] );
 		TIMER( S_Stream(i_dev, L); ,                          tmp[2] );
 		if (S_FORCE_TYPE==0)
-			TIMER( S_ComputeForcesMEA(i_dev, L, 1); ,      tmp[4] );
+			TIMER( S_ComputeForcesMEA(i_dev, L, 1); ,     tmp[4] );
 		if (S_FORCE_TYPE==1)
 			TIMER( S_ComputeForcesCV(i_dev, L, 1); ,      tmp[4] );
 		

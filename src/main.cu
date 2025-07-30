@@ -17,6 +17,7 @@
 #include "mesh_comm.cu"
 #include "mesh_criterion_geometry_binned.cu"
 #include "mesh_fill_binned.cu"
+#include "mesh_fill_binned_alt.cu"
 #include "mesh_criterion.cu"
 #include "mesh_dest.cu"
 #include "mesh_init.cu"
@@ -37,10 +38,6 @@
 // #define USED3Q27
 //
 #ifdef USED2Q9
-// 	#include "solver_lbm_setic_D2Q9.cu"
-// 	#include "solver_lbm_collision_new_D2Q9.cu"
-// 	#include "solver_lbm_imposebc_D2Q9.cu"
-// 	#include "solver_lbm_stream_new_D2Q9.cu"
 	#include "solver_lbm_kernels.cu"
 	#include "solver_lbm_interp_linear_original_D2Q9.cu"
 	#include "solver_lbm_interp_cubic_original_D2Q9.cu"
@@ -50,10 +47,6 @@
 	#include "solver_lbm_compute_forces_cv_D2Q9.cu"
 #endif
 #ifdef USED3Q19
-// 	#include "solver_lbm_setic_D3Q19.cu"
-// 	#include "solver_lbm_collision_new_D3Q19.cu"
-// 	#include "solver_lbm_imposebc_D3Q19.cu"
-// 	#include "solver_lbm_stream_new_D3Q19.cu"
 	#include "solver_lbm_kernels.cu"
 	#include "solver_lbm_interp_linear_original_D3Q19.cu"
 	#include "solver_lbm_interp_cubic_original_D3Q19.cu"
@@ -63,10 +56,6 @@
 	#include "solver_lbm_compute_forces_cv_D3Q19.cu"
 #endif
 #ifdef USED3Q27
-// 	#include "solver_lbm_setic_D3Q27.cu"
-// 	#include "solver_lbm_collision_new_D3Q27.cu"
-// 	#include "solver_lbm_imposebc_D3Q27.cu"
-// 	#include "solver_lbm_stream_new_D3Q27.cu"
 	#include "solver_lbm_kernels.cu"
 	#include "solver_lbm_interp_linear_original_D3Q27.cu"
 	#include "solver_lbm_interp_cubic_original_D3Q27.cu"
@@ -123,24 +112,24 @@ int main(int argc, char *argv[])
 	ReadInputFile(input_file_directory, input_map_int, input_map_dbl, input_map_str);
 	
 	// Create a new geometry and import from input folder.
-// 	Geometry<REAL_s,REAL_g,&APc> geometry(input_map_int, input_map_dbl, input_map_str);
-// 	if (geometry.G_LOADTYPE == V_GEOMETRY_LOADTYPE_STL)
-// 		geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
-// 	else
-// 	{
-// 		geometry.G_ImportBoundariesFromTextFile(0);
-// 		geometry.G_Convert_IndexListsToCoordList(0);
-// 	}
-// 	geometry.G_Init_Arrays_CoordsList_CPU(0);
-// 	if (geometry.G_PRINT)
-// 		geometry.G_PrintSTL(0);
-// 	geometry.G_MakeBinsAltCPU(0);
-// 	geometry.G_DrawBinsAndFaces(0);
+	Geometry<REAL_s,REAL_g,&APc> geometry(input_map_int, input_map_dbl, input_map_str);
+	if (geometry.G_LOADTYPE == V_GEOMETRY_LOADTYPE_STL)
+		geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
+	else
+	{
+		geometry.G_ImportBoundariesFromTextFile(0);
+		geometry.G_Convert_IndexListsToCoordList(0);
+	}
+	geometry.G_Init_Arrays_CoordsList_CPU(0);
+	if (geometry.G_PRINT)
+		geometry.G_PrintSTL(0);
+	geometry.G_MakeBinsAltCPU(0);
+	geometry.G_DrawBinsAndFaces(0);
 	
 	// Create a mesh.
 	const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
 	Mesh<REAL_s,REAL_g,&APc> mesh(input_map_int, input_map_dbl, input_map_str, N_U);
-	//mesh.M_AddGeometry(&geometry);
+	mesh.M_AddGeometry(&geometry);
 	
 	// Create a solver.
 	Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh, input_map_int, input_map_dbl, input_map_str);

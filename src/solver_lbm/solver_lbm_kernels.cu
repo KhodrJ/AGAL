@@ -52,7 +52,7 @@ void Cu_SetInitialConditions_V
         int i_kap_b = s_ID_cblock[k];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_b>-1))
+        if (i_kap_b>-1)
         {
             // Compute cell coordinates. Obtain the initial conditions from the custom routine.
             ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
@@ -66,13 +66,20 @@ void Cu_SetInitialConditions_V
             ufloat_t udotu = u*u + v*v + w*w;
             
             // Compute equilibrium distributions from initial macroscopic conditions.
+            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             for (int p = 0; p < N_Q; p++)
             {
-                ufloat_t cdotu = (ufloat_t)V_CONN_ID[0+p*27]*u + (ufloat_t)V_CONN_ID[1+p*27]*v + (ufloat_t)V_CONN_ID[2+p*27]*w;
-                ufloat_t f_p = rho*(ufloat_t)LBMw[p]*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-                if ( cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] != V_CELLMASK_SOLID )
-                    cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells] = f_p;
+                ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
+                ufloat_t f_p = (ufloat_t)(-1.0);
+                if (valid_mask != V_CELLMASK_SOLID)
+                    f_p = rho*(ufloat_t)LBMw[p]*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
+            
+                // Note: this is written for solid cells to ensure that they have negative DDFs. This negative value
+                //       is used as a guard during the streaming step.
+                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells] = f_p;
             }
+            
+            // Write macroscopic properties.
             cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
             cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
             cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
@@ -207,18 +214,14 @@ void Cu_Collision_V
             
             
             // Perform collision step.
-            ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + (threadIdx.x/4)%4);
             ufloat_t omeg = dx_L / tau_L;
             ufloat_t omegp = (ufloat_t)(1.0) - omeg;
             #pragma unroll
             for (int p = 0; p < N_Q; p++)
             {
+                ufloat_t f_pi = (ufloat_t)(-1.0);
                 ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
-                ufloat_t f_pi = f_p[p]*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
-                
-                // LDC.
-                //if (p > 0 && y+(ufloat_t)V_CONN_ID[p+1*27]*dx_L > 1.0)
-                //    f_pi = f_pi - (ufloat_t)(6.0)*(ufloat_t)LBMw[p]*(ufloat_t)V_CONN_ID[p+0*27]*(ufloat_t)(0.05);
+                f_pi = f_p[p]*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
                 
                 if (valid_mask != V_CELLMASK_SOLID)
                     cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells] = f_pi;
@@ -519,12 +522,12 @@ void Cu_ImposeBC_V
             ufloat_t rho = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells];
             ufloat_t u = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells];
             ufloat_t v = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells];
-            ufloat_t w;
+            ufloat_t w = (ufloat_t)(0.0);
             if (N_DIM==3)
                 w = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells];
             
             // Retrieve indices of neighboring blocks.
-            if (valid_block == 1 && threadIdx.x==0)
+            if (threadIdx.x==0)
             {
                 for (int p = 0; p < N_Q_max; p++)
                     s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
@@ -562,7 +565,7 @@ void Cu_ImposeBC_V
                     }
 
                     // Do interpolated bounce-back, if applicable.
-                    if (valid_mask == V_CELLMASK_BOUNDARY)
+                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
                     {
                         // Get face-cell link.
                         ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b] / dx_L_g;
@@ -577,24 +580,18 @@ void Cu_ImposeBC_V
                         // Identify the correct neighboring block and cell.
                         int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
                         int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
-                        //Ip = (4 + (Ip % 4)) % 4;
-                        //Jp = (4 + (Jp % 4)) % 4;
-                        //if (N_DIM==3)
-                        //        Kp = (4 + (Kp % 4)) % 4;
-                        //int nbr_kap_c = Ip + 4*Jp + 16*Kp;
                         
                         // Retrieve DDF from 'behind.'
                         ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + p*n_maxcells];
                         
-                        // ULI.
-                        if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                        if (bc_type==1)
                         {
-                            f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                        }
-                        // DLI.
-                        if (dQ >= (ufloat_g_t)(0.5))
-                        {
-                            f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
+                            // ULI.
+                            if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                                f_p = (ufloat_t)(2.0)*dQ*f_p + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                            // DLI.
+                            if (dQ >= (ufloat_g_t)(0.5))
+                                f_p = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_p + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_q;
                         }
                     }
                     
@@ -619,7 +616,7 @@ void Cu_ImposeBC_V
                     }
                     
                     // Do interpolated bounce-back, if applicable.
-                    if (valid_mask == V_CELLMASK_BOUNDARY)
+                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
                     {
                         // Get face-cell link.
                         ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells_b] / dx_L_g;
@@ -634,25 +631,18 @@ void Cu_ImposeBC_V
                         // Identify the correct neighboring block and cell.
                         int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
                         int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
-                        //Ip = (4 + (Ip % 4)) % 4;
-                        //Jp = (4 + (Jp % 4)) % 4;
-                        //if (N_DIM==3)
-                        //        Kp = (4 + (Kp % 4)) % 4;
-                        //int nbr_kap_c = Ip + 4*Jp + 16*Kp;
                         
                         // Retrieve DDF from 'behind.'
                         ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
                         
-                        // ULI.
-                        if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                        if (bc_type==1)
                         {
-                            f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
-                        }
-                        
-                        // DLI.
-                        if (dQ >= (ufloat_g_t)(0.5))
-                        {
-                            f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
+                            // ULI.
+                            if (dQ > 0 && dQ < (ufloat_g_t)(0.5))
+                                f_q = (ufloat_t)(2.0)*dQ*f_q + ((ufloat_t)(1.0) - (ufloat_t)(2.0)*dQ)*f_m;
+                            // DLI.
+                            if (dQ >= (ufloat_g_t)(0.5))
+                                f_q = ((ufloat_t)(1.0)/((ufloat_t)(2.0)*dQ))*f_q + (((ufloat_t)(2.0)*dQ - (ufloat_t)(1.0))/((ufloat_t)(2.0)*dQ))*f_p;
                         }
                     }
                     

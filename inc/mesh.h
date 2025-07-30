@@ -629,6 +629,7 @@ class Mesh
 	int             M_Geometry_FillBinned_S1(int i_dev, int L);
 	int             M_Geometry_FillBinned_S2(int i_dev, int L);
 	int             M_Geometry_FillBinned_S2A(int i_dev);
+	int             M_Geometry_FillBinned3D(int i_dev);
 	int             M_IdentifyFaces(int i_dev, int L);
 	int             M_Advance_InitTextOutput();
 	int             M_Advance_RefineNearWall();

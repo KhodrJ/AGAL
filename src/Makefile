@@ -115,6 +115,7 @@ SRC_MESH = mesh_init.cu\
       mesh_criterion.cu\
       mesh_criterion_geometry_binned.cu\
       mesh_fill_binned.cu\
+      mesh_fill_binned_alt.cu\
       mesh_amr.cu\
       mesh_solvers.cu\
       mesh_advance.cu\
@@ -135,30 +136,6 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_compute_macro.cu\
 	solver_lbm_criterion.cu\
 	solver_lbm_identify_faces.cu\
-	solver_lbm_setic_D2Q9.cu\
-	solver_lbm_setic_D3Q19.cu\
-	solver_lbm_setic_D3Q27.cu\
-	solver_lbm_collision_original_D2Q9.cu\
-	solver_lbm_collision_original_D3Q19.cu\
-	solver_lbm_collision_original_D3Q27.cu\
-	solver_lbm_collision_new_D2Q9.cu\
-	solver_lbm_collision_new_D3Q19.cu\
-	solver_lbm_collision_new_D3Q27.cu\
-	solver_lbm_compute_forces_mea_D2Q9.cu\
-	solver_lbm_compute_forces_mea_D3Q19.cu\
-	solver_lbm_compute_forces_mea_D3Q27.cu\
-	solver_lbm_compute_forces_cv_D2Q9.cu\
-	solver_lbm_compute_forces_cv_D3Q19.cu\
-	solver_lbm_compute_forces_cv_D3Q27.cu\
-	solver_lbm_imposebc_D2Q9.cu\
-	solver_lbm_imposebc_D3Q19.cu\
-	solver_lbm_imposebc_D3Q27.cu\
-	solver_lbm_stream_original_D2Q9.cu\
-	solver_lbm_stream_original_D3Q19.cu\
-	solver_lbm_stream_original_D3Q27.cu\
-	solver_lbm_stream_new_D2Q9.cu\
-	solver_lbm_stream_new_D3Q19.cu\
-	solver_lbm_stream_new_D3Q27.cu\
 	solver_lbm_kernels.cu\
 	solver_lbm_interp_linear_original_D2Q9.cu\
 	solver_lbm_interp_linear_original_D3Q19.cu\
@@ -212,4 +189,4 @@ clean:
 
 
 
-#make pxtas VSET=D2Q9 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
+#make pxtas VSET=D3Q27 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
