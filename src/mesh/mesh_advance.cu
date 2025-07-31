@@ -79,10 +79,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 			if (L < MAX_LEVELS_WALL-1)
 				M_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
 			cudaDeviceSynchronize();
-			//tic_simple("");
-			//M_ComputeRefCriteria(0,L,V_MESH_REF_NW_GEOMETRY);
-			//cudaDeviceSynchronize();
-			//toc_simple("",T_MS);
 			
 			// Fill solid cells and mark blocks nearby.
 			if (geometry_init)

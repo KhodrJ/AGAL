@@ -7,15 +7,6 @@
 
 #include "mesh.h"
 
-// template <class T>
-// __device__
-// void Cu_CrossProduct(T a1, T a2, T a3, T b1, T b2, T b3, T &s1, T &s2, T &s3)
-// {
-// 	s1 = a2*b3 - a3*b2;
-// 	s2 = a3*b1 - a1*b3;
-// 	s3 = a1*b2 - a2*b1;
-// }
-
 template <typename ufloat_t, const ArgsPack *AP>
 __global__
 void Cu_ComputeRefCriteria_NearWall_Cases

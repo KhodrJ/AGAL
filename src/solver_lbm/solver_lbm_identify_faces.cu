@@ -91,7 +91,7 @@ void Cu_IdentifyFaces_V2
 			
 			// Initialize face-cell links.
 			for (int q = 0; q < N_Q_max; q++)
-				dQ[q] = -1;
+				dQ[q] = (ufloat_g_t)(-1.0);
 			//int b_id_p = -8;
 			
 			for (int p = 0; p < n_f; p++)
@@ -120,11 +120,11 @@ void Cu_IdentifyFaces_V2
 					{
 						ufloat_g_t nx = vy2-vy1;
 						ufloat_g_t ny = vx1-vx2;
-						ufloat_g_t tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ufloat_g_t)V_CONN_ID[0+q*27]*nx + (ufloat_g_t)V_CONN_ID[1+q*27]*ny);
+						ufloat_g_t tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny);
 						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
-							ufloat_g_t tmpy = vyp + V_CONN_ID[1+q*27]*tmp;
-							ufloat_g_t tmpx = vxp + V_CONN_ID[0+q*27]*tmp;
+							ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
+							ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
 							
 							if (CheckPointInLine(tmpx, tmpy, vx1, vy1, vx2, vy2))
 							{
@@ -151,12 +151,12 @@ void Cu_IdentifyFaces_V2
 						ufloat_g_t nz = (ufloat_g_t)0.0;
 						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
 						ufloat_g_t tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
-						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ufloat_g_t)V_CONN_ID[0+q*27]*nx + (ufloat_g_t)V_CONN_ID[1+q*27]*ny + (ufloat_g_t)V_CONN_ID[2+q*27]*nz);
+						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny + (ufloat_g_t)V_CONN_ID[q+2*27]*nz);
 						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 						{
-							ufloat_g_t tmpy = vyp + V_CONN_ID[1+q*27]*tmp;
-							ufloat_g_t tmpz = vzp + V_CONN_ID[2+q*27]*tmp;
-							ufloat_g_t tmpx = vxp + V_CONN_ID[0+q*27]*tmp;
+							ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
+							ufloat_g_t tmpz = vzp + V_CONN_ID[q+2*27]*tmp;
+							ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
 							if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
 							{
 								ufloat_g_t dist_q = dQ[q];
@@ -173,6 +173,8 @@ void Cu_IdentifyFaces_V2
 			{
 				cells_ID_mask_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = -8; // This will be updated to read actual boundary Ids later.
 				cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = dQ[q];
+				//if (dQ[q] > 0)
+				//	printf("%17.5f\n", dQ[q]/dx_L);
 			}
 		}
 	}

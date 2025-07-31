@@ -354,7 +354,7 @@ void Cu_PropagateMarks_S1
 	{
 		int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
 		if (i_p > -1 && cblock_ID_ref[i_p] == V_REF_ID_UNREFINED)
-			cblock_ID_ref[i_p] = V_REF_ID_INDETERMINATE;
+			cblock_ID_ref[i_p] = V_REF_ID_INDETERMINATE_E;
 	}
 }
 
@@ -369,7 +369,7 @@ void Cu_PropagateMarks_S2
 	constexpr int N_Q_max = AP->N_Q_max;
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	
-	if (kap < id_max_curr && cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE)
+	if (kap < id_max_curr && cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE_E)
 	{
 		// Don't refine near invalid fine-grid boundaries. Only in the interior for quality purposes.
 		bool eligible = true;

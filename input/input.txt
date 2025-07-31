@@ -1,5 +1,5 @@
 # MESH
-MAX_LEVELS_WALL                 1
+MAX_LEVELS_WALL                 3
 MAX_LEVELS_INTERIOR             1
 N_LEVEL_START                   0
 L_c                             1.0
@@ -9,21 +9,21 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              512
-N_ITER_TOTAL                    100*Nx
+Nx                              128
+N_ITER_TOTAL                    1000
 
 # GEOMETRY
 G_FILENAME                      bunny_ascii.stl
 G_LOADTYPE                      1
-G_PRINT                         1
+G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.1
 G_BIN_OVERLAP                   10
-G_BIN_DENSITY                   32
+G_BIN_DENSITY                   128
 G_BIN_FRAC                      1
 G_BIN_APPROACH                  1
 
 # SOLVER
-v0                              1.5625e-5
+v0                              5e-5
 s1                              1
 s2                              1
 s3                              1.7
@@ -35,7 +35,7 @@ S_INTERP                        0
 S_INTERP_HYBRID                 0
 S_AVERAGE                       0
 S_CRITERION                     0
-S_FORCE_ORDER                   2
+S_FORCE_ORDER                   1
 S_FORCE_TYPE                    0
 S_BC_TYPE                       0
 S_FORCEVOLUME_Xm                0.1
@@ -58,10 +58,10 @@ N_PROBE_FREQUENCY               32
 V_PROBE_TOL                     1e-4
 N_PROBE_FORCE                   1
 N_PROBE_F_FREQUENCY             16
-N_PROBE_F_START                 50*Nx
+N_PROBE_F_START                 0*Nx
 N_PROBE_AVE                     0
 N_PROBE_AVE_FREQUENCY           1
-N_PROBE_AVE_START               100*Nx
+N_PROBE_AVE_START               2
 
 # INPUT/OUTPUT       
 I_DIR_NAME                      ../input/
@@ -69,7 +69,7 @@ P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  0
 N_PRINT_LEVELS_LEGACY           3
 N_OUTPUT_START                  0*Nx
-P_OUTPUT                        100*Nx
+P_OUTPUT                        1000
 
 # RENDERING
 VOL_I_MIN                       0

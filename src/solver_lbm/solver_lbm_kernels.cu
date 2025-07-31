@@ -757,6 +757,8 @@ void Cu_ComputeForcesCV_V
             // Compute cell coordinates and retrieve macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+            
+            // Initialize the shared memory arrays if this block has boundary cells.
             for (int d = 0; d < N_DIM; d++)
             {
                 s_Fp[threadIdx.x + d*M_TBLOCK] = 0;
@@ -873,8 +875,8 @@ void Cu_ComputeForcesCV_V
                 if (post_step==1 && is_root)
                 {
                     bool participatesS;
-                    if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
-                    if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,z+V_CONN_ID[p+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
+                    if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
+                    if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,z+V_CONN_ID[LBMpb[p]+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
                     if (participatesS && participatesV)
                     {
                         for (int d = 0; d < N_DIM; d++)
@@ -1006,7 +1008,9 @@ void Cu_ComputeForcesMEA_V
     int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int J = (threadIdx.x / 4) % 4;
-    int K = (threadIdx.x / 4) / 4;
+    int K = 0;
+    if (N_DIM==3)
+        K = (threadIdx.x / 4) / 4;
     s_ID_cblock[threadIdx.x] = -1;
     if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
     {
@@ -1034,6 +1038,8 @@ void Cu_ComputeForcesMEA_V
             int block_mask = -1;
             if (geometry_init)
                 block_mask = cblock_ID_onb_solid[i_kap_b];
+            
+            // Initialize the shared memory arrays if this block has boundary cells.
             if (n_maxblocks_b > 0 && block_mask > -1)
             {
                 for (int d = 0; d < N_DIM; d++)
@@ -1044,7 +1050,7 @@ void Cu_ComputeForcesMEA_V
             }
             
             // Get the indices of neighboring blocks.
-            if (valid_block == 1 && threadIdx.x == 0)
+            if (threadIdx.x == 0)
             {
                 for (int p = 0; p < N_Q_max; p++)
                     s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
@@ -1145,36 +1151,39 @@ void Cu_ComputeForcesMEA_V
             
             
             // Reductions for the sums of force contributions in this cell-block.
-            __syncthreads();
-            for (int s=blockDim.x/2; s>0; s>>=1)
+            if (n_maxblocks_b > 0 && block_mask > -1)
             {
-                if (threadIdx.x < s)
-                {
-                    for (int d = 0; d < N_DIM; d++)
-                    {
-                        s_Fp[threadIdx.x+d*M_TBLOCK] = s_Fp[threadIdx.x+d*M_TBLOCK] + s_Fp[threadIdx.x+s+d*M_TBLOCK];
-                        s_Fm[threadIdx.x+d*M_TBLOCK] = s_Fm[threadIdx.x+d*M_TBLOCK] + s_Fm[threadIdx.x+s+d*M_TBLOCK];
-                    }
-                }
                 __syncthreads();
-            }
-            // Store the sums of contributions in global memory; this will be reduced further later.
-            if (threadIdx.x == 0)
-            {
-                if (post_step == 0)
+                for (int s=blockDim.x/2; s>0; s>>=1)
                 {
-                    for (int d = 0; d < N_DIM; d++)
+                    if (threadIdx.x < s)
                     {
-                        cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] = s_Fp[0+d*M_TBLOCK]*dv_L;
-                        cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] = s_Fm[0+d*M_TBLOCK]*dv_L;
+                        for (int d = 0; d < N_DIM; d++)
+                        {
+                            s_Fp[threadIdx.x+d*M_TBLOCK] = s_Fp[threadIdx.x+d*M_TBLOCK] + s_Fp[threadIdx.x+s+d*M_TBLOCK];
+                            s_Fm[threadIdx.x+d*M_TBLOCK] = s_Fm[threadIdx.x+d*M_TBLOCK] + s_Fm[threadIdx.x+s+d*M_TBLOCK];
+                        }
                     }
+                    __syncthreads();
                 }
-                else
+                // Store the sums of contributions in global memory; this will be reduced further later.
+                if (threadIdx.x == 0)
                 {
-                    for (int d = 0; d < N_DIM; d++)
+                    if (post_step == 0)
                     {
-                        cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] += s_Fp[0+d*M_TBLOCK]*dv_L;
-                        cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] += s_Fm[0+d*M_TBLOCK]*dv_L;
+                        for (int d = 0; d < N_DIM; d++)
+                        {
+                            cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] = s_Fp[0+d*M_TBLOCK]*dv_L;
+                            cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] = s_Fm[0+d*M_TBLOCK]*dv_L;
+                        }
+                    }
+                    else
+                    {
+                        for (int d = 0; d < N_DIM; d++)
+                        {
+                            cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] += s_Fp[0+d*M_TBLOCK]*dv_L;
+                            cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] += s_Fm[0+d*M_TBLOCK]*dv_L;
+                        }
                     }
                 }
             }

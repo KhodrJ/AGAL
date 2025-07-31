@@ -574,7 +574,7 @@ void Cu_MarkBlocks_CheckMasks_V2
 			__syncthreads();
 			
 			// Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
-			for (int p = 0; p < N_Q_max; p++)
+			for (int p = 1; p < N_Q_max; p++)
 			{
 				// nbr_kap_b is the index of the neighboring block w.r.t the current cell.
 				// nbr_kap_c is the index of the cell in that neighboring block.
@@ -604,7 +604,7 @@ void Cu_MarkBlocks_CheckMasks_V2
 					s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
 			}
 			int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-			s_ID_mask[(I+1)+6*(J+1)+36*(K+1)] = curr_mask;
+			s_ID_mask[(I+1)+6*(J+1)+(N_DIM-2)*36*(K+1)] = curr_mask;
 			__syncthreads();
 			
 			// Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
@@ -1801,7 +1801,7 @@ void Cu_MarkBlocks_MarkInterior
 			}
 			
 			if (eligible)
-				cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE;
+				cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE_E;
 		}
 		
 		if (cblock_ID_mask[kap] == V_BLOCKMASK_REGULAR)
@@ -1810,11 +1810,6 @@ void Cu_MarkBlocks_MarkInterior
 }
 
 /**************************************************************************************/
-/*                                                                                    */
-/*  Author: Khodr Jaber                                                               */
-/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
-/*                                                                                    */
-/*                                                                                    */
 /*                                                                                    */
 /*  ===[ Cu_MarkBlocks_Propagate ]==================================================  */
 /*                                                                                    */
@@ -1830,8 +1825,15 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_Propagate
 (
-	int id_max_curr, int n_maxcblocks, int L,
-	int *cblock_ID_ref, int *cblock_ID_mask, int *cblock_ID_nbr, int *cblock_level
+	const int id_max_curr,
+	const int n_maxcblocks,
+	const int L,
+	int *__restrict__ cblock_ID_ref,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_level,
+	int *__restrict__ tmp_1,
+	const int jprop
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
@@ -1841,6 +1843,11 @@ void Cu_MarkBlocks_Propagate
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	bool mark_for_refinement = false;
 	bool eligible = true;
+	
+	// To prevent a race condition, alternative between even and odd intermediate states.
+	bool check_even = true;
+	if (jprop%2 == 1)
+		check_even = false;
 	
 	for (int p = 0; p < 9; p++)
 		s_ID_nbr[p + threadIdx.x*9] = -1;
@@ -1860,10 +1867,20 @@ void Cu_MarkBlocks_Propagate
 		for (int p = 0; p < 9; p++)
 		{
 			int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-			if (i_p > -1 && cblock_ID_ref[i_p] == V_REF_ID_INDETERMINATE)
-				s_ID_nbr[threadIdx.x + p*M_BLOCK] = 1;
+			if (check_even)
+			{
+				if (i_p > -1 && cblock_ID_ref[i_p] == V_REF_ID_INDETERMINATE_E)
+					s_ID_nbr[threadIdx.x + p*M_BLOCK] = 1;
+				else
+					s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
+			}
 			else
-				s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
+			{
+				if (i_p > -1 && tmp_1[i_p] == V_REF_ID_INDETERMINATE_O)
+					s_ID_nbr[threadIdx.x + p*M_BLOCK] = 1;
+				else
+					s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
+			}
 		}
 		__syncthreads();
 		
@@ -1898,7 +1915,12 @@ void Cu_MarkBlocks_Propagate
 		}
 		
 		if (eligible)
-			cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE;
+		{
+			if (check_even)
+				tmp_1[kap] = V_REF_ID_INDETERMINATE_O;
+			else
+				cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE_E;
+		}
 	}
 }
 
@@ -1915,12 +1937,15 @@ __global__
 void Cu_MarkBlocks_Finalize
 (
 	const int id_max_curr,
-	int *__restrict__ cblock_ID_ref
+	int *__restrict__ cblock_ID_ref,
+	int *__restrict__ tmp_1
 )
 {
 	int kap = blockIdx.x*blockDim.x + threadIdx.x;
 	
-	if (kap < id_max_curr && cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE)
+	// Note: ref Id will be corrected after this. tmp_1 is reset before Cu_MarkBlocks_GetMasks, so if that is changed then
+	// make sure tmp_1 has been reset properly before calling propagation.
+	if (kap < id_max_curr && (cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE_E || tmp_1[kap] == V_REF_ID_INDETERMINATE_O))
 		cblock_ID_ref[kap] = V_REF_ID_MARK_REFINE;
 	
 }
@@ -1940,7 +1965,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		bool hit_max = L==MAX_LEVELS-1;
 		
 		// Voxelize the solid, filling in all solid cells.
-		Cu_Voxelize_V2<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
@@ -1964,13 +1989,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		{
 			Cu_MarkBlocks_Propagate<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 				id_max[i_dev][L], n_maxcblocks, L,
-				c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
+				c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev], c_tmp_1[i_dev], j
 			);
 		}
 		
 		// Finalize the intermediate marks for refinement.
 		Cu_MarkBlocks_Finalize<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
-			id_max[i_dev][L], c_cblock_ID_ref[i_dev]
+			id_max[i_dev][L], c_cblock_ID_ref[i_dev], c_tmp_1[i_dev]
 		);
 	}
 	
@@ -1984,7 +2009,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 	{
 		// Reset one of the intermediate arrays in preparation for copying.
 		if (L == 0)
+		{
 			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
+			Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_2[i_dev], 0);
+		}
 		
 		// Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
 		Cu_MarkBlocks_CheckMasks_V2<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
@@ -1992,6 +2020,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
 			c_tmp_1[i_dev]
 		);
+		cudaDeviceSynchronize();
 	}
 	
 	return 0;
@@ -2000,9 +2029,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 {
+	// Declare an 'old' number of solid cell-blocks prior to adjustment via padding.
+	int n_solidb_old = 0;
+	
 	// Compute the number of solid-adjacent cells, and the number of blocks these cells occupy.
 	n_solida = thrust::reduce(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], 0);
 	n_solidb = thrust::count_if(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max[i_dev][MAX_LEVELS], is_positive());
+	n_solidb_old = n_solidb;
 	n_solidb = ((n_solidb + 128) / 128) * 128;
 	n_maxcells_b = n_solidb*M_CBLOCK;
 	std::cout << "Counted " << n_solida << " cells adjacent to the solid boundary (" << (double)n_solida / (double)n_maxcells << ", in " << n_solidb << " blocks or " << n_maxcells_b << " cells)..." << std::endl;
@@ -2011,9 +2044,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 	if (n_solidb > 0)
 	{
 		// Allocate memory for the solid cell linkage data.
-		cells_ID_mask_b[i_dev] = new int[n_maxcells_b*N_Q_max]{1};
-		cells_f_X_b[i_dev] = new ufloat_g_t[n_maxcells_b*N_Q_max]{0};
-		cblock_ID_onb_solid[i_dev] = new int[n_maxcblocks]{-1};
+		cells_ID_mask_b[i_dev] = new int[n_maxcells_b*N_Q_max];
+		cells_f_X_b[i_dev] = new ufloat_g_t[n_maxcells_b*N_Q_max];
+		cblock_ID_onb_solid[i_dev] = new int[n_maxcblocks];
 		gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask_b[i_dev], n_maxcells_b*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cells_f_X_b[i_dev], n_maxcells_b*N_Q_max*sizeof(ufloat_g_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb_solid[i_dev], n_maxcblocks*sizeof(int)) );
@@ -2033,8 +2066,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
 		//
 		// Now scatter the addresses of these copied Ids so that cell-blocks know where to find the data of their solid-adjacent cells
 		// in the new arrays.
-		thrust::scatter(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev] );
+		thrust::scatter(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb_old, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev] );
 		
+		// Report available memory after these new allocations.
 		cudaMemGetInfo(&free_t, &total_t);
 		std::cout << "[-] After allocations:\n";
 		std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;

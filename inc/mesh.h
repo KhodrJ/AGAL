@@ -17,7 +17,8 @@ constexpr int V_REF_ID_MARK_COARSEN          = 5;    ///< Indicates cell-block i
 constexpr int V_REF_ID_NEW                   = 6;    ///< Indicates cell-block was newly inserted (as a child).
 constexpr int V_REF_ID_REMOVE                = 7;    ///< Indicates cell-block will be removed (as a child).
 constexpr int V_REF_ID_INACTIVE              = 8;    ///< Indicates cell-block is inactive in the simulation.
-constexpr int V_REF_ID_INDETERMINATE         = 11;   ///< Indicates cell-block is an indeterminate state.
+constexpr int V_REF_ID_INDETERMINATE_E       = 11;   ///< Indicates cell-block is an indeterminate state (even).
+constexpr int V_REF_ID_INDETERMINATE_O       = 12;   ///< Indicates cell-block is an indeterminate state (odd).
 
 // Mesh communication.
 constexpr int V_INTERP_INTERFACE             = 0;    ///< Interpolate to interface cells only.
@@ -27,6 +28,9 @@ constexpr int V_AVERAGE_BLOCK                = 1;    ///< Average involves whole
 constexpr int V_AVERAGE_GRID                 = 2;    ///< Average involves whole grid.
 
 // Mesh-geometry interaction.
+constexpr int V_CELLMASK_INTERIOR            = 0;    ///< Indicates that the cell doesn't participate in fine-coarse data transfers.
+constexpr int V_CELLMASK_INTERFACE           = 1;    ///< Indicates that the cell participates in fine-to-coarse data transfers.
+constexpr int V_CELLMASK_GHOST               = 2;    ///< Indicates that the cell participates in coarse-to-fine data transfers.
 constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
 constexpr int V_CELLMASK_BOUNDARY            = -2;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
 constexpr int V_BLOCKMASK_REGULAR            = 0;    ///< Default state of a cell-block.
@@ -34,7 +38,8 @@ constexpr int V_BLOCKMASK_INTERFACE          = 1;    ///< This cell-block partic
 constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies entirely within a solid object.
 constexpr int V_BLOCKMASK_SOLIDB             = -1;   ///< This cell-block lies on the boundary of a solid object.
 constexpr int V_BLOCKMASK_SOLIDA             = -2;   ///< This cell-block is adjacent to the boundary of a solid object.
-constexpr int V_BLOCKMASK_INDETERMINATE      = -4;   ///< This cell-block is in an indeterminate state.
+constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;   ///< This cell-block is in an indeterminate state (odd).
+constexpr int V_BLOCKMASK_INDETERMINATE_E    = -4;   ///< This cell-block is in an indeterminate state (even).
 
 // Mesh refinements types.
 constexpr int V_MESH_REF_NW_CASES            = 0;    ///< Near-wall refinement for the benchmark cases.
@@ -53,6 +58,8 @@ constexpr int V_SOLVER_LBM_MRT               = 2;
 
 __constant__ int V_CONN_ID[81];
 __constant__ int V_CONN_MAP[27];
+int V_CONN_ID_H[81];
+int V_CONN_MAP_H[27];
 
 
 #include "structs.h"
@@ -702,23 +709,23 @@ class Mesh
 };
 
 template <int N_DIM>
-__device__ __forceinline__
+__host__ __device__ __forceinline__
 int Cu_NbrMap(int I, int J, int K)
 {
 	int S = 0;
 	
 	//if (I == -1) S = 0;
-	if (I == 4) S = 2;
+	if (I >= 4) S = 2;
 	if (I >= 0 && I < 4) S = 1;
 	
 	//if (J == -1) S += 3*(0);
-	if (J == 4) S += 3*(2);
+	if (J >= 4) S += 3*(2);
 	if (J >= 0 && J < 4) S += 3*(1);
 	
 	if (N_DIM==3)
 	{
 		//if (K == -1) S += 9*(0);
-		if (K == 4) S += 9*(2);
+		if (K >= 4) S += 9*(2);
 		if (K >= 0 && K < 4) S += 9*(1);
 	}
 	
@@ -726,7 +733,7 @@ int Cu_NbrMap(int I, int J, int K)
 }
 
 template <int N_DIM>
-__device__ __forceinline__
+__host__ __device__ __forceinline__
 int Cu_NbrCellId(int Ip, int Jp, int Kp)
 {
 	// I,J,K are incremented by direction, and can be in {-1,0,1,2,3,4}.
