@@ -7,21 +7,22 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeProperties(int i_dev, int i_
 	// Density and velocity computations.	
 	for (int kap_i = 0; kap_i < M_TBLOCK; kap_i++)
 	{
-		ufloat_t rho = 0;
-		ufloat_t u = 0;
-		ufloat_t v = 0;
-		ufloat_t w = 0;
-		S_ComputeMacroProperties(i_dev, i_kap, i_Q, kap_i, rho, u, v, w);
-		out[kap_i + 0*M_TBLOCK] = rho;
-		out[kap_i + 1*M_TBLOCK] = u;
-		out[kap_i + 2*M_TBLOCK] = v;
-		out[kap_i + 3*M_TBLOCK] = w;
-// 		out[kap_i + 0*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+0)*n_maxcells];
-// 		out[kap_i + 1*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+1)*n_maxcells];
-// 		out[kap_i + 2*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+2)*n_maxcells];
-// 		out[kap_i + 3*M_TBLOCK] = 0.0;
-// 		if (N_DIM==3)
-// 			out[kap_i + 3*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+3)*n_maxcells];
+// 		ufloat_t rho = 0;
+// 		ufloat_t u = 0;
+// 		ufloat_t v = 0;
+// 		ufloat_t w = 0;
+// 		S_ComputeMacroProperties(i_dev, i_kap, i_Q, kap_i, rho, u, v, w);
+// 		out[kap_i + 0*M_TBLOCK] = rho;
+// 		out[kap_i + 1*M_TBLOCK] = u;
+// 		out[kap_i + 2*M_TBLOCK] = v;
+// 		out[kap_i + 3*M_TBLOCK] = w;
+		
+		out[kap_i + 0*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+0)*n_maxcells];
+		out[kap_i + 1*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+1)*n_maxcells];
+		out[kap_i + 2*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+2)*n_maxcells];
+		out[kap_i + 3*M_TBLOCK] = 0.0;
+		if (N_DIM==3)
+			out[kap_i + 3*M_TBLOCK] = (double)mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + kap_i + (N_Q+3)*n_maxcells];
 	}
 
 	return 0;
@@ -200,7 +201,7 @@ else
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForcesLBM(int i_dev, int L, int iter, double t, int START)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForces(int i_dev, int L, int iter, double t, int START)
 {
 	if (START == 1 && L == -1)
 	{
@@ -226,15 +227,20 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForcesLBM(int i_dev, int L, i
 		double Fmy = thrust::reduce(
 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][3*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][3*n_maxcblocks] + cblocks_id_max, 0.0
 		);
-// 		double Fpz = thrust::reduce(
-// 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks] + cblocks_id_max, 0.0
-// 		);
-// 		double Fmz = thrust::reduce(
-// 			thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks] + cblocks_id_max, 0.0
-// 		);
+		double Fpz __attribute__((unused)) = 0.0;
+		double Fmz __attribute__((unused)) = 0.0;
+		if (N_DIM==3)
+		{
+			Fpz = thrust::reduce(
+				thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][4*n_maxcblocks] + cblocks_id_max, 0.0
+			);
+			Fmz = thrust::reduce(
+				thrust::device, &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks], &mesh->c_cblock_f_Ff_dptr[i_dev][5*n_maxcblocks] + cblocks_id_max, 0.0
+			);
+		}
 		double Fx = factor*(Fpx - Fmx);
 		double Fy = factor*(Fpy - Fmy);
-// 		double Fz = factor*(Fpz - Fmz);
+		double Fz __attribute__((unused)) = factor*(Fpz - Fmz);
 		double Dp = 1.0/32.0;
 		double uin = 0.05;
 		std::cout << "Report:" << std::endl;

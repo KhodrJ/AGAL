@@ -5,6 +5,26 @@ template <class T> __device__ __forceinline__ T EPS(T a);
 template <> __device__ __forceinline__ float EPS(float a) { return 1e-7F; }
 template <> __device__ __forceinline__ double EPS(double a) { return 1e-15; }
 
+__device__ __forceinline__ int imin(int a, int b) { return (a < b) ? a : b; }
+__device__ __forceinline__ int imax(int a, int b) { return (a > b) ? a : b; }
+//
+template <class T> __device__ __forceinline__ T Tabs(T a);
+template <> __device__ __forceinline__ int Tabs(int a) { return abs(a); }
+template <> __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }
+template <> __device__ __forceinline__  double Tabs(double a) { return fabs(a); }
+//
+template <class T> __device__ __forceinline__ T Tpow(T a, T b);
+template <> __device__ __forceinline__  float Tpow(float a, float b) { return powf(a,b); }
+template <> __device__ __forceinline__  double Tpow(double a, double b) { return pow(a,b); }
+//
+template <class T> __device__ __forceinline__ T Tsqrt(T a);
+template <> __device__ __forceinline__  float Tsqrt(float a) { return sqrtf(a); }
+template <> __device__ __forceinline__  double Tsqrt(double a) { return sqrt(a); }
+//
+template <class T> __device__ __forceinline__ T Tacos(T a);
+template <> __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
+template <> __device__ __forceinline__  double Tacos(double a) { return acos(a); }
+
 template <typename T>
 __device__
 void Cross(T &ax, T &ay, T &az, T &bx, T &by, T &bz, T &sx, T &sy, T &sz)

@@ -218,6 +218,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 		}
 	}
 	
+	
 	// Write the AMR object.
 	std::cout << "Finished building VTK dataset, writing..." << std::endl;
 	std::string fileName = output_dir + std::string("out_") + std::to_string(iter+1) + ".vthb";

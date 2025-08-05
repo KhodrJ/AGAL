@@ -182,7 +182,9 @@ class Geometry
 	int G_MakeBins2D(int i_dev);
 	int G_MakeBins3D(int i_dev);
 	int G_MakeBins(int i_dev);
-	int G_MakeBinsAltCPU(int i_dev);
+	int G_MakeBinsCPU(int i_dev);
+	int G_MakeBinsGPU(int i_dev);
+	int G_RefineFaces_Length(int i_dev);
 	int G_DrawBinsAndFaces(int i_dev);
 	int G_DrawBinsAndFaces2D(int i_dev);
 	int G_DrawBinsAndFaces3D(int i_dev);

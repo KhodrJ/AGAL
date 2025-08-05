@@ -75,4 +75,32 @@ struct is_positive
 	}
 };
 
+struct is_nonnegative_and_less_than
+{
+	is_nonnegative_and_less_than(int ID) : val_{ID} {}
+	__device__ bool operator()(const int ID) const
+	{
+		return ID>=0 && ID<val_;
+	}
+	int val_;
+};
+
+struct is_positive_and_less_than
+{
+	is_positive_and_less_than(int ID) : val_{ID} {}
+	__device__ bool operator()(const int ID) const
+	{
+		return ID>0 && ID<val_;
+	}
+	int val_;
+};
+
+struct replace_diff_with_indexM1
+{
+	__device__ int operator()(const int& index, const int& val) const
+	{
+		return (val > 0) ? index-1 : val;
+	}
+};
+
 #endif

@@ -4,8 +4,9 @@
 #include "solver_lbm.h"
 
 #include "geometry_add.cu"
-#include "geometry_bin.cu"
-#include "geometry_bin_alt.cu"
+#include "geometry_bin_cpu.cu"
+#include "geometry_bin_gpu.cu"
+#include "geometry_bin_draw.cu"
 #include "geometry_convert.cu"
 #include "geometry_dest.cu"
 #include "geometry_import.cu"
@@ -43,8 +44,6 @@
 	#include "solver_lbm_interp_cubic_original_D2Q9.cu"
 	#include "solver_lbm_average_original_D2Q9.cu"
 	#include "solver_lbm_debug_drawgeom_D2Q9.cu"
-	#include "solver_lbm_compute_forces_mea_D2Q9.cu"
-	#include "solver_lbm_compute_forces_cv_D2Q9.cu"
 #endif
 #ifdef USED3Q19
 	#include "solver_lbm_kernels.cu"
@@ -52,8 +51,6 @@
 	#include "solver_lbm_interp_cubic_original_D3Q19.cu"
 	#include "solver_lbm_average_original_D3Q19.cu"
 	#include "solver_lbm_debug_drawgeom_D3Q19.cu"
-	#include "solver_lbm_compute_forces_mea_D3Q19.cu"
-	#include "solver_lbm_compute_forces_cv_D3Q19.cu"
 #endif
 #ifdef USED3Q27
 	#include "solver_lbm_kernels.cu"
@@ -61,8 +58,6 @@
 	#include "solver_lbm_interp_cubic_original_D3Q27.cu"
 	#include "solver_lbm_average_original_D3Q27.cu"
 	#include "solver_lbm_debug_drawgeom_D3Q27.cu"
-	#include "solver_lbm_compute_forces_mea_D3Q27.cu"
-	#include "solver_lbm_compute_forces_cv_D3Q27.cu"
 #endif
 
 int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);
@@ -75,9 +70,9 @@ constexpr ArgsPack AP2D __attribute__((unused)) = ArgsPack(2,M_BLOCK_C,1,1,M_LBL
 constexpr ArgsPack AP3D __attribute__((unused)) = ArgsPack(3,M_BLOCK_C,1,1,M_LBLOCK_C,M_LWBLOCK_C,2048);
 
 // Define some LBM argument packs for the tests.
-constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VS_D2Q9, CM_BGK, IM_CUBIC);
-constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_CUBIC);
-constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_CUBIC);
+constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VS_D2Q9, CM_BGK, IM_LINEAR);
+constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_LINEAR);
+constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_LINEAR);
 
 // Typedefs and chosen packs.
 typedef float REAL_s;
@@ -99,11 +94,6 @@ typedef float REAL_g;
 
 int main(int argc, char *argv[])
 {
-	// Debug.
-	// [-]   This block increases printf limit.
-	//size_t size = 5 * 1024 * 1024;
-	//cudaDeviceSetLimit(cudaLimitPrintfFifoSize, size);
-	
 	// Read input file and use map to make solver input.
 	std::string input_file_directory = "../input/";
 	std::map<std::string, int> input_map_int;
@@ -123,8 +113,9 @@ int main(int argc, char *argv[])
 	geometry.G_Init_Arrays_CoordsList_CPU(0);
 	if (geometry.G_PRINT)
 		geometry.G_PrintSTL(0);
-	geometry.G_MakeBinsAltCPU(0);
-	geometry.G_DrawBinsAndFaces(0);
+	//geometry.G_MakeBinsGPU(0);
+	geometry.G_MakeBinsCPU(0);
+	//geometry.G_DrawBinsAndFaces(0);
 	
 	// Create a mesh.
 	const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.

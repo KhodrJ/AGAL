@@ -12,18 +12,16 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
-void Cu_SetInitialConditions_V
+void Cu_SetInitialConditions
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	ufloat_t *__restrict__ cells_f_F,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb,
-	const ufloat_t dx_L
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_t dx_L
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -57,7 +55,9 @@ void Cu_SetInitialConditions_V
             // Compute cell coordinates. Obtain the initial conditions from the custom routine.
             ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
             ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
-            ufloat_t z __attribute__((unused)) = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t z __attribute__((unused)) = (ufloat_t)0.0;
+            if (N_DIM==3)
+                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
             ufloat_t rho = (ufloat_t)(0.0);
             ufloat_t u = (ufloat_t)(0.0);
             ufloat_t v = (ufloat_t)(0.0);
@@ -90,19 +90,114 @@ void Cu_SetInitialConditions_V
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetInitialConditions_V(int i_dev, int L)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetIC(int i_dev, int L)
 {
-	if (mesh->n_ids[i_dev][L] > 0)
-	{
-		Cu_SetInitialConditions_V<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->dxf_vec[L]);
-	}
+    if (mesh->n_ids[i_dev][L] > 0)
+    {
+        Cu_SetInitialConditions<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->dxf_vec[L] 
+        );
+    }
 
-	return 0;
+    return 0;
 }
 
 
 
 
+
+
+
+
+
+
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+__global__
+void Cu_RefreshVariables
+(
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int *__restrict__ id_set_idev_L,
+    ufloat_t *__restrict__ cells_f_F
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    constexpr int M_LBLOCK = AP->M_LBLOCK;
+    constexpr int N_Q = LP->N_Q;
+    __shared__ int s_ID_cblock[M_TBLOCK];
+    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
+    s_ID_cblock[threadIdx.x] = -1;
+    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
+    {
+        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
+    }
+    __syncthreads();
+    
+    // Loop over block Ids.
+    for (int k = 0; k < M_LBLOCK; k += 1)
+    {
+        int i_kap_b = s_ID_cblock[k];
+        
+        // Latter condition is added only if n>0.
+        if (i_kap_b>-1)
+        {
+            // Macroscopic properties.
+            ufloat_t rho = (ufloat_t)0.0;
+            ufloat_t u = (ufloat_t)0.0;
+            ufloat_t v = (ufloat_t)0.0;
+            ufloat_t w = (ufloat_t)0.0;
+            
+            // Traverse DDFs and compute macroscopic properties.
+            for (int p = 0; p < N_Q; p++)
+            {
+                ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
+                rho += f_pi;
+                u += V_CONN_ID[p+0*27]*f_pi;
+                v += V_CONN_ID[p+1*27]*f_pi;
+                if (N_DIM==3)
+                    w += V_CONN_ID[p+2*27]*f_pi;
+            }
+            u /= rho;
+            v /= rho;
+            if (N_DIM==3)
+                w /= rho;
+            
+            // Store macroscopic properties.
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
+            if (N_DIM==3)
+                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
+        }
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_RefreshVariables(int i_dev, int L, int var)
+{
+    if (mesh->n_ids[i_dev][L] > 0)
+    {
+        Cu_RefreshVariables<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L], n_maxcells,
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_f_F[i_dev]
+        );
+    }
+
+    return 0;
+}
 
 
 
@@ -129,7 +224,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetInitialConditions_V(int i_dev, i
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
-void Cu_Collision_V
+void Cu_Collide
 (
 	const int n_ids_idev_L,
 	const long int n_maxcells,
@@ -139,11 +234,8 @@ void Cu_Collision_V
 	const int *__restrict__ id_set_idev_L,
 	const int *__restrict__ cells_ID_mask,
 	ufloat_t *__restrict__ cells_f_F,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr,
 	const int *__restrict__ cblock_ID_nbr_child,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb
+	const int *__restrict__ cblock_ID_mask
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -231,11 +323,12 @@ void Cu_Collision_V
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collision_V(int i_dev, int L)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_Collision_V<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
+        Cu_Collide<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
             mesh->n_ids[i_dev][L], n_maxcells,
             n_maxcblocks,
             dxf_vec[L],
@@ -243,11 +336,8 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collision_V(int i_dev, int L)
             &mesh->c_id_set[i_dev][L*n_maxcblocks],
             mesh->c_cells_ID_mask[i_dev],
             mesh->c_cells_f_F[i_dev],
-            mesh->c_cblock_f_X[i_dev],
-            mesh->c_cblock_ID_nbr[i_dev],
             mesh->c_cblock_ID_nbr_child[i_dev],
-            mesh->c_cblock_ID_mask[i_dev],
-            mesh->c_cblock_ID_onb[i_dev]
+            mesh->c_cblock_ID_mask[i_dev]
         );
     }
 
@@ -276,7 +366,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collision_V(int i_dev, int L)
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
-void Cu_Stream_V
+void Cu_Stream
 (
 	const int n_ids_idev_L,
 	const long int n_maxcells,
@@ -392,11 +482,12 @@ void Cu_Stream_V
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream_V(int i_dev, int L)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_Stream_V<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
+        Cu_Stream<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
             mesh->n_ids[i_dev][L],
             n_maxcells,
             n_maxcblocks,
@@ -447,29 +538,27 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream_V(int i_dev, int L)
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
-void Cu_ImposeBC_V
+void Cu_ImposeBC
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const int n_maxcells_b,
-	const int n_maxblocks_b,
-	const ufloat_t dx_L,
-	const ufloat_t dx_L_g,
-	const ufloat_t tau_L,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	ufloat_t *__restrict__ cells_f_F,
-	const ufloat_g_t *__restrict__ cells_f_X_b,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr,
-	const int *__restrict__ cblock_ID_nbr_child,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb,
-	const int *__restrict__ cblock_ID_onb_solid,
-	const bool geometry_init,
-	const int force_type,
-	const int bc_type
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const int n_maxcells_b,
+    const ufloat_t dx_L,
+    const ufloat_t dx_L_g,
+    const ufloat_t tau_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const ufloat_g_t *__restrict__ cells_f_X_b,
+    const ufloat_t *__restrict__ cblock_f_X,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_onb,
+    const int *__restrict__ cblock_ID_onb_solid,
+    const bool geometry_init,
+    const int bc_type
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -516,7 +605,9 @@ void Cu_ImposeBC_V
                 block_mask = cblock_ID_onb_solid[i_kap_b];
             ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
             ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
-            ufloat_t z __attribute__((unused)) = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
+            ufloat_t z __attribute__((unused)) = (ufloat_t)0.0;
+            if (N_DIM==3)
+                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
             
             // Get macroscopic properties and place them in shared memory.
             ufloat_t rho = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells];
@@ -660,14 +751,35 @@ void Cu_ImposeBC_V
 
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC_V(int i_dev, int L)
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC(int i_dev, int L)
 {
-	if (mesh->n_ids[i_dev][L] > 0)
-	{
-		Cu_ImposeBC_V<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], (ufloat_g_t)dxf_vec[L], tau_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_BC_TYPE);
-	}
+    if (mesh->n_ids[i_dev][L] > 0)
+    {
+        Cu_ImposeBC<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            mesh->n_maxcells_b,
+            dxf_vec[L],
+            (ufloat_g_t)dxf_vec[L],
+            tau_vec[L],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cells_f_X_b[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr[i_dev],
+            mesh->c_cblock_ID_nbr_child[i_dev],
+            mesh->c_cblock_ID_mask[i_dev],
+            mesh->c_cblock_ID_onb[i_dev],
+            mesh->c_cblock_ID_onb_solid[i_dev],
+            mesh->geometry_init,
+            S_BC_TYPE
+        );
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -702,7 +814,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC_V(int i_dev, int L)
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP, int post_step>
 __global__
-void Cu_ComputeForcesCV_V
+void Cu_ComputeForcesCV
 (
 	const int is_root,
 	const int n_ids_idev_L,
@@ -715,13 +827,8 @@ void Cu_ComputeForcesCV_V
 	const int *__restrict__ cells_ID_mask,
 	const ufloat_t *__restrict__ cells_f_F,
 	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr,
 	const int *__restrict__ cblock_ID_nbr_child,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb,
 	ufloat_t *__restrict__ cblock_f_Ff,
-	const bool geometry_init,
-	const int order,
 	const ufloat_t cv_xm,
 	const ufloat_t cv_xM,
 	const ufloat_t cv_ym,
@@ -930,14 +1037,56 @@ void Cu_ComputeForcesCV_V
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesCV(int i_dev, int L, int var)
 {
-	if (mesh->n_ids[i_dev][L]>0 && var==0)
-	{
-		Cu_ComputeForcesCV_V<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
-	}
-	if (mesh->n_ids[i_dev][L]>0 && var==1)
-	{
-		Cu_ComputeForcesCV_V<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(L==N_LEVEL_START, mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L], dvf_vec[L], dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_TYPE, S_FORCEVOLUME_Xm, S_FORCEVOLUME_XM, S_FORCEVOLUME_Ym, S_FORCEVOLUME_YM, S_FORCEVOLUME_Zm, S_FORCEVOLUME_ZM);
-	}
+    if (mesh->n_ids[i_dev][L]>0 && var==0)
+    {
+        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            L==N_LEVEL_START,
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            dxf_vec[L],
+            dvf_vec[L],
+            dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr_child[i_dev],
+            mesh->c_cblock_f_Ff[i_dev],
+            S_FORCEVOLUME_Xm,
+            S_FORCEVOLUME_XM,
+            S_FORCEVOLUME_Ym,
+            S_FORCEVOLUME_YM,
+            S_FORCEVOLUME_Zm,
+            S_FORCEVOLUME_ZM
+        );
+    }
+    if (mesh->n_ids[i_dev][L]>0 && var==1)
+    {
+        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            L==N_LEVEL_START,
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            dxf_vec[L],
+            dvf_vec[L],
+            dxf_vec[N_LEVEL_START]/tau_vec[N_LEVEL_START],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr_child[i_dev],
+            mesh->c_cblock_f_Ff[i_dev],
+            S_FORCEVOLUME_Xm,
+            S_FORCEVOLUME_XM,
+            S_FORCEVOLUME_Ym,
+            S_FORCEVOLUME_YM,
+            S_FORCEVOLUME_Zm,
+            S_FORCEVOLUME_ZM
+        );
+    }
 
 	return 0;
 }
@@ -971,7 +1120,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesCV(int i_dev, int L, i
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP, int post_step>
 __global__
-void Cu_ComputeForcesMEA_V
+void Cu_ComputeForcesMEA
 (
 	const int n_ids_idev_L,
 	const long int n_maxcells,
@@ -986,7 +1135,6 @@ void Cu_ComputeForcesMEA_V
 	const ufloat_g_t *__restrict__ cells_f_X_b,
 	const ufloat_t *__restrict__ cblock_f_X,
 	const int *__restrict__ cblock_ID_nbr,
-	const int *__restrict__ cblock_ID_nbr_child,
 	const int *__restrict__ cblock_ID_mask,
 	const int *__restrict__ cblock_ID_onb,
 	const int *__restrict__ cblock_ID_onb_solid,
@@ -1194,14 +1342,313 @@ void Cu_ComputeForcesMEA_V
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, int var)
 {
-	if (mesh->n_ids[i_dev][L]>0 && var==0)
-	{
-		Cu_ComputeForcesMEA_V<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_ORDER);
-	}
-	if (mesh->n_ids[i_dev][L]>0 && var==1)
-	{
-		Cu_ComputeForcesMEA_V<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L], dvf_vec[L], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cells_f_X_b[i_dev], mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_f_Ff[i_dev], mesh->geometry_init, S_FORCE_ORDER);
-	}
+    if (mesh->n_ids[i_dev][L]>0 && var==0)
+    {
+        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            mesh->n_maxcells_b,
+            mesh->n_solidb,
+            dxf_vec[L],
+            dvf_vec[L],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cells_f_X_b[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr[i_dev],
+            mesh->c_cblock_ID_mask[i_dev],
+            mesh->c_cblock_ID_onb[i_dev],
+            mesh->c_cblock_ID_onb_solid[i_dev],
+            mesh->c_cblock_f_Ff[i_dev],
+            mesh->geometry_init,
+            S_FORCE_ORDER
+        );
+    }
+    if (mesh->n_ids[i_dev][L]>0 && var==1)
+    {
+        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            mesh->n_maxcells_b,
+            mesh->n_solidb,
+            dxf_vec[L],
+            dvf_vec[L],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cells_f_X_b[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr[i_dev],
+            mesh->c_cblock_ID_mask[i_dev],
+            mesh->c_cblock_ID_onb[i_dev],
+            mesh->c_cblock_ID_onb_solid[i_dev],
+            mesh->c_cblock_f_Ff[i_dev],
+            mesh->geometry_init,
+            S_FORCE_ORDER
+        );
+    }
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*  Last Updated: Sun Jul 27 18:28:19 2025                                            */
+/*                                                                                    */
+/**************************************************************************************/
+
+#include "solver_lbm.h"
+#include "mesh.h"
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP, int post_step>
+__global__
+void Cu_ComputePressureOnWall
+(
+	const int n_ids_idev_L,
+	const long int n_maxcells,
+	const int n_maxcblocks,
+	const int n_maxcells_b,
+	const int n_maxblocks_b,
+	const ufloat_t dx_L,
+	const ufloat_t dv_L,
+	const int *__restrict__ id_set_idev_L,
+	const int *__restrict__ cells_ID_mask,
+	const ufloat_t *__restrict__ cells_f_F,
+	const ufloat_g_t *__restrict__ cells_f_X_b,
+	const ufloat_t *__restrict__ cblock_f_X,
+	const int *__restrict__ cblock_ID_nbr,
+	const int *__restrict__ cblock_ID_mask,
+	const int *__restrict__ cblock_ID_onb,
+	const int *__restrict__ cblock_ID_onb_solid,
+	const bool geometry_init,
+	const int order
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    constexpr int M_LBLOCK = AP->M_LBLOCK;
+    constexpr int M_HBLOCK = AP->M_HBLOCK;
+    constexpr int N_Q_max = AP->N_Q_max;
+    constexpr int N_Q = LP->N_Q;
+    __shared__ int s_ID_cblock[M_TBLOCK];
+    __shared__ int s_ID_nbr[N_Q_max];
+    __shared__ ufloat_t s_F_p[M_HBLOCK];
+    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
+    int I = threadIdx.x % 4;
+    int J = (threadIdx.x / 4) % 4;
+    int K = 0;
+    if (N_DIM==3)
+        K = (threadIdx.x / 4) / 4;
+    s_ID_cblock[threadIdx.x] = -1;
+    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
+    {
+        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
+    }
+    __syncthreads();
+    
+    // Loop over block Ids.
+    for (int k = 0; k < M_LBLOCK; k += 1)
+    {
+        int i_kap_b = s_ID_cblock[k];
+        int valid_block = -1;
+        
+        // Load data for conditions on cell-blocks.
+        if (i_kap_b>-1)
+        {
+            valid_block=cblock_ID_onb[i_kap_b];
+        }
+        
+        // Latter condition is added only if n>0.
+        if ((i_kap_b>-1)&&((valid_block==1)))
+        {
+            // Compute cell coordinates and retrieve macroscopic properties.
+            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+            int block_mask = -1;
+            if (geometry_init)
+                block_mask = cblock_ID_onb_solid[i_kap_b];
+            
+            // Get the indices of neighboring blocks.
+            if (threadIdx.x == 0)
+            {
+                for (int p = 0; p < N_Q_max; p++)
+                    s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
+            }
+            __syncthreads();
+            
+            
+            // Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
+            for (int p = 1; p < N_Q_max; p++)
+            {
+                    // nbr_kap_b is the index of the neighboring block w.r.t the current cell.
+                    // nbr_kap_c is the index of the cell in that neighboring block.
+                    // nbr_kap_h is the index of the halo to store that value.
+                    
+                    // First, increment indices along pth direction. Store the resulting halo index.
+                    int Ip = I + V_CONN_ID[p + 0*27];
+                    int Jp = J + V_CONN_ID[p + 1*27];
+                    int Kp = 0;
+                    if (N_DIM==3)
+                            Kp = K + V_CONN_ID[p + 2*27];
+                    int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+                    if (N_DIM==3)
+                            nbr_kap_h += 36*(Kp+1);
+                    
+                    // Then, identify the appropriate neighbor block to store the retrieved cell masks.
+                    int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    if (N_DIM==3)
+                            Kp = (4 + (Kp % 4)) % 4;
+                    int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    
+                    // Write cell mask to the halo.
+                    bool changed = (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
+                    if (changed && nbr_kap_b > -1)
+                            s_F_p[nbr_kap_h] = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + (N_Q+0)*n_maxcells];
+            }
+            ufloat_t rho = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+            s_F_p[(I+1)+6*(J+1)+(N_DIM-2)*36*(K+1)] = rho;
+            __syncthreads();
+            
+            
+            // Compute cell coordinates.
+            ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
+            ufloat_t z __attribute__((unused)) = (ufloat_t)0.0;
+            if (N_DIM==3)
+                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
+            
+            
+            #pragma unroll
+            for (int p = 1; p < N_Q; p++)
+            {
+                // Find the right neighboring DDFs if the second-order Ginzburg and d'Humieres calculation is being used.
+                if (valid_mask == V_CELLMASK_BOUNDARY)
+                {
+                    // Check if DDF p is directed towards the solid object.
+                    ufloat_g_t dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
+                    if (dist_p > 0)
+                    {
+                        // Compute incremented local indices.
+                        int Ip = I + V_CONN_ID[LBMpb[p]+0*27];
+                        int Jp = J + V_CONN_ID[LBMpb[p]+1*27];
+                        int Kp = 0;
+                        if (N_DIM==3)
+                                Kp = K + V_CONN_ID[LBMpb[p]+2*27];
+                        int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+                        if (N_DIM==3)
+                            nbr_kap_h += 36*(Kp+1);
+                        
+                        // Assign the correct neighbor cell-block ID.
+                        int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+                        
+                        // Get DDF from 'behind' and normalize link. Print out the answer.
+                        ufloat_t rho_m = s_F_p[nbr_kap_h];
+                        dist_p /= dx_L;
+                        
+                        
+                    }
+
+                    // Check if DDF pb is directed towards the solid object.
+                    dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells_b];
+                    if (dist_p > 0)
+                    {
+                        // Compute incremented local indices.
+                        int Ip = I + V_CONN_ID[p+0*27];
+                        int Jp = J + V_CONN_ID[p+1*27];
+                        int Kp = 0;
+                        if (N_DIM==3)
+                                Kp = K + V_CONN_ID[p+2*27];
+                        int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+                        if (N_DIM==3)
+                            nbr_kap_h += 36*(Kp+1);
+                        
+                        // Assign the correct neighbor cell-block ID.
+                        int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+                        int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
+                        
+                        ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
+                        dist_p /= dx_L;
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputePressureOnWall(int i_dev, int L, int var)
+{
+    if (mesh->n_ids[i_dev][L]>0)
+    {
+        Cu_ComputePressureOnWall<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        (
+            mesh->n_ids[i_dev][L],
+            n_maxcells,
+            n_maxcblocks,
+            mesh->n_maxcells_b,
+            mesh->n_solidb,
+            dxf_vec[L],
+            dvf_vec[L],
+            &mesh->c_id_set[i_dev][L*n_maxcblocks],
+            mesh->c_cells_ID_mask[i_dev],
+            mesh->c_cells_f_F[i_dev],
+            mesh->c_cells_f_X_b[i_dev],
+            mesh->c_cblock_f_X[i_dev],
+            mesh->c_cblock_ID_nbr[i_dev],
+            mesh->c_cblock_ID_mask[i_dev],
+            mesh->c_cblock_ID_onb[i_dev],
+            mesh->c_cblock_ID_onb_solid[i_dev],
+            mesh->geometry_init,
+            S_FORCE_ORDER
+        );
+    }
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+

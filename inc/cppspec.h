@@ -23,6 +23,12 @@
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/copy.h>
+#include <thrust/count.h>
+#include <thrust/sort.h>
+#include <thrust/unique.h>
+#include <thrust/remove.h>
 
 // VTK.
 #include "vtkAMRBox.h"
@@ -271,17 +277,38 @@ void Cu_FillLinear(int N, T *arr)
 }
 
 template <class T>
-int DebugPrintDeviceArray(int N, T *d_arr)
+int DebugPrintDeviceArray(int N, T *d_arr, int stride=1, std::string sdbg="")
 {
 	// Allocate memory for host array, copy device array data to it.
 	T *h_arr = new T[N];
 	gpuErrchk( cudaMemcpy(h_arr, d_arr, N*sizeof(T), cudaMemcpyDeviceToHost) );
 	
 	// Print data to console.
-	std::cout << "DEBUG: ";
-	for (int k = 0; k < N; k++)
-		std::cout << h_arr[k] << " ";
-	std::cout << std::endl;
+	if (sdbg == "")
+	{
+		std::cout << "DEBUG: ";
+		for (int k = 0; k < N/stride; k++)
+		{
+			for (int j = 0; j < stride; j++)
+				std::cout << h_arr[k + j*(N/stride)] << ",";
+			std::cout << "   |   ";
+		}
+		std::cout << std::endl;
+	}
+	
+	// Print data to a file, if a name is specified.
+	if (sdbg != "")
+	{
+		std::ofstream out = std::ofstream("./debug/" + sdbg);
+		for (int k = 0; k < N/stride; k++)
+		{
+			for (int j = 0; j < stride; j++)
+				out << h_arr[k + j*(N/stride)] << ",";
+			out << std::endl;
+		}
+		out << std::endl;
+		out.close();
+	}
 	
 	// Free memory of temporary host array.
 	delete[] h_arr;
@@ -374,22 +401,5 @@ inline int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1,
 	
 	return 0;
 }
-
-template <class T> __device__ __forceinline__ T Tabs(T a);
-template <> __device__ __forceinline__ int Tabs(int a) { return abs(a); }
-template <> __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }
-template <> __device__ __forceinline__  double Tabs(double a) { return fabs(a); }
-
-template <class T> __device__ __forceinline__ T Tpow(T a, T b);
-template <> __device__ __forceinline__  float Tpow(float a, float b) { return powf(a,b); }
-template <> __device__ __forceinline__  double Tpow(double a, double b) { return pow(a,b); }
-
-template <class T> __device__ __forceinline__ T Tsqrt(T a);
-template <> __device__ __forceinline__  float Tsqrt(float a) { return sqrtf(a); }
-template <> __device__ __forceinline__  double Tsqrt(double a) { return sqrt(a); }
-
-template <class T> __device__ __forceinline__ T Tacos(T a);
-template <> __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
-template <> __device__ __forceinline__  double Tacos(double a) { return acos(a); }
 
 #endif

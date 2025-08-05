@@ -96,8 +96,9 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_add.cu\
       geometry_import.cu\
       geometry_convert.cu\
-      geometry_bin.cu\
-      geometry_bin_alt.cu\
+      geometry_bin_cpu.cu\
+      geometry_bin_gpu.cu\
+      geometry_bin_draw.cu\
       geometry_print.cu\
       geometry_inst.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)

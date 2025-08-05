@@ -349,6 +349,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
 			solver->S_Average(0,L,V_AVERAGE_GRID);
 		for (int L = 0; L < MAX_LEVELS-1; L++)
 			solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+		for (int L = 0; L < MAX_LEVELS; L++)
+			solver->S_RefreshVariables(0,L);
 	}
 	
 	// Retrieve data from the GPU.
