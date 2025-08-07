@@ -1,22 +1,47 @@
 #CIRCLE 128 0.3125 0.50 0.015625
 #RECTANGLE CENTER 0.3125 0.5 0.03125 0.03125
 #PRISM CENTER 0.45 0.5 0.5 0.0625 0.0625 0.0625
-SPHERE 64 64 0.3125 0.5 0.5 0.015625
+#SPHERE 64 64 0.3125 0.5 0.5 0.015625
 
 
-#CIRCLE 8 0.3125 0.50 0.3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# For testing the 'draw' function.
+CIRCLE 8 0.3125 0.50 0.5
 #SPHERE 8 8 0.3125 0.50 0.50 0.1
 
-
+# For testing voxelization of a bunch of particles.
 #CIRCLE 64 0.25 0.35 0.05
 #CIRCLE 64 0.25 0.65 0.05
 #CIRCLE 64 0.75 0.35 0.05
 #CIRCLE 64 0.75 0.65 0.05
 #CIRCLE 64 0.75 0.95 0.1
 
+# For testing airfoils.
 #NACA002D CENTER 128 15 0.5 0.5 0.3 0.2 1
 #NACA003D CENTER 128 15 0.5 0.5 0.5 0.0625 1 0.015625 1
 
+# Some other stuff I forgot.
 #NACA002D CENTER 128 15 0.5 0.5 0.3 0.2 1
 #NACA003D CENTER 32 15 0.3 0.5 0.5 0.4 0.4 0.2 1
 #BOX 2

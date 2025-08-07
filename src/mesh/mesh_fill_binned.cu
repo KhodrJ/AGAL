@@ -42,37 +42,7 @@ void Cu_Voxelize_V1
 	int I_kap = threadIdx.x % 4;
 	int J_kap = (threadIdx.x / 4) % 4;
 	int K_kap = (threadIdx.x / 4) / 4;
-	int i_kap_b;
-	int global_bin_id;
-	int bin_id_y = 0;
-	int bin_id_z __attribute__((unused)) = 0;
-	ufloat_g_t vx1 = (ufloat_g_t)0.0;
-	ufloat_g_t vy1 = (ufloat_g_t)0.0;
-	ufloat_g_t vz1 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vx2 = (ufloat_g_t)0.0;
-	ufloat_g_t vy2 = (ufloat_g_t)0.0;
-	ufloat_g_t vz2 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vx3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vy3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t vz3 __attribute__((unused)) = (ufloat_g_t)0.0;
-	ufloat_g_t nx = (ufloat_g_t)0.0;
-	ufloat_g_t ny = (ufloat_g_t)0.0;
-	ufloat_g_t nz = (ufloat_g_t)0.0;
-	ufloat_g_t ex1 = (ufloat_g_t)0.0;
-	ufloat_g_t ey1 = (ufloat_g_t)0.0;
-	ufloat_g_t ez1 = (ufloat_g_t)0.0;
-	ufloat_g_t ex2 = (ufloat_g_t)0.0;
-	ufloat_g_t ey2 = (ufloat_g_t)0.0;
-	ufloat_g_t ez2 = (ufloat_g_t)0.0;
-	ufloat_g_t vxp = (ufloat_g_t)0.0;
-	ufloat_g_t vyp = (ufloat_g_t)0.0;
-	ufloat_g_t vzp = (ufloat_g_t)0.0;
-	ufloat_g_t tmp = (ufloat_g_t)0.0;
-	ufloat_g_t tmp2 = (ufloat_g_t)0.0;
 	int intersect_counter = 0;
-	bool C;
-	//bool eligible __attribute__((unused)) = true;
-	//bool D = false;
 	
 	s_ID_cblock[threadIdx.x] = -1;
 	if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
@@ -84,79 +54,89 @@ void Cu_Voxelize_V1
 	// Loop over block Ids.
 	for (int k = 0; k < M_LBLOCK; k += 1)
 	{
-		i_kap_b = s_ID_cblock[k];
-
+		int i_kap_b = s_ID_cblock[k];
+		
 		// Latter condition is added only if n>0.
 		if (i_kap_b > -1)
 		{
 			// Compute cell coordinates.
-			vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I_kap*dx_L + 0.5*dx_L;
-			vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J_kap*dx_L + 0.5*dx_L;
+			ufloat_g_t vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I_kap*dx_L + 0.5*dx_L;
+			ufloat_g_t vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J_kap*dx_L + 0.5*dx_L;
+			ufloat_g_t vzp = (ufloat_g_t)0.0;
 			if (N_DIM==3)
 				vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K_kap*dx_L + 0.5*dx_L;
 			
 			// For each face, check if the current cell is within the appropriate bounds. If at least
 			// one condition is satisfied, exit the loop and make a note.
-			bin_id_y = (int)(vyp*G_BIN_DENSITY);
+			int bin_id_x = (int)(vxp*G_BIN_DENSITY);
+			int bin_id_y = (int)(vyp*G_BIN_DENSITY);
+			int bin_id_z = 0;
 			if (N_DIM==3)
 				bin_id_z = (int)(vzp*G_BIN_DENSITY);
 			
 			// Now find the total number of intersections a ray makes in the direction with the smallest number of bins.
-			global_bin_id = bin_id_y + G_BIN_DENSITY*bin_id_z;
+			//int global_bin_id = bin_id_y + G_BIN_DENSITY*bin_id_z;
+			int global_bin_id = bin_id_x + G_BIN_DENSITY*bin_id_y + G_BIN_DENSITY*G_BIN_DENSITY*bin_id_z;
 			int n_f = binned_face_ids_n[global_bin_id];
 			int N_f = 0;
 			if (n_f > 0)
-				N_f = binned_face_ids_N[global_bin_id];
-			for (int p = 0; p < n_f; p++)
 			{
-				int f_p = binned_face_ids[N_f+p];
-				vx1 = geom_f_face_X[f_p + 0*n_faces_a];
-				vy1 = geom_f_face_X[f_p + 1*n_faces_a];
-				vx2 = geom_f_face_X[f_p + 3*n_faces_a];
-				vy2 = geom_f_face_X[f_p + 4*n_faces_a];
-				nx = vy2-vy1;
-				ny = vx1-vx2;
-				
-				if (N_DIM==2)
+				N_f = binned_face_ids_N[global_bin_id];
+				for (int p = 0; p < n_f; p++)
 				{
-					// Find the distance along a ray with direction [1,0].
-					tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx);
-					if (tmp > 0)
+					int f_p = binned_face_ids[N_f+p];
+					ufloat_g_t vx1 = geom_f_face_X[f_p + 0*n_faces_a];
+					ufloat_g_t vy1 = geom_f_face_X[f_p + 1*n_faces_a];
+					ufloat_g_t vx2 = geom_f_face_X[f_p + 3*n_faces_a];
+					ufloat_g_t vy2 = geom_f_face_X[f_p + 4*n_faces_a];
+					
+					if (N_DIM==2)
 					{
-						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
-						C = CheckPointInLine(tmp2, vyp, vx1, vy1, vx2, vy2);
-						if (C)
-							intersect_counter++;
+						ufloat_g_t nx = vy2-vy1;
+						ufloat_g_t ny = vx1-vx2;
+						
+						// Find the distance along a ray with direction [1,0].
+						ufloat_g_t tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx);
+						if (tmp > 0)
+						{
+							ufloat_g_t tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+							bool C = CheckPointInLine(tmp2, vyp, vx1, vy1, vx2, vy2);
+							if (C)
+								intersect_counter++;
+						}
 					}
-				}
-				else
-				{
-					vz1 = geom_f_face_X[f_p + 2*n_faces_a];
-					vz2 = geom_f_face_X[f_p + 5*n_faces_a];
-					vx3 = geom_f_face_X[f_p + 6*n_faces_a];
-					vy3 = geom_f_face_X[f_p + 7*n_faces_a];
-					vz3 = geom_f_face_X[f_p + 8*n_faces_a];
-					
-					ex1 = vx2-vx1;
-					ey1 = vy2-vy1;
-					ez1 = vz2-vz1;
-					ex2 = vx3-vx1;
-					ey2 = vy3-vy1;
-					ez2 = vz3-vz1;
-					Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
-					tmp = Tsqrt(nx*nx + ny*ny + nz*nz);
-					nx /= tmp;
-					ny /= tmp;
-					nz /= tmp;
-					
-					// Find the distance along a ray with direction [1,0,0].
-					tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx) + (vz1-vzp)*(nz/nx);
-					if (tmp > 0)
+					else
 					{
-						tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
-						C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
-						if (C)
-							intersect_counter++;
+						ufloat_g_t vz1 = geom_f_face_X[f_p + 2*n_faces_a];
+						ufloat_g_t vz2 = geom_f_face_X[f_p + 5*n_faces_a];
+						ufloat_g_t vx3 = geom_f_face_X[f_p + 6*n_faces_a];
+						ufloat_g_t vy3 = geom_f_face_X[f_p + 7*n_faces_a];
+						ufloat_g_t vz3 = geom_f_face_X[f_p + 8*n_faces_a];
+						
+						ufloat_g_t ex1 = vx2-vx1;
+						ufloat_g_t ey1 = vy2-vy1;
+						ufloat_g_t ez1 = vz2-vz1;
+						ufloat_g_t ex2 = vx3-vx1;
+						ufloat_g_t ey2 = vy3-vy1;
+						ufloat_g_t ez2 = vz3-vz1;
+						ufloat_g_t nx = (ufloat_g_t)0.0;
+						ufloat_g_t ny = (ufloat_g_t)0.0;
+						ufloat_g_t nz = (ufloat_g_t)0.0;
+						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
+						ufloat_g_t tmp = Tsqrt(nx*nx + ny*ny + nz*nz);
+						nx /= tmp;
+						ny /= tmp;
+						nz /= tmp;
+						
+						// Find the distance along a ray with direction [1,0,0].
+						tmp = (vx1-vxp) + (vy1-vyp)*(ny/nx) + (vz1-vzp)*(nz/nx);
+						if (tmp > 0)
+						{
+							ufloat_g_t tmp2 = vxp + tmp; // Stores the x-component of the intersection point.
+							bool C = CheckPointInTriangle(tmp2, vyp, vzp, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2);
+							if (C)
+								intersect_counter++;
+						}
 					}
 				}
 			}
@@ -238,7 +218,7 @@ void Cu_Voxelize_V2
 	for (int k = 0; k < M_LBLOCK; k += 1)
 	{
 		int i_kap_b = s_ID_cblock[k];
-
+		
 		// Latter condition is added only if n>0.
 		if (i_kap_b > -1)
 		{
@@ -512,7 +492,7 @@ void Cu_MarkBlocks_MarkBoundary
 
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_CheckMasks_V2
+void Cu_MarkBlocks_CheckMasks
 (
 	const int n_ids_idev_L,
 	const int *__restrict__ id_set_idev_L,
@@ -929,38 +909,54 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		bool hit_max = L==MAX_LEVELS-1;
 		
 		// Voxelize the solid, filling in all solid cells.
+		cudaDeviceSynchronize();
+		tic_simple("");
 		Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
 			geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY
 		);
+		cudaDeviceSynchronize();
+		std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);
 		
 		// Identify the cell-blocks on the boundary of the solid. Mark them for refinement, if eligible.
+		tic_simple("");
 		Cu_MarkBlocks_MarkBoundary<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 		);
+		cudaDeviceSynchronize();
+		std::cout << "MESH_VOXELIZE | L=" << L << ", MarkBoundary"; toc_simple("",T_US,1);
 		
 		// Now, mark blocks adjacent to these solid-boundary cell-blocks for refinement if eligible as well.
+		tic_simple("");
 		Cu_MarkBlocks_MarkInterior<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], n_maxcblocks, hit_max, L,
 			c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
 		);
+		cudaDeviceSynchronize();
+		std::cout << "MESH_VOXELIZE | L=" << L << ", MarkInterior"; toc_simple("",T_US,1);
 		
 		// Propagate these latter marks until the specified near-wall refinement criterion is approximately reached.
 		for (int j = 0; j < Nprop; j++)
 		{
+			tic_simple("");
 			Cu_MarkBlocks_Propagate<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 				id_max[i_dev][L], n_maxcblocks, L,
 				c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev], c_tmp_1[i_dev], j
 			);
+			cudaDeviceSynchronize();
+			std::cout << "MESH_VOXELIZE | L=" << L << ", Propagate (" << j << ")"; toc_simple("",T_US,1);
 		}
 		
 		// Finalize the intermediate marks for refinement.
+		tic_simple("");
 		Cu_MarkBlocks_Finalize<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
 			id_max[i_dev][L], c_cblock_ID_ref[i_dev], c_tmp_1[i_dev]
 		);
+		cudaDeviceSynchronize();
+		std::cout << "MESH_VOXELIZE | L=" << L << ", Finalize"; toc_simple("",T_US,1);
 	}
 	
 	return 0;
@@ -979,12 +975,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
 		}
 		
 		// Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
-		Cu_MarkBlocks_CheckMasks_V2<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+		cudaDeviceSynchronize();
+		tic_simple("");
+		Cu_MarkBlocks_CheckMasks<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
 			c_tmp_1[i_dev]
 		);
 		cudaDeviceSynchronize();
+		std::cout << "MESH_UPDATEMASKS | L=" << L << ", UpdateMasks"; toc_simple("",T_US,1);
 	}
 	
 	return 0;
@@ -1046,7 +1045,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_IdentifyFaces(int i_dev, int L)
 {
 	// Use the solver-defined face-cell link calculation procedure (might move this back to the Mesh since it doesn't seem to depend on the solver).
 	if (n_solidb > 0)
+	{
+		cudaDeviceSynchronize();
+		tic_simple("");
 		solver->S_IdentifyFaces(0,L);
+		cudaDeviceSynchronize();
+		std::cout << "MESH_IDENTIFYFACES | L=" << L << ", IdentifyFaces"; toc_simple("",T_US,1);
+	}
 	
 	return 0;
 }

@@ -78,26 +78,14 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 			std::cout << "Near wall refinement #" << L+1 << std::endl;
 			if (L < MAX_LEVELS_WALL-1)
 				M_ComputeRefCriteria(0,L,V_MESH_REF_NW_CASES);
-			cudaDeviceSynchronize();
 			
 			// Fill solid cells and mark blocks nearby.
 			if (geometry_init)
-			{
-				std::cout << "Filling nodes (S1)." << std::endl;
-				tic_simple("");
 				M_Geometry_FillBinned_S1(0,L);
-				cudaDeviceSynchronize();
-				toc_simple("TIME (Filling nodes (S1))",T_US);
-			}
 
 			// Invoke refinement and coarsening routine.
 			if (MAX_LEVELS > 1)
-			{
-				tic_simple("");
 				M_RefineAndCoarsenBlocks(0);
-				cudaDeviceSynchronize();
-				toc_simple("TIME (Refine)",T_US);
-			}
 			
 			//std::cout << "(Refine and coarsen time: " << toc_simple("",T_US,0) << std::endl;;
 			solver->S_SetIC(0,L);
@@ -107,31 +95,16 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
 		// After near-wall refinment, 
 		if (geometry_init)
 		{
-			for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-			{
-				std::cout << "Filling nodes (S2)." << std::endl;
-				tic_simple("");
-				M_Geometry_FillBinned_S2(0,L);
-				cudaDeviceSynchronize();
-				toc_simple("TIME (Filling nodes (S2))",T_US);
-			}
-			
-			std::cout << "Filling nodes (S2A)." << std::endl;
-			tic_simple("");
-			M_Geometry_FillBinned_S2A(0);
-			cudaDeviceSynchronize();
-			toc_simple("TIME (Filling nodes (S2A))",T_US);
+// 			for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+// 				M_Geometry_FillBinned_S2(0,L);
+// 			M_Geometry_FillBinned_S2A(0);
 		}
 		
 		// Cell-blocks near the wall construct their list of faces.
 		if (geometry_init)
 		{
-			std::cout << "Identifying faces and linkages." << std::endl;
-			tic_simple("");
 			for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
 				M_IdentifyFaces(0,L);
-			cudaDeviceSynchronize();
-			toc_simple("TIME (Identifying faces and linkages)",T_US);
 		}
 		
 		// Freeze mesh: these new near-wall cells are not eligible for coarsening.

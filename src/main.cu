@@ -17,7 +17,7 @@
 #include "mesh_amr.cu"
 #include "mesh_comm.cu"
 #include "mesh_criterion_geometry_binned.cu"
-#include "mesh_fill_binned.cu"
+// #include "mesh_fill_binned.cu"
 #include "mesh_fill_binned_alt.cu"
 #include "mesh_criterion.cu"
 #include "mesh_dest.cu"
@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
 	geometry.G_Init_Arrays_CoordsList_CPU(0);
 	if (geometry.G_PRINT)
 		geometry.G_PrintSTL(0);
-	//geometry.G_MakeBinsGPU(0);
-	geometry.G_MakeBinsCPU(0);
+	geometry.G_MakeBinsGPU(0);
+	//geometry.G_MakeBinsCPU(0);
 	//geometry.G_DrawBinsAndFaces(0);
 	
 	// Create a mesh.
@@ -127,9 +127,9 @@ int main(int argc, char *argv[])
 	mesh.M_AddSolver(&solver);
 	
 	// Solver loop (includes rendering and printing).
-	mesh.M_AdvanceLoop();
-// 	mesh.M_Advance_RefineNearWall();
-// 	mesh.M_Advance_PrintData(0,0);
+// 	mesh.M_AdvanceLoop();
+	mesh.M_Advance_RefineNearWall();
+	mesh.M_Advance_PrintData(0,0);
 	
 	return 0;
 }

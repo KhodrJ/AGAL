@@ -43,6 +43,16 @@ struct is_equal_to
 	int level_;
 };
 
+struct is_equal_to_zip
+{
+	int val;
+	is_equal_to_zip(int v) : val(v) {}
+	__device__ bool operator()(const thrust::tuple<int, int>& t) const  // adjust types accordingly
+	{
+		return thrust::get<0>(t) == val;  // only compares the first zipped element
+	}
+};
+
 struct is_removed
 {
 	__device__ bool operator()(const int ID)

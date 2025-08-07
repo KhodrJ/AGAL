@@ -87,95 +87,97 @@ void Cu_IdentifyFaces_V2
 			int n_f = binned_face_ids_n[global_bin_id];
 			int N_f = 0;
 			if (n_f > 0)
+			//{
 				N_f = binned_face_ids_N[global_bin_id];
-			
-			// Initialize face-cell links.
-			for (int q = 0; q < N_Q_max; q++)
-				dQ[q] = (ufloat_g_t)(-1.0);
-			//int b_id_p = -8;
-			
-			for (int p = 0; p < n_f; p++)
-			{
-				int f_p = binned_face_ids[N_f+p];
-				ufloat_g_t vx1 = geom_f_face_X[f_p + 0*n_faces_a];
-				ufloat_g_t vy1 = geom_f_face_X[f_p + 1*n_faces_a];
-				ufloat_g_t vz1 = geom_f_face_X[f_p + 2*n_faces_a];
-				ufloat_g_t vx2 = geom_f_face_X[f_p + 3*n_faces_a];
-				ufloat_g_t vy2 = geom_f_face_X[f_p + 4*n_faces_a];
-				ufloat_g_t vz2 = geom_f_face_X[f_p + 5*n_faces_a];
-				ufloat_g_t vx3 __attribute__((unused)) = (ufloat_g_t)(0.0);
-				ufloat_g_t vy3 __attribute__((unused)) = (ufloat_g_t)(0.0);
-				ufloat_g_t vz3 __attribute__((unused)) = (ufloat_g_t)(0.0);
-				if (N_DIM==3)
-				{
-					vx3 = geom_f_face_X[f_p + 6*n_faces_a];
-					vy3 = geom_f_face_X[f_p + 7*n_faces_a];
-					vz3 = geom_f_face_X[f_p + 8*n_faces_a];
-				}
 				
-				if (N_DIM==2)
+				// Initialize face-cell links.
+				for (int q = 0; q < N_Q_max; q++)
+					dQ[q] = (ufloat_g_t)(-1.0);
+				//int b_id_p = -8;
+				
+				for (int p = 0; p < n_f; p++)
 				{
-					// Loop over all directions, update links for this face if applicable.
-					for (int q = 1; q < N_Q_max; q++)
+					int f_p = binned_face_ids[N_f+p];
+					ufloat_g_t vx1 = geom_f_face_X[f_p + 0*n_faces_a];
+					ufloat_g_t vy1 = geom_f_face_X[f_p + 1*n_faces_a];
+					ufloat_g_t vz1 = geom_f_face_X[f_p + 2*n_faces_a];
+					ufloat_g_t vx2 = geom_f_face_X[f_p + 3*n_faces_a];
+					ufloat_g_t vy2 = geom_f_face_X[f_p + 4*n_faces_a];
+					ufloat_g_t vz2 = geom_f_face_X[f_p + 5*n_faces_a];
+					ufloat_g_t vx3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+					ufloat_g_t vy3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+					ufloat_g_t vz3 __attribute__((unused)) = (ufloat_g_t)(0.0);
+					if (N_DIM==3)
 					{
-						ufloat_g_t nx = vy2-vy1;
-						ufloat_g_t ny = vx1-vx2;
-						ufloat_g_t tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny);
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
+						vx3 = geom_f_face_X[f_p + 6*n_faces_a];
+						vy3 = geom_f_face_X[f_p + 7*n_faces_a];
+						vz3 = geom_f_face_X[f_p + 8*n_faces_a];
+					}
+					
+					if (N_DIM==2)
+					{
+						// Loop over all directions, update links for this face if applicable.
+						for (int q = 1; q < N_Q_max; q++)
 						{
-							ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
-							ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
-							
-							if (CheckPointInLine(tmpx, tmpy, vx1, vy1, vx2, vy2))
+							ufloat_g_t nx = vy2-vy1;
+							ufloat_g_t ny = vx1-vx2;
+							ufloat_g_t tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny);
+							if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
 							{
-								ufloat_g_t dist_q = dQ[q];
-								if (tmp < dist_q || dist_q < 0)
-									dQ[q] = tmp;
+								ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
+								ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
+								
+								if (CheckPointInLine(tmpx, tmpy, vx1, vy1, vx2, vy2))
+								{
+									ufloat_g_t dist_q = dQ[q];
+									if (tmp < dist_q || dist_q < 0)
+										dQ[q] = tmp;
+								}
+							}
+						}
+					}
+					
+					if (N_DIM==3)
+					{
+						for (int q = 1; q < N_Q_max; q++)
+						{
+							ufloat_g_t ex1 = vx2-vx1;
+							ufloat_g_t ey1 = vy2-vy1;
+							ufloat_g_t ez1 = vz2-vz1;
+							ufloat_g_t ex2 = vx3-vx1;
+							ufloat_g_t ey2 = vy3-vy1;
+							ufloat_g_t ez2 = vz3-vz1;
+							ufloat_g_t nx = (ufloat_g_t)0.0;
+							ufloat_g_t ny = (ufloat_g_t)0.0;
+							ufloat_g_t nz = (ufloat_g_t)0.0;
+							Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
+							ufloat_g_t tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
+							tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny + (ufloat_g_t)V_CONN_ID[q+2*27]*nz);
+							if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
+							{
+								ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
+								ufloat_g_t tmpz = vzp + V_CONN_ID[q+2*27]*tmp;
+								ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
+								if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
+								{
+									ufloat_g_t dist_q = dQ[q];
+									if (tmp < dist_q || dist_q < 0)
+										dQ[q] = tmp;
+								}
 							}
 						}
 					}
 				}
 				
-				if (N_DIM==3)
+				// Write face-cell links to global memory.
+				for (int q = 1; q < N_Q_max; q++)
 				{
-					for (int q = 1; q < N_Q_max; q++)
-					{
-						ufloat_g_t ex1 = vx2-vx1;
-						ufloat_g_t ey1 = vy2-vy1;
-						ufloat_g_t ez1 = vz2-vz1;
-						ufloat_g_t ex2 = vx3-vx1;
-						ufloat_g_t ey2 = vy3-vy1;
-						ufloat_g_t ez2 = vz3-vz1;
-						ufloat_g_t nx = (ufloat_g_t)0.0;
-						ufloat_g_t ny = (ufloat_g_t)0.0;
-						ufloat_g_t nz = (ufloat_g_t)0.0;
-						Cross(ex1, ey1, ez1, ex2, ey2, ez2, nx, ny, nz);
-						ufloat_g_t tmp = Tsqrt(nx*nx + ny*ny + nz*nz); nx /= tmp; ny /= tmp; nz /= tmp;
-						tmp = ((vx1-vxp)*nx + (vy1-vyp)*ny + (vz1-vzp)*nz) / ((ufloat_g_t)V_CONN_ID[q+0*27]*nx + (ufloat_g_t)V_CONN_ID[q+1*27]*ny + (ufloat_g_t)V_CONN_ID[q+2*27]*nz);
-						if (tmp > (ufloat_g_t)0.0 && tmp < dx_L + (ufloat_g_t)1e-5)
-						{
-							ufloat_g_t tmpy = vyp + V_CONN_ID[q+1*27]*tmp;
-							ufloat_g_t tmpz = vzp + V_CONN_ID[q+2*27]*tmp;
-							ufloat_g_t tmpx = vxp + V_CONN_ID[q+0*27]*tmp;
-							if (CheckPointInTriangle(tmpx, tmpy, tmpz, vx1, vy1, vz1, vx2, vy2, vz2, vx3, vy3, vz3, nx, ny, nz, ex1, ey1, ez1, ex2, ey2, ez2))
-							{
-								ufloat_g_t dist_q = dQ[q];
-								if (tmp < dist_q || dist_q < 0)
-									dQ[q] = tmp;
-							}
-						}
-					}
+					cells_ID_mask_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = -8; // This will be updated to read actual boundary Ids later.
+					cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = dQ[q];
+					//if (dQ[q] > 0)
+					//	printf("%17.5f\n", dQ[q]/dx_L);
 				}
-			}
-			
-			// Write face-cell links to global memory.
-			for (int q = 1; q < N_Q_max; q++)
-			{
-				cells_ID_mask_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = -8; // This will be updated to read actual boundary Ids later.
-				cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + q*n_maxcells_b] = dQ[q];
-				//if (dQ[q] > 0)
-				//	printf("%17.5f\n", dQ[q]/dx_L);
-			}
+			//}
 		}
 	}
 }

@@ -268,7 +268,25 @@ else
 	return false;
 }
 
-
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ G_MakeBinsCPU ]============================================================  */
+/*                                                                                    */
+/*  Performs a uniform spatial binning of geometry faces inside of the domain in      */
+/*  parallel on the CPU. Faces outside of the domain are filtered out. The result     */
+/*  is the allocation of memory for and filling of three sets of arrays: 1)           */
+/*  c_binned_ids_v/b, a set of contiguous binned faces such that the first batch      */
+/*  correspond to the faces of bin 0, the second batch corresponds to bin 1 and so    */
+/*  on, 2) c_binned_ids_n_v/b, the sizes of the n_bins_v/b bins, and 3)               */
+/*  c_binned_ids_N_v/b, the starting indices for the faces of each bin in             */
+/*  c_binned_ids_v/b. The set of arrays with '_v' corresponds to a 2D binning which   */
+/*  enables a raycast algorithm for solid-cell identification. The one with '_b'      */
+/*  corresponds to the 3D binning, where the bins are extended in volume by an        */
+/*  amount dx specified by the mesh resolution and which is used to restrict the      */
+/*  search-space when cells are computing the lengths of cut-links across the         */
+/*  geometry.                                                                         */
+/*                                                                                    */
+/**************************************************************************************/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsCPU(int i_dev)
