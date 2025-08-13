@@ -276,7 +276,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init(std::map<std::string, int> params_i
 	
 	// Derived.
 	dx = Lx/Nx;
-	dx = (ufloat_t)(dx / pow(2.0, (ufloat_t)MAX_LEVELS_WALL));
+	//dx = (ufloat_t)(dx / pow(2.0, (ufloat_t)(MAX_LEVELS_WALL-1)));
 	
 	return 0;
 }
@@ -444,27 +444,27 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU(int i_dev)
 				vze = vz1 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx1 = vx1 + eps*vxe;
-				vy1 = vy1 + eps*vye;
-				vz1 = vz1 + eps*vze;
+				vx1 = vx1 - eps*vxe;
+				vy1 = vy1 - eps*vye;
+				vz1 = vz1 - eps*vze;
 					// Vertex 2.
 				vxe = vx2 - vxc;
 				vye = vy2 - vyc;
 				vze = vz2 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx2 = vx2 + eps*vxe;
-				vy2 = vy2 + eps*vye;
-				vz2 = vz2 + eps*vze;
+				vx2 = vx2 - eps*vxe;
+				vy2 = vy2 - eps*vye;
+				vz2 = vz2 - eps*vze;
 					// Vertex 3.
 				vxe = vx3 - vxc;
 				vye = vy3 - vyc;
 				vze = vz3 - vzc;
 				norm = sqrt(vxe*vxe + vye*vye + vze*vze);
 				vxe /= norm; vye /= norm; vze /= norm;
-				vx3 = vx3 + eps*vxe;
-				vy3 = vy3 + eps*vye;
-				vz3 = vz3 + eps*vze;
+				vx3 = vx3 - eps*vxe;
+				vy3 = vy3 - eps*vye;
+				vz3 = vz3 - eps*vze;
 				
 				
 				

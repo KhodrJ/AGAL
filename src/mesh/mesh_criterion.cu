@@ -99,30 +99,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeRefCriteria(int i_dev, int L, int var
 			);
 		}
 	}
-	if (var == V_MESH_REF_NW_GEOMETRY) // Complex geometry.
-	{
-		ufloat_g_t R = geometry->G_NEAR_WALL_DISTANCE/pow(2.0,(ufloat_g_t)L);
-		ufloat_g_t R2 __attribute__((unused)) = R*R;
-		if (n_ids[i_dev][L] > 0)
-		{
-// 			Cu_ComputeRefCriteria_NearWall_Geometry_Naive<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
-// 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
-// 				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-// 				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
-// 			);
-			//if (geometry->G_BIN_DENSITY==1)
-			//	M_ComputeRefCriteria_Geometry_Naive(i_dev, L);
-			//else
-				M_ComputeRefCriteria_Geometry_Binned(i_dev, L);
-			
-			
-// 			Cu_ComputeRefCriteria_NearWall_Geometry_Binned<<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
-// 				n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], L,
-// 				c_cells_ID_mask[i_dev], c_cblock_ID_ref[i_dev], c_cblock_ID_onb[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-// 				geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], R, R2
-// 			);
-		}
-	}
 	if (var == V_MESH_REF_UNIFORM) // Refine the whole level.
 	{
 		if (n_ids[i_dev][L] > 0)

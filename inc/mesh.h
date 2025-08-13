@@ -32,11 +32,12 @@ constexpr int V_CELLMASK_INTERIOR            = 0;    ///< Indicates that the cel
 constexpr int V_CELLMASK_INTERFACE           = 1;    ///< Indicates that the cell participates in fine-to-coarse data transfers.
 constexpr int V_CELLMASK_GHOST               = 2;    ///< Indicates that the cell participates in coarse-to-fine data transfers.
 constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
-constexpr int V_CELLMASK_SOLID_O             = -2;   ///< Indicates cell-center lies within the solid (odd).
-constexpr int V_CELLMASK_SOLID_E             = -3;   ///< Indicates cell-center lies within the solid (even).
-constexpr int V_CELLMASK_SOLIDS              = -4;   ///< Indicates cell-center lies outside the solid (guard during propagation).
-constexpr int V_CELLMASK_BOUNDARY            = -5;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
-constexpr int V_CELLMASK_INTERMEDIATE        = -6;   ///< Indicates an intermediate phase for the current cell.
+constexpr int V_CELLMASK_DUMMY_I             = -2;   ///< Indicates a dummy mask value.
+constexpr int V_CELLMASK_DUMMY_II            = -3;   ///< Indicates another dummy mask value.
+constexpr int V_CELLMASK_DUMMY_III           = -4;   ///< Indicates another dummy mask value.
+constexpr int V_CELLMASK_SOLIDS              = -5;   ///< Indicates cell-center lies outside the solid (guard during propagation).
+constexpr int V_CELLMASK_BOUNDARY            = -6;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
+constexpr int V_CELLMASK_INTERMEDIATE        = -7;   ///< Indicates an intermediate phase for the current cell.
 constexpr int V_BLOCKMASK_REGULAR            = 0;    ///< Default state of a cell-block.
 constexpr int V_BLOCKMASK_INTERFACE          = 1;    ///< This cell-block participates in the grid communication routines.
 constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies entirely within a solid object.
@@ -44,6 +45,8 @@ constexpr int V_BLOCKMASK_SOLIDB             = -1;   ///< This cell-block lies o
 constexpr int V_BLOCKMASK_SOLIDA             = -2;   ///< This cell-block is adjacent to the boundary of a solid object.
 constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;   ///< This cell-block is in an indeterminate state (odd).
 constexpr int V_BLOCKMASK_INDETERMINATE_E    = -4;   ///< This cell-block is in an indeterminate state (even).
+constexpr int V_BLOCKMASK_DUMMY_I            = -6;   ///< Indicates a dummy mask value.
+constexpr int V_BLOCKMASK_DUMMY_II           = -7;   ///< Indicates another dummy mask value.
 
 // Mesh refinements types.
 constexpr int V_MESH_REF_NW_CASES            = 0;    ///< Near-wall refinement for the benchmark cases.

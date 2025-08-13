@@ -102,7 +102,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 				// Block mask.
 			vtkNew<vtkDoubleArray> data_kap_mask_cblock;
 			data_kap_mask_cblock->SetName("Block Mask");
-			data_kap_mask_cblock->SetNumberOfComponents(1);
+			data_kap_mask_cblock->SetNumberOfComponents(2);
 			data_kap_mask_cblock->SetNumberOfTuples(M_CBLOCK);
 				// Density.
 			vtkNew<vtkDoubleArray> data_kap_sc;
@@ -168,7 +168,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 					data_kap_mask_cell->SetTuple1(i_global, (double)cells_ID_mask[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i]);
 					
 					// Block mask.
-					data_kap_mask_cblock->SetTuple1(i_global, (double)cblock_ID_mask[i_dev][i_kap]);
+					data_kap_mask_cblock->SetTuple2(i_global, (double)cblock_ID_mask[i_dev][i_kap], (double)cblock_ID_mask[i_dev][i_kap + 1*n_maxcblocks]);
 					
 					// Density.
 					data_kap_sc->SetTuple1(i_global,
@@ -222,7 +222,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 	// Write the AMR object.
 	std::cout << "Finished building VTK dataset, writing..." << std::endl;
 	std::string fileName = output_dir + std::string("out_") + std::to_string(iter+1) + ".vthb";
-	vtkNew<vtkXMLUniformGridAMRWriter> writer;
+	vtkNew<vtkXMLHierarchicalBoxDataWriter> writer;
+// 	vtkNew<vtkXMLUniformGridAMRWriter> writer;
 	writer->SetInputData(data);
 	writer->SetFileName(fileName.c_str());
 	writer->Write();

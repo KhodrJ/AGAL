@@ -61,7 +61,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_DrawBinsAndFaces(int i_dev)
 				// Get the number of faces in the bin.
 				int n_f = binned_face_ids_n_b[i_dev][global_bin_id];
 				int N_f = 0;
-				if (n_f > 0)
+				//if (n_f > 0)
 				{
 					N_f = binned_face_ids_N_b[i_dev][global_bin_id];
 					out3D << "% Bin #" << counter_3D << std::endl;
@@ -70,7 +70,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_DrawBinsAndFaces(int i_dev)
 				}
 				
 				// If there are faces to draw, draw the bin too. Each bin gets its own unique color.
-				if (n_f > 0)
+				//if (n_f > 0)
 				{
 					c0 = (double)(std::rand() % 256) / 256.0;
 					c1 = (double)(std::rand() % 256) / 256.0;

@@ -9,7 +9,7 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              128
+Nx                              64
 N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
@@ -18,7 +18,7 @@ G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
 G_BIN_OVERLAP                   10
-G_BIN_DENSITY                   64
+G_BIN_DENSITY                   16
 G_BIN_FRAC                      1
 G_BIN_APPROACH                  1
 

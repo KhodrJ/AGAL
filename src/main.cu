@@ -16,7 +16,7 @@
 #include "mesh_advance.cu"
 #include "mesh_amr.cu"
 #include "mesh_comm.cu"
-#include "mesh_criterion_geometry_binned.cu"
+// #include "mesh_criterion_geometry_binned.cu"
 // #include "mesh_fill_binned.cu"
 #include "mesh_fill_binned_alt.cu"
 #include "mesh_criterion.cu"
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	mesh.M_AddSolver(&solver);
 	
 	// Solver loop (includes rendering and printing).
-// 	mesh.M_AdvanceLoop();
+	//mesh.M_AdvanceLoop();
 	mesh.M_Advance_RefineNearWall();
 	mesh.M_Advance_PrintData(0,0);
 	

@@ -28,7 +28,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_LoadToGPU()
 		
 		// Metadata arrays.
 		gpuErrchk( cudaMemcpy(c_cells_ID_mask[i_dev], cells_ID_mask[i_dev], cells_id_max*sizeof(int), cudaMemcpyHostToDevice) );
-		gpuErrchk( cudaMemcpy(c_cblock_ID_mask[i_dev], cblock_ID_mask[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyHostToDevice) );
+		for (int p = 0; p < 2; p++)
+			gpuErrchk( cudaMemcpy(&c_cblock_ID_mask[i_dev][p*n_maxcblocks], &cblock_ID_mask[i_dev][p*n_maxcblocks], cblocks_id_max*sizeof(int), cudaMemcpyHostToDevice) );
 		gpuErrchk( cudaMemcpy(c_cblock_ID_ref[i_dev], cblock_ID_ref[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyHostToDevice) );
 		gpuErrchk( cudaMemcpy(c_cblock_level[i_dev], cblock_level[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyHostToDevice) );
 
@@ -67,7 +68,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RetrieveFromGPU()
 
 		// Metadata arrays.
 		gpuErrchk( cudaMemcpy(cells_ID_mask[i_dev], c_cells_ID_mask[i_dev], cells_id_max*sizeof(int), cudaMemcpyDeviceToHost) );
-		gpuErrchk( cudaMemcpy(cblock_ID_mask[i_dev], c_cblock_ID_mask[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyDeviceToHost) );
+		for (int p = 0; p < 2; p++)
+			gpuErrchk( cudaMemcpy(&cblock_ID_mask[i_dev][p*n_maxcblocks], &c_cblock_ID_mask[i_dev][p*n_maxcblocks], cblocks_id_max*sizeof(int), cudaMemcpyDeviceToHost) );
 		gpuErrchk( cudaMemcpy(cblock_ID_ref[i_dev], c_cblock_ID_ref[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyDeviceToHost) );
 		gpuErrchk( cudaMemcpy(cblock_level[i_dev], c_cblock_level[i_dev], cblocks_id_max*sizeof(int), cudaMemcpyDeviceToHost) );
 		

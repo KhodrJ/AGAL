@@ -45,6 +45,7 @@
 #include "vtkImageData.h"
 #include "vtkXMLImageDataWriter.h"
 #include "vtkXMLUniformGridAMRWriter.h"
+#include <vtkXMLHierarchicalBoxDataWriter.h>
 #include "vtkCellDataToPointData.h"
 #include "vtkContourFilter.h"
 #include "vtkActor.h"
@@ -221,7 +222,7 @@ inline double toc_simple(std::string s, int scale=T_S, int print=1) { return tic
     @param arr is a pointer to the array.
     @param val is the value being set.
 */
-template<class T>
+template <class T>
 __global__
 void Cu_ResetToValue(int N, T *arr, T val)
 {
@@ -230,6 +231,12 @@ void Cu_ResetToValue(int N, T *arr, T val)
 	if (kap < N)
 		arr[kap] = val;
 }
+
+// template <class T, int M>
+// void ResetToValue(int N, T *arr, T val)
+// {
+// 	Cu_ResetToValue<<<(M+N-1)/M, M>>>(N, arr, val);
+// }
 
 //! Contract array elements by a specified amount.
 /*! Retrieve elements of an array and store only a fraction of them (skipping over others) in a destination array not necessarily the same as the input.

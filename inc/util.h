@@ -1,29 +1,137 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-template <class T> __device__ __forceinline__ T EPS(T a);
-template <> __device__ __forceinline__ float EPS(float a) { return 1e-7F; }
-template <> __device__ __forceinline__ double EPS(double a) { return 1e-15; }
+template <class T> __host__ __device__ __forceinline__ T EPS(T a);
+template <> __host__ __device__ __forceinline__ float EPS(float a) { return 1e-7F; }
+template <> __host__ __device__ __forceinline__ double EPS(double a) { return 1e-15; }
 
-__device__ __forceinline__ int imin(int a, int b) { return (a < b) ? a : b; }
-__device__ __forceinline__ int imax(int a, int b) { return (a > b) ? a : b; }
+__host__ __device__ __forceinline__ int imin(int a, int b) { return (a < b) ? a : b; }
+__host__ __device__ __forceinline__ int imax(int a, int b) { return (a > b) ? a : b; }
 //
-template <class T> __device__ __forceinline__ T Tabs(T a);
-template <> __device__ __forceinline__ int Tabs(int a) { return abs(a); }
-template <> __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }
-template <> __device__ __forceinline__  double Tabs(double a) { return fabs(a); }
+template <class T> __host__ __device__ __forceinline__ T Tmin(T a, T b);
+template <> __host__ __device__ __forceinline__ int Tmin(int a, int b) { return imin(a,b); }
+template <> __host__ __device__ __forceinline__  float Tmin(float a, float b) { return fminf(a,b); }
+template <> __host__ __device__ __forceinline__  double Tmin(double a, double b) { return fmin(a,b); }
 //
-template <class T> __device__ __forceinline__ T Tpow(T a, T b);
-template <> __device__ __forceinline__  float Tpow(float a, float b) { return powf(a,b); }
-template <> __device__ __forceinline__  double Tpow(double a, double b) { return pow(a,b); }
+template <class T> __host__ __device__ __forceinline__ T Tmax(T a, T b);
+template <> __host__ __device__ __forceinline__ int Tmax(int a, int b) { return imax(a,b); }
+template <> __host__ __device__ __forceinline__  float Tmax(float a, float b) { return fmaxf(a,b); }
+template <> __host__ __device__ __forceinline__  double Tmax(double a, double b) { return fmax(a,b); }
 //
-template <class T> __device__ __forceinline__ T Tsqrt(T a);
-template <> __device__ __forceinline__  float Tsqrt(float a) { return sqrtf(a); }
-template <> __device__ __forceinline__  double Tsqrt(double a) { return sqrt(a); }
+template <class T> __host__ __device__ __forceinline__ T Tabs(T a);
+template <> __host__ __device__ __forceinline__ int Tabs(int a) { return abs(a); }
+template <> __host__ __device__ __forceinline__  float Tabs(float a) { return fabsf(a); }
+template <> __host__ __device__ __forceinline__  double Tabs(double a) { return fabs(a); }
 //
-template <class T> __device__ __forceinline__ T Tacos(T a);
-template <> __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
-template <> __device__ __forceinline__  double Tacos(double a) { return acos(a); }
+template <class T> __host__ __device__ __forceinline__ T Tpow(T a, T b);
+template <> __host__ __device__ __forceinline__  float Tpow(float a, float b) { return powf(a,b); }
+template <> __host__ __device__ __forceinline__  double Tpow(double a, double b) { return pow(a,b); }
+//
+template <class T> __host__ __device__ __forceinline__ T Tsqrt(T a);
+template <> __host__ __device__ __forceinline__  float Tsqrt(float a) { return sqrtf(a); }
+template <> __host__ __device__ __forceinline__  double Tsqrt(double a) { return sqrt(a); }
+//
+template <class T> __host__ __device__ __forceinline__ T Tacos(T a);
+template <> __host__ __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
+template <> __host__ __device__ __forceinline__  double Tacos(double a) { return acos(a); }
+
+
+
+
+
+
+
+
+
+
+
+template <typename T>
+struct vec3
+{
+	T x;
+	T y;
+	T z;
+	
+	// Constructors.
+	__host__ __device__ vec3() : x(0), y(0), z(0) {}
+	__host__ __device__ vec3(T x_, T y_) : x(x_), y(y_), z(0) {}
+	__host__ __device__ vec3(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
+	
+	// Useful operation overloads.
+	__host__ __device__ vec3<T> operator+(const vec3<T> &w) const
+	{
+		return vec3<T>(x + w.x, y + w.y, z + w.z);
+	}
+	__host__ __device__ vec3<T> operator-(const vec3<T> &w) const
+	{
+		return vec3<T>(x - w.x, y - w.y, z - w.z);
+	}
+	__host__ __device__ vec3<T> operator*(T a) const
+	{
+		return vec3<T>(x*a, y*a, z*a);
+	}
+	__host__ __device__ bool operator==(const vec3<T> &w) const
+	{
+		return x==w.x && y==w.y && z==w.z;
+	}
+	__host__ __device__ vec3<T> &operator+=(const vec3<T> & w)
+	{
+		x += w.x;
+		y += w.y;
+		z += w.z;
+		return *this;
+	}
+	__host__ __device__ vec3<T> &operator*=(const vec3<T> &w)
+	{
+		x *= w.x;
+		y *= w.y;
+		z *= w.z;
+		return *this;
+	}
+};
+
+template <typename T>
+__host__ __device__ vec3<T> CrossV(const vec3<T> &a, const vec3<T> &b)
+{
+	return vec3<T>
+	(
+		a.y*b.z - a.z*b.y,
+		a.z*b.x - a.x*b.z,
+		a.x*b.y - a.y*b.x
+	);
+}
+
+template <typename T>
+__host__ __device__ T DotV(const vec3<T> &a, const vec3<T> &b)
+{
+	return (a.x*b.x + a.y*b.y + a.z*b.z);
+}
+
+template <typename T>
+__host__ __device__ T NormV(const vec3<T> &a)
+{
+	return Tsqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+}
+
+template <typename T>
+__host__ __device__ vec3<T> UnitV(const vec3<T> &a)
+{
+	T onorm = static_cast<T>(1.0)/NormV(a);
+	return a*onorm;
+}
+
+template <typename T>
+__host__ __device__ T DistV(const vec3<T> &a, const vec3<T> &b)
+{
+	return NormV(a-b);
+}
+
+
+
+
+
+
+
 
 template <typename T>
 __device__
@@ -183,6 +291,138 @@ __device__
 bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm, T vzM)
 {
 	return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <typename T, int N_DIM>
+__device__ __forceinline__ vec3<T> FaceNormal(const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3)
+{
+	if (N_DIM==2)
+		return vec3<T>(v2.y-v1.y,v1.x-v2.x);
+	return CrossV(v2-v1,v3-v1);
+}
+
+template <typename T, int N_DIM>
+__device__ __forceinline__ vec3<T> FaceNormalUnit(const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3)
+{
+	vec3<T> n = FaceNormal<T,N_DIM>(v1,v2,v3);
+	return UnitV(n);
+}
+
+template <typename T>
+__device__ __forceinline__ vec3<T> InwardNormal(const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &n)
+{
+	return CrossV(v2-v1,n);
+}
+
+template <typename T>
+__device__ __forceinline__ vec3<T> InwardNormalUnit(const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &n)
+{
+	vec3<T> e = CrossV(v2-v1,n);
+	return UnitV(e);
+}
+
+template <typename T>
+__device__ __forceinline__
+vec3<T> PointLineIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+{
+	vec3<T> e = v2-v1;
+	vec3<T> w = vp-v1;
+	T t = DotV(e,w)/DotV(e,e);
+	t = Tmax(static_cast<T>(0.0),Tmin(static_cast<T>(1.0),t));
+	
+	return v1 + e*t;
+}
+
+template <typename T>
+__device__ __forceinline__
+// bool CheckPointInTriangleA(T vxp, T vyp, T vzp, T vx1, T vy1, T vz1, T vx2, T vy2, T vz2, T vx3, T vy3, T vz3, T nx, T ny, T nz)
+bool CheckPointInTriangleA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+	// First edge.
+	vec3<T> ven = InwardNormalUnit(v1,v2,n);
+	T s = DotV(v1-vp,ven);
+	if (s <= 0)
+		return false;
+	
+	// Second edge.
+	ven = InwardNormalUnit(v2,v3,n);
+	s = DotV(v2-vp,ven);
+	if (s <= 0)
+		return false;
+	
+	// Third edge.
+	ven = InwardNormalUnit(v3,v1,n);
+	s = DotV(v3-vp,ven);
+	if (s <= 0)
+		return false;
+	
+	return true;
+}
+
+template <typename T>
+__device__ __forceinline__
+vec3<T> PointTriangleIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+	T dT = DotV(v1-vp,n);
+	vec3<T> vi = vp + n*dT;
+	bool in_T = CheckPointInTriangleA(vi, v1, v2, v3, n);
+	
+	if (!in_T)
+	{
+		// Line 1.
+		vi = PointLineIntersection(vp,v1,v2);
+		dT = NormV(vp-vi);
+		
+		// Line 2.
+		vec3<T> vic = PointLineIntersection(vp,v2,v3);
+		T dL = NormV(vp-vic);
+		if (dL < dT)
+		{
+			vi = vic;
+			dT = dL;
+		}
+		
+		// Line 3.
+		vic = PointLineIntersection(vp,v3,v1);
+		dL = NormV(vp-vic);
+		if (dL < dT)
+		{
+			vi = vic;
+			dT = dL;
+		}
+	}
+	
+	return vi;
+	//return (vix-vxp)*nx + (vix-vxp)*ny + (vix-vxp)*nz;
+}
+
+template <typename T, int N_DIM>
+__device__ __forceinline__
+vec3<T> PointFaceIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+	if (N_DIM==2)
+		return PointLineIntersection(vp, v1, v2);
+	return PointTriangleIntersection(vp, v1, v2, v3, n);
 }
 
 #endif

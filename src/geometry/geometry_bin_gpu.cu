@@ -7,6 +7,258 @@
 
 #include "geometry.h"
 
+template <typename ufloat_g_t, int N_DIM>
+__device__ __forceinline__
+bool Cu_IncludeInBin
+(
+	const vec3<ufloat_g_t> &vm,
+	const vec3<ufloat_g_t> &vM,
+	const vec3<ufloat_g_t> &vBm,
+	const vec3<ufloat_g_t> &vBM,
+	const vec3<ufloat_g_t> &v1,
+	const vec3<ufloat_g_t> &v2,
+	const vec3<ufloat_g_t> &v3
+)
+{
+	// vm/M are the bin dimensions.
+	// vBm/M is the face bounding box.
+	// v1/2/3 are the face vertices.
+	
+	ufloat_g_t tmp = (ufloat_g_t)(0.0);
+	ufloat_g_t ex1 = (ufloat_g_t)(0.0);
+	ufloat_g_t ey1 = (ufloat_g_t)(0.0);
+	
+if (N_DIM==2)
+{
+	// Only consider this calculation if the bounding box intersects the bin.
+	if ( !( (vBm.x < vm.x && vBM.x < vm.x) || (vBm.x > vM.x && vBM.x > vM.x) || (vBm.y < vm.y && vBM.y < vm.y) || (vBm.y > vM.y && vBM.y > vM.y) ) )
+	{
+		// Check if bounding box is entirely inside current bin.
+		if (vBm.x > vm.x && vBM.x < vM.x && vBm.y > vm.y && vBM.y < vM.y) { return true; }
+		
+		// Check if at least one of the vertices is inside the bin.
+		if (v1.x > vm.x && v1.x < vM.x) { return true; }
+		if (v2.x > vm.x && v2.x < vM.x) { return true; }
+		if (v1.y > vm.y && v1.y < vM.y) { return true; }
+		if (v2.y > vm.y && v2.y < vM.y) { return true; }
+		
+		// Check the bottom edge of the bin.
+		{
+			ey1 = v2.y-v1.y;
+			tmp = (vm.y-v1.y)/(ey1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			if (CheckInLine(tmp,ex1,vm.x,vM.x)) { return true; }
+		}
+		
+		// Check the top edge of the bin.
+		{
+			ey1 = v2.y-v1.y;
+			tmp = (vM.y-v1.y)/(ey1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			if (CheckInLine(tmp,ex1,vm.x,vM.x)) { return true; }
+		}
+		
+		// Check the left edge of the bin.
+		{
+			ex1 = v2.x-v1.x;
+			tmp = (vm.x-v1.x)/(ex1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			if (CheckInLine(tmp,ey1,vm.y,vM.y)) { return true; }
+		}
+		
+		// Check the right edge of the bin.
+		{
+			ex1 = v2.x-v1.x;
+			tmp = (vM.x-v1.x)/(ex1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			if (CheckInLine(tmp,ey1,vm.y,vM.y)) { return true; }
+		}
+	}
+}
+else
+{
+	ufloat_g_t ez1 = (ufloat_g_t)(0.0);
+	
+	if ( !( (vBm.x < vm.x && vBM.x < vm.x) || (vBm.x > vM.x && vBM.x > vM.x) || (vBm.y < vm.y && vBM.y < vm.y) || (vBm.y > vM.y && vBM.y > vM.y) || (vBm.z < vm.z && vBM.z < vm.z) || (vBm.z > vM.z && vBM.z > vM.z) ) )
+	{
+		// Check if bounding box is entirely inside current bin.
+		if (vBm.x > vm.x && vBM.x < vM.x && vBm.y > vm.y && vBM.y < vM.y && vBm.z > vm.z && vBM.z < vM.z) { return true; }
+		
+		// Check if bounding box completely surrounds the bin.
+		if (vBm.x < vm.x && vBM.x > vM.x && vBm.y < vm.y && vBM.y > vM.y) { return true; }
+		if (vBm.y < vm.y && vBM.y > vM.y && vBm.z < vm.z && vBM.z > vM.z) { return true; }
+		if (vBm.z < vm.z && vBM.z > vM.z && vBm.x < vm.x && vBM.x > vM.x) { return true; }
+		
+		// Check if at least one of the vertices is inside the bin.
+		if (v1.x > vm.x && v1.x < vM.x && v1.y > vm.y && v1.y < vM.y && v1.z > vm.z && v1.z < vM.z) { return true; }
+		if (v2.x > vm.x && v2.x < vM.x && v2.y > vm.y && v2.y < vM.y && v2.z > vm.z && v2.z < vM.z) { return true; }
+		if (v3.x > vm.x && v3.x < vM.x && v3.y > vm.y && v3.y < vM.y && v3.z > vm.z && v3.z < vM.z) { return true; }
+		
+		// Check the bottom face of the bin.
+		{
+			ez1 = v2.z-v1.z;
+			tmp = (vm.z-v1.z)/(ez1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		{
+			ez1 = v3.z-v2.z;
+			tmp = (vm.z-v2.z)/(ez1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		{
+			ez1 = v1.z-v3.z;
+			tmp = (vm.z-v3.z)/(ez1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		
+		// Check the top face of the bin.
+		{
+			ez1 = v2.z-v1.z;
+			tmp = (vM.z-v1.z)/(ez1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		{
+			ez1 = v3.z-v2.z;
+			tmp = (vM.z-v2.z)/(ez1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		{
+			ez1 = v1.z-v3.z;
+			tmp = (vM.z-v3.z)/(ez1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
+		}
+		
+		// Check the back face of the bin.
+		{
+			ey1 = v2.y-v1.y;
+			tmp = (vm.y-v1.y)/(ey1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		{
+			ey1 = v3.y-v2.y;
+			tmp = (vm.y-v2.y)/(ey1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		{
+			ey1 = v1.y-v3.y;
+			tmp = (vm.y-v3.y)/(ey1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		
+		// Check the front face of the bin.
+		{
+			ey1 = v2.y-v1.y;
+			tmp = (vM.y-v1.y)/(ey1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		{
+			ey1 = v3.y-v2.y;
+			tmp = (vM.y-v2.y)/(ey1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		{
+			ey1 = v1.y-v3.y;
+			tmp = (vM.y-v3.y)/(ey1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
+		}
+		
+		// Check the left face of the bin.
+		{
+			ex1 = v2.x-v1.x;
+			tmp = (vm.x-v1.x)/(ex1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+		{
+			ex1 = v3.x-v2.x;
+			tmp = (vm.x-v2.x)/(ex1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+		{
+			ex1 = v1.x-v3.x;
+			tmp = (vm.x-v3.x)/(ex1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+		
+		// Check the right face of the bin.
+		{
+			ex1 = v2.x-v1.x;
+			tmp = (vM.x-v1.x)/(ex1);
+			ex1 = v1.x + tmp*(v2.x-v1.x);
+			ey1 = v1.y + tmp*(v2.y-v1.y);
+			ez1 = v1.z + tmp*(v2.z-v1.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+		{
+			ex1 = v3.x-v2.x;
+			tmp = (vM.x-v2.x)/(ex1);
+			ex1 = v2.x + tmp*(v3.x-v2.x);
+			ey1 = v2.y + tmp*(v3.y-v2.y);
+			ez1 = v2.z + tmp*(v3.z-v2.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+		{
+			ex1 = v1.x-v3.x;
+			tmp = (vM.x-v3.x)/(ex1);
+			ex1 = v3.x + tmp*(v1.x-v3.x);
+			ey1 = v3.y + tmp*(v1.y-v3.y);
+			ez1 = v3.z + tmp*(v1.z-v3.z);
+			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
+		}
+	}
+}
+	
+	return false;
+}
+
 /**************************************************************************************/
 /*                                                                                    */
 /*  ===[ Cu_ComputeBoundingBoxLimits2D ]============================================  */
@@ -68,16 +320,13 @@ int kap = blockIdx.x*blockDim.x + threadIdx.x;
 			int counter = 0;
 			for (int J = bin_id_yl; J < bin_id_yL+1; J++)
 			{
-				//for (int I = bin_id_xl; I < bin_id_xL+1; I++)
-				//{
-					if (C && counter < 4)
-					{
-						int global_id = J;
-						bounding_box_limits[kap + counter*n_faces] = global_id;
-						bounding_box_index_limits[kap + counter*n_faces] = kap;
-						counter++;
-					}
-				//}
+				if (C && counter < 4)
+				{
+					int global_id = J;
+					bounding_box_limits[kap + counter*n_faces] = global_id;
+					bounding_box_index_limits[kap + counter*n_faces] = kap;
+					counter++;
+				}
 			}
 		}
 		else // N_DIM==3
@@ -119,16 +368,13 @@ int kap = blockIdx.x*blockDim.x + threadIdx.x;
 			{
 				for (int J = bin_id_yl; J < bin_id_yL+1; J++)
 				{
-					//for (int I = bin_id_xl; I < bin_id_xL+1; I++)
-					//{
-						if (C && counter < 16)
-						{
-							int global_id = J + G_BIN_DENSITY*K;
-							bounding_box_limits[kap + counter*n_faces] = global_id;
-							bounding_box_index_limits[kap + counter*n_faces] = kap;
-							counter++;
-						}
-					//}
+					if (C && counter < 16)
+					{
+						int global_id = J + G_BIN_DENSITY*K;
+						bounding_box_limits[kap + counter*n_faces] = global_id;
+						bounding_box_index_limits[kap + counter*n_faces] = kap;
+						counter++;
+					}
 				}
 			}
 		}
@@ -178,16 +424,16 @@ void Cu_ComputeBoundingBoxLimits3D
 			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
 			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
 			
-			ufloat_g_t vBx_m = fmin(vx1, vx2);
-			ufloat_g_t vBx_M = fmax(vx1, vx2);
-			ufloat_g_t vBy_m = fmin(vy1, vy2);
-			ufloat_g_t vBy_M = fmax(vy1, vy2);
+			ufloat_g_t vBx_m = Tmin(vx1, vx2);
+			ufloat_g_t vBx_M = Tmax(vx1, vx2);
+			ufloat_g_t vBy_m = Tmin(vy1, vy2);
+			ufloat_g_t vBy_M = Tmax(vy1, vy2);
 			
 			// C is used to determine if a face is completely outside of the bounding box.
 			bool C = true;
-			if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+			if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
 				C = false;
-			if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+			if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
 				C = false;
 			
 			int bin_id_xl = (int)((vBx_m-dx)*G_BIN_DENSITY);
@@ -223,20 +469,20 @@ void Cu_ComputeBoundingBoxLimits3D
 			ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
 			ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
 			
-			ufloat_g_t vBx_m = fmin(fmin(vx1, vx2), vx3);
-			ufloat_g_t vBx_M = fmax(fmax(vx1, vx2), vx3);
-			ufloat_g_t vBy_m = fmin(fmin(vy1, vy2), vy3);
-			ufloat_g_t vBy_M = fmax(fmax(vy1, vy2), vy3);
-			ufloat_g_t vBz_m = fmin(fmin(vz1, vz2), vz3);
-			ufloat_g_t vBz_M = fmax(fmax(vz1, vz2), vz3);
+			ufloat_g_t vBx_m = Tmin(Tmin(vx1, vx2), vx3);
+			ufloat_g_t vBx_M = Tmax(Tmax(vx1, vx2), vx3);
+			ufloat_g_t vBy_m = Tmin(Tmin(vy1, vy2), vy3);
+			ufloat_g_t vBy_M = Tmax(Tmax(vy1, vy2), vy3);
+			ufloat_g_t vBz_m = Tmin(Tmin(vz1, vz2), vz3);
+			ufloat_g_t vBz_M = Tmax(Tmax(vz1, vz2), vz3);
 			
 			// C is used to determine if a face is completely outside of the bounding box.
 			bool C = true;
-			if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+			if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
 				C = false;
-			if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+			if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
 				C = false;
-			if (vBz_m<-dx&&vBz_M<-dx || vBz_m>Lz+dx&&vBz_M>Lz+dx)
+			if ((vBz_m<-dx&&vBz_M<-dx) || (vBz_m>Lz+dx&&vBz_M>Lz+dx))
 				C = false;
 			
 			int bin_id_xl = (int)((vBx_m-dx)*G_BIN_DENSITY);
@@ -254,6 +500,8 @@ void Cu_ComputeBoundingBoxLimits3D
 				{
 					for (int I = bin_id_xl; I < bin_id_xL+1; I++)
 					{
+						
+						
 						if (C && counter < 64)
 						{
 							int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
@@ -408,7 +656,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsGPU(int i_dev)
 			c_tmp_b_ii_ptr    // stores reduction
 		);
 		int n_unique_bins_b = result.first - c_tmp_b_i_ptr;
-		//int n_unique_bins_b = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_b, is_nonnegative_and_less_than(n_bins_b));
+		//int n_unique_bins_b2 = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_b, is_nonnegative_and_less_than(n_bins_b));
 		cudaDeviceSynchronize();
 		std::cout << "Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
 		
@@ -442,7 +690,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsGPU(int i_dev)
 		cudaDeviceSynchronize();
 		std::cout << "Copy-if"; toc_simple("",T_US,1);
 		
-		// STEP 8: Now scatter the bin sizes and starting-location indices.
+		// STEP 8: Now scatter the starting-location indices.
 		tic_simple("");
 		thrust::scatter(
 			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_b,
@@ -579,7 +827,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsGPU(int i_dev)
 		cudaDeviceSynchronize();
 		std::cout << "Copy-if"; toc_simple("",T_US,1);
 		
-		// STEP 8: Now scatter the bin sizes and starting-location indices.
+		// STEP 8: Now scatter the starting-location indices.
 		tic_simple("");
 		thrust::scatter(
 			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_v,

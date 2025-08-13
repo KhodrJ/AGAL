@@ -173,7 +173,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		cells_ID_mask[i_dev] = new int[n_maxcells]{1};
 		cells_f_F[i_dev] = new ufloat_t[n_maxcells*N_Q]{0};
 		cblock_f_X[i_dev] = new ufloat_t[n_maxcblocks*N_DIM]{0};
-		cblock_ID_mask[i_dev] = new int[n_maxcblocks]{0};
+		cblock_ID_mask[i_dev] = new int[2*n_maxcblocks]{0};
 		cblock_ID_nbr[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
 		cblock_ID_nbr_child[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
 		cblock_ID_onb[i_dev] = new int[n_maxcblocks]{0};
@@ -227,7 +227,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		gpuErrchk( cudaMalloc((void **)&c_cells_f_F[i_dev], n_maxcells*N_Q*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_t)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff[i_dev], n_maxcblocks*6*sizeof(ufloat_t)) );
-		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*sizeof(int)) );
+		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*2*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr_aos[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
 		gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr_child[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
@@ -268,9 +268,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 		
 		// Value setting.
 			// Reset masks to 1.
-		Cu_ResetToValue<<<(M_BLOCK+n_maxcells-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells, c_cells_ID_mask[i_dev], 0);
+		Cu_ResetToValue<<<(M_BLOCK+n_maxcells-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells, c_cells_ID_mask[i_dev], V_CELLMASK_INTERIOR);
 			// Reset active IDs to 0.
-		Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_mask[i_dev], 0);
+		Cu_ResetToValue<<<(M_BLOCK+(2*n_maxcblocks)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(2*n_maxcblocks, c_cblock_ID_mask[i_dev], V_BLOCKMASK_REGULAR);
 			// Reset nbr IDs to N_SKIPID.
 		Cu_ResetToValue<<<(M_BLOCK+N_Q_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(N_Q_max*n_maxcblocks, c_cblock_ID_nbr[i_dev], N_SKIPID);
 			// Reset nbr-child IDs to N_SKIPID.
@@ -303,7 +303,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	// | Load connectivity indices into (GPU) constant memory.
 	// o====================================================================================
 	
-	int V_CONN_ID_2D[81] = {0, 1, 0, -1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	int V_CONN_ID_2D[81] = {0, 1, 0, -1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 	int V_CONN_ID_3D[81] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
 // 	if (N_DIM==2) cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_2D, sizeof(int)*81);
 // 	if (N_DIM==3) cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_3D, sizeof(int)*81);

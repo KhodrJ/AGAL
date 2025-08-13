@@ -114,7 +114,6 @@ SRC_MESH = mesh_init.cu\
       mesh_dest.cu\
       mesh_comm.cu\
       mesh_criterion.cu\
-      mesh_criterion_geometry_binned.cu\
       mesh_fill_binned.cu\
       mesh_fill_binned_alt.cu\
       mesh_amr.cu\
