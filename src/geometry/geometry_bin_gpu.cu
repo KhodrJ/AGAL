@@ -410,6 +410,9 @@ void Cu_ComputeBoundingBoxLimits3D
 	const ufloat_g_t Lx,
 	const ufloat_g_t Ly,
 	const ufloat_g_t Lz,
+	const ufloat_g_t Lx0g,
+	const ufloat_g_t Ly0g,
+	const ufloat_g_t Lz0g,
 	const int G_BIN_DENSITY
 )
 {
@@ -419,27 +422,31 @@ void Cu_ComputeBoundingBoxLimits3D
 	{
 		if (N_DIM==2)
 		{
-			ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-			ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
+			vec3<ufloat_g_t> v1
+			(
+				geom_f_face_X[kap + 0*n_faces_a],
+				geom_f_face_X[kap + 1*n_faces_a]
+			);
+			vec3<ufloat_g_t> v2
+			(
+				geom_f_face_X[kap + 3*n_faces_a],
+				geom_f_face_X[kap + 4*n_faces_a]
+			);
 			
-			ufloat_g_t vBx_m = Tmin(vx1, vx2);
-			ufloat_g_t vBx_M = Tmax(vx1, vx2);
-			ufloat_g_t vBy_m = Tmin(vy1, vy2);
-			ufloat_g_t vBy_M = Tmax(vy1, vy2);
+			vec3<ufloat_g_t> vBm (Tmin(v1.x, v2.x), Tmin(v1.y, v2.y));
+			vec3<ufloat_g_t> vBM (Tmax(v1.x, v2.x), Tmax(v1.y, v2.y));
 			
 			// C is used to determine if a face is completely outside of the bounding box.
 			bool C = true;
-			if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
+			if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
 				C = false;
-			if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
+			if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
 				C = false;
 			
-			int bin_id_xl = (int)((vBx_m-dx)*G_BIN_DENSITY);
-			int bin_id_yl = (int)((vBy_m-dx)*G_BIN_DENSITY);
-			int bin_id_xL = (int)((vBx_M+dx)*G_BIN_DENSITY);
-			int bin_id_yL = (int)((vBy_M+dx)*G_BIN_DENSITY);
+			int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
+			int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
+			int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
+			int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
 			
 			// Note: this assumes that the faces intersect, at most, eight bins.
 			int counter = 0;
@@ -449,6 +456,10 @@ void Cu_ComputeBoundingBoxLimits3D
 				{
 					if (C && counter < 16)
 					{
+						vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx);
+						vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
+						C  = Cu_IncludeInBin<ufloat_g_t,2>(vm,vM,vBm,vBM,v1,v2,vec3<ufloat_g_t>());
+						
 						int global_id = I + G_BIN_DENSITY*J;
 						bounding_box_limits[kap + counter*n_faces] = global_id;
 						bounding_box_index_limits[kap + counter*n_faces] = kap;
@@ -459,38 +470,43 @@ void Cu_ComputeBoundingBoxLimits3D
 		}
 		else // N_DIM==3
 		{
-			ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-			ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-			ufloat_g_t vz1 = geom_f_face_X[kap + 2*n_faces_a];
-			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
-			ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
-			ufloat_g_t vx3 = geom_f_face_X[kap + 6*n_faces_a];
-			ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
-			ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
+			vec3<ufloat_g_t> v1
+			(
+				geom_f_face_X[kap + 0*n_faces_a],
+				geom_f_face_X[kap + 1*n_faces_a],
+				geom_f_face_X[kap + 2*n_faces_a]
+			);
+			vec3<ufloat_g_t> v2
+			(
+				geom_f_face_X[kap + 3*n_faces_a],
+				geom_f_face_X[kap + 4*n_faces_a],
+				geom_f_face_X[kap + 5*n_faces_a]
+			);
+			vec3<ufloat_g_t> v3
+			(
+				geom_f_face_X[kap + 6*n_faces_a],
+				geom_f_face_X[kap + 7*n_faces_a],
+				geom_f_face_X[kap + 8*n_faces_a]
+			);
 			
-			ufloat_g_t vBx_m = Tmin(Tmin(vx1, vx2), vx3);
-			ufloat_g_t vBx_M = Tmax(Tmax(vx1, vx2), vx3);
-			ufloat_g_t vBy_m = Tmin(Tmin(vy1, vy2), vy3);
-			ufloat_g_t vBy_M = Tmax(Tmax(vy1, vy2), vy3);
-			ufloat_g_t vBz_m = Tmin(Tmin(vz1, vz2), vz3);
-			ufloat_g_t vBz_M = Tmax(Tmax(vz1, vz2), vz3);
+			vec3<ufloat_g_t> vBm (Tmin(Tmin(v1.x, v2.x), v3.x), Tmin(Tmin(v1.y, v2.y), v3.y), Tmin(Tmin(v1.z, v2.z), v3.z));
+			vec3<ufloat_g_t> vBM (Tmax(Tmax(v1.x, v2.x), v3.x), Tmax(Tmax(v1.y, v2.y), v3.y), Tmax(Tmax(v1.z, v2.z), v3.z));
 			
 			// C is used to determine if a face is completely outside of the bounding box.
 			bool C = true;
-			if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
+			if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
 				C = false;
-			if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
+			if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
 				C = false;
-			if ((vBz_m<-dx&&vBz_M<-dx) || (vBz_m>Lz+dx&&vBz_M>Lz+dx))
+			if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
 				C = false;
 			
-			int bin_id_xl = (int)((vBx_m-dx)*G_BIN_DENSITY);
-			int bin_id_yl = (int)((vBy_m-dx)*G_BIN_DENSITY);
-			int bin_id_zl = (int)((vBz_m-dx)*G_BIN_DENSITY);
-			int bin_id_xL = (int)((vBx_M+dx)*G_BIN_DENSITY);
-			int bin_id_yL = (int)((vBy_M+dx)*G_BIN_DENSITY);
-			int bin_id_zL = (int)((vBz_M+dx)*G_BIN_DENSITY);
+			int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
+			int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
+			int bin_id_zl = (int)((vBm.z-0*dx)*G_BIN_DENSITY)-1;
+			int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
+			int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
+			int bin_id_zL = (int)((vBM.z+0*dx)*G_BIN_DENSITY)+1;
 			
 			// Note: this assumes that the faces intersect, at most, eight bins.
 			int counter = 0;
@@ -500,7 +516,11 @@ void Cu_ComputeBoundingBoxLimits3D
 				{
 					for (int I = bin_id_xl; I < bin_id_xL+1; I++)
 					{
-						
+						vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
+						vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
+						C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+						//C  = Cu_IncludeInBin<ufloat_g_t,3>(vm,vM,vBm,vBM,v1,v2,v3);
+						//C = (!(vBM.x < vm.x || vBm.x > vM.x || vBM.y < vm.y || vBm.y > vM.y || vBM.z < vm.z || vBm.z > vM.z));
 						
 						if (C && counter < 64)
 						{
@@ -621,7 +641,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsGPU(int i_dev)
 		Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
 			n_faces[i_dev], n_faces_a[i_dev],
 			c_geom_f_face_X[i_dev], c_bounding_box_limits, c_bounding_box_index_limits,
-			(ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, G_BIN_DENSITY
+			(ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
+			Lx/(ufloat_g_t)G_BIN_DENSITY, Ly/(ufloat_g_t)G_BIN_DENSITY, Lz/(ufloat_g_t)G_BIN_DENSITY, G_BIN_DENSITY
 		);
 		cudaDeviceSynchronize();
 		std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);

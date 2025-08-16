@@ -46,6 +46,94 @@ template <> __host__ __device__ __forceinline__  double Tacos(double a) { return
 
 
 template <typename T>
+struct vec2
+{
+	T x;
+	T y;
+	
+	// Constructors.
+	__host__ __device__ vec2() : x(0), y(0) {}
+	__host__ __device__ vec2(T x_) : x(x_), y(0) {}
+	__host__ __device__ vec2(T x_, T y_) : x(x_), y(y_) {}
+	
+	// Useful operation overloads.
+	__host__ __device__ vec2<T> operator+(const vec2<T> &w) const
+	{
+		return vec2<T>(x + w.x, y + w.y);
+	}
+	__host__ __device__ vec2<T> operator-(const vec2<T> &w) const
+	{
+		return vec2<T>(x - w.x, y - w.y);
+	}
+	__host__ __device__ vec2<T> operator*(T a) const
+	{
+		return vec2<T>(x*a, y*a);
+	}
+	__host__ __device__ bool operator==(const vec2<T> &w) const
+	{
+		return x==w.x && y==w.y;
+	}
+	__host__ __device__ vec2<T> &operator+=(const vec2<T> & w)
+	{
+		x += w.x;
+		y += w.y;
+		return *this;
+	}
+	__host__ __device__ vec2<T> &operator*=(const vec2<T> &w)
+	{
+		x *= w.x;
+		y *= w.y;
+		return *this;
+	}
+	
+	// Useful routines.
+	__host__ __device__ T min() const
+	{
+		return Tmin(x,y);
+	}
+	__host__ __device__ T max() const
+	{
+		return Tmax(x,y);
+	}
+	__host__ __device__ bool InRegion_Cube(const vec2<T> &vm, const vec2<T> &vM) const
+	{
+		return (x >= vm.x && x <= vM.x && y >= vm.y && y <= vM.y);
+	}
+};
+
+template <typename T>
+__host__ __device__ __forceinline__ T DotV(const vec2<T> &a, const vec2<T> &b)
+{
+	return (a.x*b.x + a.y*b.y);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ T NormV(const vec2<T> &a)
+{
+	return Tsqrt(a.x*a.x + a.y*a.y);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ vec2<T> UnitV(const vec2<T> &a)
+{
+	T onorm = static_cast<T>(1.0)/NormV(a);
+	return a*onorm;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ T DistV(const vec2<T> &a, const vec2<T> &b)
+{
+	return NormV(a-b);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ vec2<T> ReducedCrossWUnitV(const vec2<T> &a)
+{
+	// Returns the cross product of a vector a=(ax,ay,0), b=(0,0,1).
+	return vec2<T>(a.y,-a.x);
+}
+
+template <typename T>
 struct vec3
 {
 	T x;
@@ -54,6 +142,7 @@ struct vec3
 	
 	// Constructors.
 	__host__ __device__ vec3() : x(0), y(0), z(0) {}
+	__host__ __device__ vec3(T x_) : x(x_), y(0), z(0) {}
 	__host__ __device__ vec3(T x_, T y_) : x(x_), y(y_), z(0) {}
 	__host__ __device__ vec3(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
 	
@@ -88,10 +177,24 @@ struct vec3
 		z *= w.z;
 		return *this;
 	}
+	
+	// Useful routines.
+	__host__ __device__ T min() const
+	{
+		return Tmin(Tmin(x,y),z);
+	}
+	__host__ __device__ T max() const
+	{
+		return Tmax(Tmax(x,y),z);
+	}
+	__host__ __device__ bool InRegion_Cube(const vec3<T> &vm, const vec3<T> &vM) const
+	{
+		return (x >= vm.x && x <= vM.x && y >= vm.y && y <= vM.y && z >= vm.z && z <= vM.z);
+	}
 };
 
 template <typename T>
-__host__ __device__ vec3<T> CrossV(const vec3<T> &a, const vec3<T> &b)
+__host__ __device__ vec3<T> __forceinline__ CrossV(const vec3<T> &a, const vec3<T> &b)
 {
 	return vec3<T>
 	(
@@ -102,26 +205,26 @@ __host__ __device__ vec3<T> CrossV(const vec3<T> &a, const vec3<T> &b)
 }
 
 template <typename T>
-__host__ __device__ T DotV(const vec3<T> &a, const vec3<T> &b)
+__host__ __device__ __forceinline__ T DotV(const vec3<T> &a, const vec3<T> &b)
 {
 	return (a.x*b.x + a.y*b.y + a.z*b.z);
 }
 
 template <typename T>
-__host__ __device__ T NormV(const vec3<T> &a)
+__host__ __device__ __forceinline__ T NormV(const vec3<T> &a)
 {
 	return Tsqrt(a.x*a.x + a.y*a.y + a.z*a.z);
 }
 
 template <typename T>
-__host__ __device__ vec3<T> UnitV(const vec3<T> &a)
+__host__ __device__ __forceinline__ vec3<T> UnitV(const vec3<T> &a)
 {
 	T onorm = static_cast<T>(1.0)/NormV(a);
 	return a*onorm;
 }
 
 template <typename T>
-__host__ __device__ T DistV(const vec3<T> &a, const vec3<T> &b)
+__host__ __device__ __forceinline__ T DistV(const vec3<T> &a, const vec3<T> &b)
 {
 	return NormV(a-b);
 }
@@ -220,6 +323,7 @@ void GetShortestLinkVertex2D(T &vxp, T &vyp, T &vx1, T &vy1, T &vx2, T &vy2, T &
 	}
 }
 
+/*
 template <typename T>
 __device__
 void GetShortestLinkEdge3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &sx, T &sy, T &sz, T &nx, T &ny, T &nz, T &dmin, T &tmin, T &tmp, bool &C)
@@ -235,7 +339,6 @@ void GetShortestLinkEdge3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx
 	tmin = (vxp-sx)*nx + (vyp-sy)*ny + (vzp-sz)*nz;
 	//tmin = Tacos(tmin);
 }
-
 template <typename T>
 __device__
 void GetShortedLinkVertex3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &vx3, T &vy3, T &vz3, T &nx, T &ny, T &nz, T &dmin, T &tmin, T &tmp)
@@ -260,6 +363,7 @@ void GetShortedLinkVertex3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &v
 		tmin = (vxp-vx3)*nx + (vyp-vy3)*ny + (vzp-vz3)*nz;
 	}
 }
+*/
 
 template <typename T>
 __host__ __device__ __forceinline__
@@ -292,8 +396,6 @@ bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm
 {
 	return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
 }
-
-
 
 
 
@@ -424,5 +526,50 @@ vec3<T> PointFaceIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T
 		return PointLineIntersection(vp, v1, v2);
 	return PointTriangleIntersection(vp, v1, v2, v3, n);
 }
+
+template <typename T, int N_DIM>
+__device__ __forceinline__
+bool PointInIndexedBin
+(
+	const vec3<T> &vp,
+	const int &Id,
+	const int &Nx,
+	const int &Ny,
+	const T &Lx,
+	const T &Ly,
+	const T &Lz,
+	const T &dx_x,
+	const T &dx_y,
+	const T &dx_z
+)
+{
+	bool b = true;
+	
+	// Along x.
+	{
+		int Id_x = Id % Nx;
+		b = b && (vp.x >= static_cast<T>(Id_x)*Lx-dx_x && vp.x <= static_cast<T>(Id_x+1)*Lx+dx_x);
+	}
+	
+	// Along y.
+	{
+		int Id_y = (Id/Nx) % Ny;
+		b = b && (vp.y >= static_cast<T>(Id_y)*Ly-dx_y && vp.y <= static_cast<T>(Id_y+1)*Ly+dx_y);
+	}
+	
+	// Along z.
+	if (N_DIM==3)
+	{
+		int Id_z = (Id/Nx) / Ny;
+		b = b && (vp.z >= static_cast<T>(Id_z)*Lz-dx_z && vp.z <= static_cast<T>(Id_z+1)*Lz+dx_z);
+	}
+	
+	return b;
+}
+
+
+
+#include "util_tribin.h"
+
 
 #endif

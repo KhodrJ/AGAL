@@ -34,7 +34,11 @@ void Cu_Voxelize_V1
 	const int *__restrict__ binned_face_ids_n_b,
 	const int *__restrict__ binned_face_ids_N_b,
 	const int *__restrict__ binned_face_ids_b,
-	const int G_BIN_DENSITY
+	const int G_BIN_DENSITY,
+	const ufloat_g_t Lx0g,
+	const ufloat_g_t Ly0g,
+	const ufloat_g_t Lz0g,
+	const ufloat_g_t dxg
 )
 {
 	constexpr int N_DIM = AP->N_DIM;
@@ -58,32 +62,29 @@ void Cu_Voxelize_V1
 		if (N_DIM==3)
 			K = (threadIdx.x / 4) / 4;
 		
-		// Compute global bin index for this thread.
+		// Compute cell coordinates.
 		vec3<ufloat_g_t> vp
 		(
 			cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + 0.5*dx_L,
 			cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + 0.5*dx_L,
 			(N_DIM==2) ? (ufloat_g_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L
 		);
-// 		ufloat_g_t vxp = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + 0.5*dx_L;
-// 		ufloat_g_t vyp = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + 0.5*dx_L;
-// 		ufloat_g_t vzp = (ufloat_g_t)0.0;
-// 		if (N_DIM==3)
-// 			vzp = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L;
-// 		vec3<ufloat_g_t> vp(vxp,vyp,vzp);
 		
-		int bin_id_x = (int)(vp.x*G_BIN_DENSITY);
-		int bin_id_y = (int)(vp.y*G_BIN_DENSITY);
-		int bin_id_z = 0;
+		// Compute global bin index for this thread.
+		int Ibx = (int)(vp.x*G_BIN_DENSITY);
+		int Iby = (int)(vp.y*G_BIN_DENSITY);
+		int Ibz = 0;
 		if (N_DIM==3)
-			bin_id_z = (int)(vp.z*G_BIN_DENSITY);
-		int global_bin_id = bin_id_x + G_BIN_DENSITY*bin_id_y + G_BIN_DENSITY*G_BIN_DENSITY*bin_id_z;
+			Ibz = (int)(vp.z*G_BIN_DENSITY);
+		int global_bin_id = Ibx + G_BIN_DENSITY*Iby + G_BIN_DENSITY*G_BIN_DENSITY*Ibz;
 		
-		int n_f = binned_face_ids_n_b[global_bin_id];
+		// Initialize trackers for minimal face-distance.
 		int pmin = -1;
 		ufloat_g_t dmin = (ufloat_g_t)1.0;
 		ufloat_g_t dotmin = (ufloat_g_t)1.0;
+		int n_f = binned_face_ids_n_b[global_bin_id];
 		vec3<ufloat_g_t> vimin(vp.x,vp.y,vp.z);
+		
 		if (n_f > 0)
 		{
 			int N_f = binned_face_ids_N_b[global_bin_id];
@@ -112,39 +113,38 @@ void Cu_Voxelize_V1
 				
 				// If this triangle is the closest to this point, consider the relative orientation.
 				vec3<ufloat_g_t> vi = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
-				ufloat_g_t d = NormV(vi-vp);
-				if (threadIdx.x==0 && i_kap_b==2691)
 				{
-					//printf("Compared %17.15f with dmin=%17.15f...\n",d,dmin);
-				}
-				if (d < dmin || pmin == -1)
-				{
-					pmin = p;
-					dmin = d;
-					dotmin = DotV(vi-vp,n);
-					vimin = vi;
-					
-					//if (d==0)
-					//	printf("vp=[%17.15f,%17.15f,%17.15f] vs v1=[%17.15f,%17.15f,%17.15f] v2=[%17.15f,%17.15f,%17.15f] v3=[%17.15f,%17.15f,%17.15f]\n",vp.x,vp.y,vp.z,v1.x,v1.y,v1.z,v2.x,v2.y,v2.z,v3.x,v3.y,v3.z);
+					ufloat_g_t d = NormV(vi-vp);
+					if (d < dx_L && (d < dmin || pmin == -1))
+					{
+						pmin = p;
+						dmin = d;
+						dotmin = DotV(vi-vp,n);
+						vimin = vi;
+					}
 				}
 				
-				if (i_kap_b == 677)
-				{
-					// Print faces in this bin.
-					if (threadIdx.x==0)
-						printf("fill3([%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],'b');\n",v1.x,v2.x,v3.x,v1.x,  v1.y,v2.y,v3.y,v1.y,  v1.z,v2.z,v3.z,v1.z);
-					
-					if (p == n_f-1)
-					{
-						
-						if (dotmin > 0)
-							printf("plot3(%17.15f,%17.15f,%17.15f,'k*'); \n",vp.x,vp.y,vp.z);
-						else
-							printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vp.x,vp.y,vp.z);
-						printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'mo-'); \n",vp.x,vimin.x,vp.y,vimin.y,vp.z,vimin.z);
-					}
-					printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vimin.x,vimin.y,vimin.z);
-				}
+// 				if (i_kap_b == 4683)
+// 				{
+// 					// Print faces in this bin.
+// 					if (threadIdx.x==0)
+// 						printf("fill3([%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],'b');\n",v1.x,v2.x,v3.x,v1.x,  v1.y,v2.y,v3.y,v1.y,  v1.z,v2.z,v3.z,v1.z);
+// 					
+// 					if (p == n_f-1)
+// 					{
+// 						
+// 						if (dotmin > 0)
+// 						{
+// 							printf("plot3(%17.15f,%17.15f,%17.15f,'k*'); \n",vp.x,vp.y,vp.z);
+// 							printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'mo-'); \n",vp.x,vimin.x,vp.y,vimin.y,vp.z,vimin.z);
+// 							printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vimin.x,vimin.y,vimin.z);
+// 						}
+// 						else
+// 						{
+// 							printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vp.x,vp.y,vp.z);
+// 						}
+// 					}
+// 				}
 			}
 		}
 			
@@ -178,66 +178,64 @@ void Cu_Voxelize_V1
 			if (threadIdx.x == 0)
 				cblock_ID_mask[i_kap_b] = global_bin_id;
 			
-			/*
+			
 			// Internally propagate the cell mask values to the x-edges of the cell-block.
 			for (int l = 0; l < 9; l++)
 			{
 				if (I > 0)
 				{
 					int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				if (I < 3)
 				{
 					int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				if (J > 0)
 				{
 					int nbr_mask = s_ID_mask[I + 4*(J-1) + 16*K];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				if (J < 3)
 				{
 					int nbr_mask = s_ID_mask[I + 4*(J+1) + 16*K];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				if (N_DIM==3 && K > 0)
 				{
 					int nbr_mask = s_ID_mask[I + 4*J + 16*(K-1)];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				if (N_DIM==3 && K < 3)
 				{
 					int nbr_mask = s_ID_mask[I + 4*J + 16*(K+1)];
-					if (nbr_mask == V_CELLMASK_DUMMY_II && cellmask == V_CELLMASK_INTERIOR)
-						cellmask = V_CELLMASK_DUMMY_II;
-					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask != V_CELLMASK_DUMMY_II)
+					if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
 						cellmask = V_CELLMASK_DUMMY_I;
+					if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+						cellmask = V_CELLMASK_SOLID;
 				}
 				s_ID_mask[threadIdx.x] = cellmask;
 				__syncthreads();
 			}
-			*/
+			
 			
 			// If there are solid masks in this block, place guard in the masks for the propagation.
-			//if (cellmask == V_CELLMASK_INTERIOR)
-			//	cellmask = V_CELLMASK_SOLIDS;
 			cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
 		}
 	}
@@ -1232,6 +1230,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
 		int Nprop_d = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For satisfying the near-wall distance criterion.
 		bool hit_max = L==MAX_LEVELS-1;
+		ufloat_g_t Lx0g = (ufloat_g_t)geometry->Lx/(ufloat_g_t)geometry->G_BIN_DENSITY;
+		ufloat_g_t Ly0g = (ufloat_g_t)geometry->Ly/(ufloat_g_t)geometry->G_BIN_DENSITY;
+		ufloat_g_t Lz0g = (ufloat_g_t)geometry->Lz/(ufloat_g_t)geometry->G_BIN_DENSITY;
+		ufloat_g_t dxg = geometry->dx;
 		
 		// Voxelize the solid, filling in all solid cells.
 		tic_simple("");
@@ -1239,7 +1241,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
-			geometry->c_binned_face_ids_n_b[i_dev], geometry->c_binned_face_ids_N_b[i_dev], geometry->c_binned_face_ids_b[i_dev], geometry->G_BIN_DENSITY
+			geometry->c_binned_face_ids_n_b[i_dev], geometry->c_binned_face_ids_N_b[i_dev], geometry->c_binned_face_ids_b[i_dev], geometry->G_BIN_DENSITY, Lx0g, Ly0g, Lz0g, dxg
 		);
 		cudaDeviceSynchronize();
 		std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);

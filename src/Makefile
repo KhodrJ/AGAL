@@ -150,7 +150,7 @@ OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
 
 
 # Building the application objects.
-INC_MAIN = cppspec.h geometry.h mesh.h solver_lbm.h solver.h structs.h util.h custom.h
+INC_MAIN = cppspec.h geometry.h mesh.h solver_lbm.h solver.h structs.h util.h util_tribin.h custom.h
 SRC_MAIN = main_read_input.cu
 OBJ_MAIN = $(SRC_MAIN:.cu=.o)
 # main_%.o: main_%.cu
