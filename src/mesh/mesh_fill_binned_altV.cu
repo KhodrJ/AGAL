@@ -18,7 +18,7 @@
 // 	const ufloat_t *__restrict__ cblock_f_X,
 // 	int *__restrict__ cblock_ID_mask,
 // 	const int *__restrict__ cblock_level,
-// 	const int *__restrict__ binned_face_ids_n_b,
+// 	const int *__restrict__ binned_face_ids_n_3D,
 // 	const int G_BIN_DENSITY
 // )
 // {
@@ -41,7 +41,7 @@
 // 		int global_bin_id = bin_id_x + G_BIN_DENSITY*bin_id_y + G_BIN_DENSITY*G_BIN_DENSITY*bin_id_z;
 // 		
 // 		// If the associated 3D bin has a positive size, mark this cell-block for consideration in S2.
-// 		if (binned_face_ids_n_b[global_bin_id] > 0)
+// 		if (binned_face_ids_n_3D[global_bin_id] > 0)
 // 			cblock_ID_mask[kap] = V_BLOCKMASK_DUMMY_I;
 // 	}
 // }
@@ -58,7 +58,7 @@ void Cu_Voxelize_S1
 	const ufloat_t *__restrict__ cblock_f_X,
 	int *__restrict__ cblock_ID_mask,
 	const int *__restrict__ cblock_level,
-	const int *__restrict__ binned_face_ids_n_b,
+	const int *__restrict__ binned_face_ids_n_3D,
 	const int G_BIN_DENSITY
 )
 {
@@ -98,7 +98,7 @@ void Cu_Voxelize_S1
 		
 		// Now find the total number of intersections a ray makes in the direction with the smallest number of bins.
 		int global_bin_id = bin_id_x + G_BIN_DENSITY*bin_id_y + G_BIN_DENSITY*G_BIN_DENSITY*bin_id_z;
-		int n_f = binned_face_ids_n_b[global_bin_id];
+		int n_f = binned_face_ids_n_3D[global_bin_id];
 		s_D[threadIdx.x] = n_f;
 		__syncthreads();
 		
@@ -206,9 +206,9 @@ void Cu_Voxelize_S3_V1
 	const int n_faces_a,
 	const ufloat_g_t *__restrict__ geom_f_face_X,
 	const ufloat_g_t *__restrict__ geom_f_face_Xt,
-	const int *__restrict__ binned_face_ids_n_v,
-	const int *__restrict__ binned_face_ids_N_v,
-	const int *__restrict__ binned_face_ids_v,
+	const int *__restrict__ binned_face_ids_n_2D,
+	const int *__restrict__ binned_face_ids_N_2D,
+	const int *__restrict__ binned_face_ids_2D,
 	const int G_BIN_DENSITY
 )
 {
@@ -248,11 +248,11 @@ void Cu_Voxelize_S3_V1
 				bin_id_z = (int)(vzp*G_BIN_DENSITY);
 			int global_bin_id = bin_id_y + G_BIN_DENSITY*bin_id_z;
 			
-			int n_f = binned_face_ids_n_v[global_bin_id];
-			int N_f = binned_face_ids_N_v[global_bin_id];
+			int n_f = binned_face_ids_n_2D[global_bin_id];
+			int N_f = binned_face_ids_N_2D[global_bin_id];
 			for (int p = 0; p < n_f; p++)
 			{
-				int f_p = binned_face_ids_v[N_f+p];
+				int f_p = binned_face_ids_2D[N_f+p];
 				ufloat_g_t vx1 = geom_f_face_X[f_p + 0*n_faces_a];
 				ufloat_g_t vy1 = geom_f_face_X[f_p + 1*n_faces_a];
 				ufloat_g_t vx2 = geom_f_face_X[f_p + 3*n_faces_a];
@@ -1402,7 +1402,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		Cu_Voxelize_S1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], L, (ufloat_t)dxf_vec[L], n_maxcblocks,
 			c_cblock_f_X[i_dev], c_cblock_ID_mask[i_dev], c_cblock_level[i_dev],
-			geometry->c_binned_face_ids_n_b[i_dev], geometry->G_BIN_DENSITY
+			geometry->c_binned_face_ids_n_3D[i_dev], geometry->G_BIN_DENSITY
 		);
 		cudaDeviceSynchronize();
 		std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize1"; toc_simple("",T_US,1);
@@ -1418,7 +1418,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
 			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
-			geometry->c_binned_face_ids_n_v[i_dev], geometry->c_binned_face_ids_N_v[i_dev], geometry->c_binned_face_ids_v[i_dev], geometry->G_BIN_DENSITY
+			geometry->c_binned_face_ids_n_2D[i_dev], geometry->c_binned_face_ids_N_2D[i_dev], geometry->c_binned_face_ids_2D[i_dev], geometry->G_BIN_DENSITY
 		);
 		cudaDeviceSynchronize();
 		std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize3"; toc_simple("",T_US,1);

@@ -70,41 +70,41 @@
 
 struct ArgsPack
 {
-	// Base.
-	const int N_DIM;
-	const int N_DEV;
-	const int Nqx;
-	const int M_LBLOCK;
-	const int M_LWBLOCK;
-	const int M_BLOCK;
-	const int M_RNDOFF;
-	
-	// Derived.
-	const int N_CHILDREN             = N_DIM==2? 4:8;
-	const int N_Q_max                = N_DIM==2? 9:27;
-	const int N_QUADS                = N_DIM==2? Nqx*Nqx:Nqx*Nqx*Nqx;
-	const int M_TBLOCK               = N_DIM==2? 16:64;
-	const int M_WBLOCK               = N_DIM==2? 16:32;
-	const int M_HBLOCK               = N_DIM==2? 36:216;
-	const int M_CBLOCK               = N_QUADS*M_TBLOCK;
-	
-	constexpr ArgsPack(
-		int N_DIM_=3,
-		int M_BLOCK_=128,
-		int N_DEV_=1,
-		int Nqx_=1,
-		int M_LBLOCK_=1,
-		int M_LWBLOCK_=1,
-		int M_RNDOFF_=2048
-	) : 
-		N_DIM(N_DIM_),
-		M_BLOCK(M_BLOCK_),
-		N_DEV(N_DEV_),
-		Nqx(Nqx_),
-		M_LBLOCK(M_LBLOCK_),
-		M_LWBLOCK(M_LWBLOCK_),
-		M_RNDOFF(M_RNDOFF_)
-	{}
+    // Base.
+    const int N_DIM;
+    const int N_DEV;
+    const int Nqx;
+    const int M_LBLOCK;
+    const int M_LWBLOCK;
+    const int M_BLOCK;
+    const int M_RNDOFF;
+    
+    // Derived.
+    const int N_CHILDREN             = N_DIM==2? 4:8;
+    const int N_Q_max                = N_DIM==2? 9:27;
+    const int N_QUADS                = N_DIM==2? Nqx*Nqx:Nqx*Nqx*Nqx;
+    const int M_TBLOCK               = N_DIM==2? 16:64;
+    const int M_WBLOCK               = N_DIM==2? 16:32;
+    const int M_HBLOCK               = N_DIM==2? 36:216;
+    const int M_CBLOCK               = N_QUADS*M_TBLOCK;
+    
+    constexpr ArgsPack(
+        int N_DIM_=3,
+        int M_BLOCK_=128,
+        int N_DEV_=1,
+        int Nqx_=1,
+        int M_LBLOCK_=1,
+        int M_LWBLOCK_=1,
+        int M_RNDOFF_=2048
+    ) : 
+        N_DIM(N_DIM_),
+        M_BLOCK(M_BLOCK_),
+        N_DEV(N_DEV_),
+        Nqx(Nqx_),
+        M_LBLOCK(M_LBLOCK_),
+        M_LWBLOCK(M_LWBLOCK_),
+        M_RNDOFF(M_RNDOFF_)
+    {}
 };
 
 constexpr ArgsPack AP2D_DEF = ArgsPack(2); /// Default 2D argument pack.
@@ -136,46 +136,46 @@ constexpr int T_US = 2;
 #define gpuErrchk(ans) {gpuAssert((ans), __FILE__, __LINE__);}
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
-        if (code != cudaSuccess)
-        {
-                fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-                if (abort)
-                        exit(code);
-        }
+    if (code != cudaSuccess)
+    {
+        fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+        if (abort)
+            exit(code);
+    }
 }
 
 // Prints out execution time measured with system clock.
 // Credit: https://stackoverflow.com/a/63391159 (username: mma)
 inline double tic(std::string s="", int mode=0, int scale=0)
 {
-	static std::chrono::_V2::system_clock::time_point t_start;
+    static std::chrono::_V2::system_clock::time_point t_start;
     
-	if (mode==0)
-	{
-		t_start = std::chrono::high_resolution_clock::now();
-		if (s != "")
-			std::cout << "PROCESS: " << s << std::endl;
-		return 0.0;
-	}
-	else
-	{
-		auto t_end = std::chrono::high_resolution_clock::now();
-		if (scale == T_S)
-		{
-			std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::seconds>(t_end-t_start).count() << " seconds\n\n";
-			return std::chrono::duration_cast<std::chrono::seconds>(t_end-t_start).count();
-		}
-		else if (scale == T_MS)
-		{
-			std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count() << " milliseconds\n\n";
-			return std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count();
-		}
-		else
-		{
-			std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end-t_start).count() << " microseconds\n\n";
-			return std::chrono::duration_cast<std::chrono::microseconds>(t_end-t_start).count();
-		}
-	}
+    if (mode==0)
+    {
+        t_start = std::chrono::high_resolution_clock::now();
+        if (s != "")
+            std::cout << "PROCESS: " << s << std::endl;
+        return 0.0;
+    }
+    else
+    {
+        auto t_end = std::chrono::high_resolution_clock::now();
+        if (scale == T_S)
+        {
+            std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::seconds>(t_end-t_start).count() << " seconds\n\n";
+            return std::chrono::duration_cast<std::chrono::seconds>(t_end-t_start).count();
+        }
+        else if (scale == T_MS)
+        {
+            std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count() << " milliseconds\n\n";
+            return std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start).count();
+        }
+        else
+        {
+            std::cout << "END: Elapsed time for process " << s << " is: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end-t_start).count() << " microseconds\n\n";
+            return std::chrono::duration_cast<std::chrono::microseconds>(t_end-t_start).count();
+        }
+    }
 }
 inline double toc(std::string s, int scale=T_S) { return tic(s,1,scale); }
 
@@ -184,35 +184,35 @@ inline double toc(std::string s, int scale=T_S) { return tic(s,1,scale); }
 // Another version of tic-toc for separate measurements, controls whether to output to terminal.
 inline double tic_simple(std::string s="", int mode=0, int scale=0, int print=1)
 {
-	static std::chrono::_V2::system_clock::time_point t_start_simple;
+    static std::chrono::_V2::system_clock::time_point t_start_simple;
     
-	if (mode==0)
-	{
-		t_start_simple = std::chrono::high_resolution_clock::now();
-		return 0.0;
-	}
-	else
-	{
-		auto t_end_simple = std::chrono::high_resolution_clock::now();
-		if (scale == T_S)
-		{
-			if (print)
-				std::cout << s << ": " << std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count() << " seconds\n";
-			return std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count();
-		}
-		else if (scale == T_MS)
-		{
-			if (print)
-				std::cout << s << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count() << " milliseconds\n";
-			return std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count();
-		}
-		else
-		{
-			if (print)
-				std::cout << s << ": " << std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count() << " microseconds\n";
-			return std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count();
-		}
-	}
+    if (mode==0)
+    {
+        t_start_simple = std::chrono::high_resolution_clock::now();
+        return 0.0;
+    }
+    else
+    {
+        auto t_end_simple = std::chrono::high_resolution_clock::now();
+        if (scale == T_S)
+        {
+            if (print)
+                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count() << " seconds\n";
+            return std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count();
+        }
+        else if (scale == T_MS)
+        {
+            if (print)
+                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count() << " milliseconds\n";
+            return std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count();
+        }
+        else
+        {
+            if (print)
+                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count() << " microseconds\n";
+            return std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count();
+        }
+    }
 }
 inline double toc_simple(std::string s, int scale=T_S, int print=1) { return tic_simple(s,1,scale,print); }
 
@@ -226,16 +226,16 @@ template <class T>
 __global__
 void Cu_ResetToValue(int N, T *arr, T val)
 {
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < N)
-		arr[kap] = val;
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < N)
+        arr[kap] = val;
 }
 
 // template <class T, int M>
 // void ResetToValue(int N, T *arr, T val)
 // {
-// 	Cu_ResetToValue<<<(M+N-1)/M, M>>>(N, arr, val);
+//     Cu_ResetToValue<<<(M+N-1)/M, M>>>(N, arr, val);
 // }
 
 //! Contract array elements by a specified amount.
@@ -249,22 +249,22 @@ template <class T, const ArgsPack *AP>
 __global__
 void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
 {
-	constexpr int M_BLOCK = AP->M_BLOCK;
-	__shared__ int s_arr[M_BLOCK];
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	int new_start = blockIdx.x*blockDim.x/frac;
-	
-	if (kap < N)
-	{
-		// Read arr into shared memory first.
-		s_arr[threadIdx.x] = arr[kap];
-		__syncthreads();
-	
-		if (threadIdx.x < M_BLOCK/frac)
-		{
-			arr2[new_start + threadIdx.x] = s_arr[frac*threadIdx.x];
-		}
-	}
+    constexpr int M_BLOCK = AP->M_BLOCK;
+    __shared__ int s_arr[M_BLOCK];
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int new_start = blockIdx.x*blockDim.x/frac;
+    
+    if (kap < N)
+    {
+        // Read arr into shared memory first.
+        s_arr[threadIdx.x] = arr[kap];
+        __syncthreads();
+    
+        if (threadIdx.x < M_BLOCK/frac)
+        {
+            arr2[new_start + threadIdx.x] = s_arr[frac*threadIdx.x];
+        }
+    }
 }
 
 //! Fill an array with a value equal to the index.
@@ -275,138 +275,138 @@ template <class T>
 __global__
 void Cu_FillLinear(int N, T *arr)
 {
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < N)
-	{
-		arr[kap] = kap;
-	}
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < N)
+    {
+        arr[kap] = kap;
+    }
 }
 
 template <class T>
 int DebugPrintDeviceArray(int N, T *d_arr, int stride=1, std::string sdbg="")
 {
-	// Allocate memory for host array, copy device array data to it.
-	T *h_arr = new T[N];
-	gpuErrchk( cudaMemcpy(h_arr, d_arr, N*sizeof(T), cudaMemcpyDeviceToHost) );
-	
-	// Print data to console.
-	if (sdbg == "")
-	{
-		std::cout << "DEBUG: ";
-		for (int k = 0; k < N/stride; k++)
-		{
-			for (int j = 0; j < stride; j++)
-				std::cout << h_arr[k + j*(N/stride)] << ",";
-			std::cout << "   |   ";
-		}
-		std::cout << std::endl;
-	}
-	
-	// Print data to a file, if a name is specified.
-	if (sdbg != "")
-	{
-		std::ofstream out = std::ofstream("./debug/" + sdbg);
-		for (int k = 0; k < N/stride; k++)
-		{
-			for (int j = 0; j < stride; j++)
-				out << h_arr[k + j*(N/stride)] << ",";
-			out << std::endl;
-		}
-		out << std::endl;
-		out.close();
-	}
-	
-	// Free memory of temporary host array.
-	delete[] h_arr;
-	
-	return 0;
+    // Allocate memory for host array, copy device array data to it.
+    T *h_arr = new T[N];
+    gpuErrchk( cudaMemcpy(h_arr, d_arr, N*sizeof(T), cudaMemcpyDeviceToHost) );
+    
+    // Print data to console.
+    if (sdbg == "")
+    {
+        std::cout << "DEBUG: ";
+        for (int k = 0; k < N/stride; k++)
+        {
+            for (int j = 0; j < stride; j++)
+                std::cout << h_arr[k + j*(N/stride)] << ",";
+            std::cout << "   |   ";
+        }
+        std::cout << std::endl;
+    }
+    
+    // Print data to a file, if a name is specified.
+    if (sdbg != "")
+    {
+        std::ofstream out = std::ofstream("./debug/" + sdbg);
+        for (int k = 0; k < N/stride; k++)
+        {
+            for (int j = 0; j < stride; j++)
+                out << h_arr[k + j*(N/stride)] << ",";
+            out << std::endl;
+        }
+        out << std::endl;
+        out.close();
+    }
+    
+    // Free memory of temporary host array.
+    delete[] h_arr;
+    
+    return 0;
 }
 
 template <typename T, int M, int PER, int BSZ>
 __global__
 void Cu_SoA2AoS(const T *__restrict__ in, T *__restrict__ out, int N)
 {
-	int kap = blockIdx.x * blockDim.x + threadIdx.x;
+    int kap = blockIdx.x * blockDim.x + threadIdx.x;
 
-	__shared__ T s_d[PER*BSZ];       // Stores arranged data.
-	__shared__ T s_I[BSZ];           // Stores current indices.
-	__shared__ int s_i[PER*BSZ];     // Stores indicator.
+    __shared__ T s_d[PER*BSZ];       // Stores arranged data.
+    __shared__ T s_I[BSZ];           // Stores current indices.
+    __shared__ int s_i[PER*BSZ];     // Stores indicator.
 
-	for (int K = 0; K < M/PER+1; K++)
-	{
-		if (kap < N)
-		{
-			#pragma unroll
-			for (int i = 0; i < PER; i++)
-			{
-				s_i[i + PER*threadIdx.x] = -1;
-				if ((i+PER*K) < M)
-				{
-					T val = in[kap + (i+PER*K)*N];
-					s_d[i + PER*threadIdx.x] = val;
-					s_i[i + PER*threadIdx.x] = 1;
-				}
-			}
-			s_I[threadIdx.x] = kap;
-		}
-		__syncthreads();
-			
-		if (kap < N)
-		{
-			#pragma unroll
-			for (int k = 0; k < PER; k++)
-			{
-				size_t id = s_I[threadIdx.x/PER + k*(BSZ/PER)];
-				int ind = s_i[threadIdx.x + BSZ*k];
-				T val = s_d[threadIdx.x + BSZ*k];
-				if (ind == 1 && threadIdx.x%PER + PER*K < N)
-					out[threadIdx.x%PER + PER*K + M*id] = val;
-			}
-		}
-		__syncthreads();
-	}
+    for (int K = 0; K < M/PER+1; K++)
+    {
+        if (kap < N)
+        {
+            #pragma unroll
+            for (int i = 0; i < PER; i++)
+            {
+                s_i[i + PER*threadIdx.x] = -1;
+                if ((i+PER*K) < M)
+                {
+                    T val = in[kap + (i+PER*K)*N];
+                    s_d[i + PER*threadIdx.x] = val;
+                    s_i[i + PER*threadIdx.x] = 1;
+                }
+            }
+            s_I[threadIdx.x] = kap;
+        }
+        __syncthreads();
+            
+        if (kap < N)
+        {
+            #pragma unroll
+            for (int k = 0; k < PER; k++)
+            {
+                size_t id = s_I[threadIdx.x/PER + k*(BSZ/PER)];
+                int ind = s_i[threadIdx.x + BSZ*k];
+                T val = s_d[threadIdx.x + BSZ*k];
+                if (ind == 1 && threadIdx.x%PER + PER*K < N)
+                    out[threadIdx.x%PER + PER*K + M*id] = val;
+            }
+        }
+        __syncthreads();
+    }
 }
 
 inline int DebugDrawSquareInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double c0, double c1, double c2)
 {
-	out << "plot([" << x0 << " " << x1 << " " << x1 << " " << x0 << " " << x0 << "],[" << y0 << " " << y0 << " " << y1 << " " << y1 << " " << y0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	
-	return 0;
+    out << "plot([" << x0 << " " << x1 << " " << x1 << " " << x0 << " " << x0 << "],[" << y0 << " " << y0 << " " << y1 << " " << y1 << " " << y0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    
+    return 0;
 }
 
 inline int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double z0, double z1, double c0, double c1, double c2)
 {
-	out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	
-	out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	
-	out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x0 << " " << x0 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	out << "plot3([" << x1 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	
-	return 0;
+    out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    
+    out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    
+    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x0 << " " << x0 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    out << "plot3([" << x1 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    
+    return 0;
 }
 
 inline int DebugDrawLineInMATLAB(std::ofstream &out, double vx1, double vy1, double vx2, double vy2, double c0, double c1, double c2)
 {
-	out << "plot([" << vx1 << " " << vx2 << "],[" << vy1 << " " << vy2 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "],'Marker','o');\n";
-	
-	return 0;
+    out << "plot([" << vx1 << " " << vx2 << "],[" << vy1 << " " << vy2 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "],'Marker','o');\n";
+    
+    return 0;
 }
 
 inline int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double vx3, double vy3, double vz3, double c0, double c1, double c2)
 {
-	out << "fill3([" << vx1 << " " << vx2 << " " << vx3 << " " << vx1 << "],[" << vy1 << " " << vy2 << " " << vy3 << " " << vy1 << "],[" << vz1 << " " << vz2 << " " << vz3 << " " << vz1 << "],[" << c0 << " " << c1 << " " << c2 << "]);\n";
-	
-	return 0;
+    out << "fill3([" << vx1 << " " << vx2 << " " << vx3 << " " << vx1 << "],[" << vy1 << " " << vy2 << " " << vy3 << " " << vy1 << "],[" << vz1 << " " << vz2 << " " << vz3 << " " << vz1 << "],[" << c0 << " " << c1 << " " << c2 << "]);\n";
+    
+    return 0;
 }
 
 #endif

@@ -8,7 +8,7 @@
 #include "mesh.h"
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, std::map<std::string, double> params_dbl, std::map<std::string, std::string> params_str)
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
 {
 	std::cout << " o====================================================================================" << std::endl;
 	std::cout << " | New: Mesh Object                                                                   " << std::endl;
@@ -19,50 +19,50 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init(std::map<std::string, int> params_int, 
 	// o====================================================================================
 	
 	// Set mesh parameters from input.
-	Lx                      = params_dbl["L_c"];
-	Ly                      = params_dbl["L_fy"]*Lx;
-	Lz                      = params_dbl["L_fz"]*Lx;
-	Nx                      = params_int["Nx"];
+	Lx                      = parser->params_dbl["L_c"];
+	Ly                      = parser->params_dbl["L_fy"]*Lx;
+	Lz                      = parser->params_dbl["L_fz"]*Lx;
+	Nx                      = parser->params_int["Nx"];
 	Ny                      = (int)(Nx*(Ly/Lx));
 	Nz                      = (int)(Nx*(Lz/Lx));
 	Nxi                     = new int[3]{Nx, Ny, Nz};
 	dx                      = Lx/Nx;
 	dx_cblock               = 4*Nqx*dx;
-	MAX_LEVELS_WALL         = params_int["MAX_LEVELS_WALL"];
-	MAX_LEVELS_INTERIOR     = params_int["MAX_LEVELS_INTERIOR"];
-	N_ITER_TOTAL            = params_int["N_ITER_TOTAL"];
-	N_LEVEL_START           = params_int["N_LEVEL_START"];
-	N_RESTART               = params_int["N_RESTART"];
-	PERIODIC_X              = params_int["PERIODIC_X"];
-	PERIODIC_Y              = params_int["PERIODIC_Y"];
-	PERIODIC_Z              = params_int["PERIODIC_Z"];
-	P_REFINE                = params_int["P_REFINE"];
-	N_REFINE_START          = params_dbl["N_REFINE_START"];
-	N_REFINE_INC            = params_dbl["N_REFINE_INC"];
-	N_REFINE_MAX            = params_dbl["N_REFINE_MAX"];
-	N_PROBE                 = params_int["N_PROBE"];
-	N_PROBE_DENSITY         = params_int["N_PROBE_DENSITY"];
-	N_PROBE_FREQUENCY       = params_int["N_PROBE_FREQUENCY"];
-	V_PROBE_TOL             = params_dbl["V_PROBE_TOL"];
-	N_PROBE_FORCE           = params_int["N_PROBE_FORCE"];
-	N_PROBE_F_FREQUENCY     = params_int["N_PROBE_F_FREQUENCY"];
-	N_PROBE_F_START         = params_int["N_PROBE_F_START"];
-	N_PROBE_AVE             = params_int["N_PROBE_AVE"];
-	N_PROBE_AVE_FREQUENCY   = params_int["N_PROBE_AVE_FREQUENCY"];
-	N_PROBE_AVE_START       = params_int["N_PROBE_AVE_START"];
-	N_PRINT_LEVELS          = params_int["N_PRINT_LEVELS"];
-	N_PRINT_LEVELS_LEGACY   = params_int["N_PRINT_LEVELS_LEGACY"];
-	P_OUTPUT                = params_int["P_OUTPUT"];
-	N_OUTPUT_START          = params_int["N_OUTPUT_START"];
-	VOL_I_MIN               = params_int["VOL_I_MIN"]/(4*Nqx);
-	VOL_I_MAX               = params_int["VOL_I_MAX"]/(4*Nqx);
-	VOL_J_MIN               = params_int["VOL_J_MIN"]/(4*Nqx);
-	VOL_J_MAX               = params_int["VOL_J_MAX"]/(4*Nqx);
-	VOL_K_MIN               = params_int["VOL_K_MIN"]/(4*Nqx);
-	VOL_K_MAX               = params_int["VOL_K_MAX"]/(4*Nqx);
-	input_dir               = params_str["I_DIR_NAME"];
-	output_dir              = params_str["P_DIR_NAME"];
-	use_cpu                 = params_int["USE_CPU"];
+	MAX_LEVELS_WALL         = parser->params_int["MAX_LEVELS_WALL"];
+	MAX_LEVELS_INTERIOR     = parser->params_int["MAX_LEVELS_INTERIOR"];
+	N_ITER_TOTAL            = parser->params_int["N_ITER_TOTAL"];
+	N_LEVEL_START           = parser->params_int["N_LEVEL_START"];
+	N_RESTART               = parser->params_int["N_RESTART"];
+	PERIODIC_X              = parser->params_int["PERIODIC_X"];
+	PERIODIC_Y              = parser->params_int["PERIODIC_Y"];
+	PERIODIC_Z              = parser->params_int["PERIODIC_Z"];
+	P_REFINE                = parser->params_int["P_REFINE"];
+	N_REFINE_START          = parser->params_dbl["N_REFINE_START"];
+	N_REFINE_INC            = parser->params_dbl["N_REFINE_INC"];
+	N_REFINE_MAX            = parser->params_dbl["N_REFINE_MAX"];
+	N_PROBE                 = parser->params_int["N_PROBE"];
+	N_PROBE_DENSITY         = parser->params_int["N_PROBE_DENSITY"];
+	N_PROBE_FREQUENCY       = parser->params_int["N_PROBE_FREQUENCY"];
+	V_PROBE_TOL             = parser->params_dbl["V_PROBE_TOL"];
+	N_PROBE_FORCE           = parser->params_int["N_PROBE_FORCE"];
+	N_PROBE_F_FREQUENCY     = parser->params_int["N_PROBE_F_FREQUENCY"];
+	N_PROBE_F_START         = parser->params_int["N_PROBE_F_START"];
+	N_PROBE_AVE             = parser->params_int["N_PROBE_AVE"];
+	N_PROBE_AVE_FREQUENCY   = parser->params_int["N_PROBE_AVE_FREQUENCY"];
+	N_PROBE_AVE_START       = parser->params_int["N_PROBE_AVE_START"];
+	N_PRINT_LEVELS          = parser->params_int["N_PRINT_LEVELS"];
+	N_PRINT_LEVELS_LEGACY   = parser->params_int["N_PRINT_LEVELS_LEGACY"];
+	P_OUTPUT                = parser->params_int["P_OUTPUT"];
+	N_OUTPUT_START          = parser->params_int["N_OUTPUT_START"];
+	VOL_I_MIN               = parser->params_int["VOL_I_MIN"]/(4*Nqx);
+	VOL_I_MAX               = parser->params_int["VOL_I_MAX"]/(4*Nqx);
+	VOL_J_MIN               = parser->params_int["VOL_J_MIN"]/(4*Nqx);
+	VOL_J_MAX               = parser->params_int["VOL_J_MAX"]/(4*Nqx);
+	VOL_K_MIN               = parser->params_int["VOL_K_MIN"]/(4*Nqx);
+	VOL_K_MAX               = parser->params_int["VOL_K_MAX"]/(4*Nqx);
+	input_dir               = parser->params_str["I_DIR_NAME"];
+	output_dir              = parser->params_str["P_DIR_NAME"];
+	use_cpu                 = parser->params_int["USE_CPU"];
 	
 	
 	// Adjust N_PRECISION based on ufloat_t (i.e., is it double? switch to 1).

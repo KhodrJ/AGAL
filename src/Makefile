@@ -100,7 +100,7 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_bin_gpu.cu\
       geometry_bin_draw.cu\
       geometry_print.cu\
-      geometry_inst.cu
+      geometry_refine.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 # geometry_%.o: geometry_%.cu geometry.h cppspec.h
 # 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
@@ -117,7 +117,6 @@ SRC_MESH = mesh_init.cu\
       mesh_fill_binned.cu\
       mesh_fill_binned_alt.cu\
       mesh_amr.cu\
-      mesh_solvers.cu\
       mesh_advance.cu\
       mesh_restart.cu\
       mesh_output.cu\
@@ -150,9 +149,20 @@ OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
 
 
 # Building the application objects.
-INC_MAIN = cppspec.h geometry.h mesh.h solver_lbm.h solver.h structs.h util.h util_tribin.h custom.h
-SRC_MAIN = main_read_input.cu
-OBJ_MAIN = $(SRC_MAIN:.cu=.o)
+INC_MAIN = cppspec.h\
+	parser.h\
+	geometry.h\
+	geometry_bins.h\
+	mesh.h\
+	solver_lbm.h\
+	solver.h\
+	structs.h\
+	util.h\
+	util_tribin.h\
+	util_tribin_old.h\
+	custom.h
+# SRC_MAIN = main_read_input.cu
+# OBJ_MAIN = $(SRC_MAIN:.cu=.o)
 # main_%.o: main_%.cu
 # 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
 
@@ -172,16 +182,16 @@ $(VSET_STAMP):
 
 
 # Application.
-OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER_LBM) $(OBJ_MAIN)
-SRC = $(SRC_GEOMETRY) $(SRC_MESH) $(SRC_SOLVER_LBM) $(SRC_MAIN)
-a.out: main.cu $(VSET_STAMP) $(OBJ_MAIN) $(SRC) $(INC_MAIN)
-	$(NVCC) -DUSE$(VSET) $(NVCCFLAGS) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
+OBJ = $(OBJ_GEOMETRY) $(OBJ_MESH) $(OBJ_SOLVER_LBM)
+SRC = $(SRC_GEOMETRY) $(SRC_MESH) $(SRC_SOLVER_LBM)
+a.out: main.cu $(VSET_STAMP) $(SRC) $(INC_MAIN)
+	$(NVCC) -DUSE$(VSET) $(NVCCFLAGS) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 
 geometry: $(OBJ_GEOMETRY)
 mesh: $(OBJ_MESH)
 solver_lbm: $(OBJ_SOLVER_LBM)
 pxtas:
-	$(NVCC) -DUSE$(VSET) $(NVCCFLAGSPTX) $(OBJ_MAIN) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
+	$(NVCC) -DUSE$(VSET) $(NVCCFLAGSPTX) $(INC) $(OPTS) $(LIB) main.cu $(LIBS) -o $@
 clean:
 	$(RM) $(OBJ) vset_*
 

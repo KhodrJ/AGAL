@@ -7,13 +7,6 @@
 
 #include "mesh.h"
 
-template <typename T>
-__device__ __forceinline__
-void PrintLineFORMATLAB(const vec3<T> &vp, const vec3<T> &vi)
-{
-	printf("plot3([%17.15f %17.15f],[%17.15f %17.15f],[%17.15f %17.15f]);\n",vp.x,vi.x,vp.y,vi.y,vp.z,vi.z);
-}
-
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_Voxelize_V1
@@ -31,9 +24,9 @@ void Cu_Voxelize_V1
 	const int n_faces_a,
 	const ufloat_g_t *__restrict__ geom_f_face_X,
 	const ufloat_g_t *__restrict__ geom_f_face_Xt,
-	const int *__restrict__ binned_face_ids_n_b,
-	const int *__restrict__ binned_face_ids_N_b,
-	const int *__restrict__ binned_face_ids_b,
+	const int *__restrict__ binned_face_ids_n_3D,
+	const int *__restrict__ binned_face_ids_N_3D,
+	const int *__restrict__ binned_face_ids_3D,
 	const int G_BIN_DENSITY,
 	const ufloat_g_t Lx0g,
 	const ufloat_g_t Ly0g,
@@ -82,15 +75,17 @@ void Cu_Voxelize_V1
 		int pmin = -1;
 		ufloat_g_t dmin = (ufloat_g_t)1.0;
 		ufloat_g_t dotmin = (ufloat_g_t)1.0;
-		int n_f = binned_face_ids_n_b[global_bin_id];
+		int n_f = binned_face_ids_n_3D[global_bin_id];
 		vec3<ufloat_g_t> vimin(vp.x,vp.y,vp.z);
 		
+		// If bin is nonempty, traverse the faces and get the signed distance to the closest face.
+		// Only consider faces within a distance of dx (these would be adjacent to the surface).
 		if (n_f > 0)
 		{
-			int N_f = binned_face_ids_N_b[global_bin_id];
+			int N_f = binned_face_ids_N_3D[global_bin_id];
 			for (int p = 0; p < n_f; p++)
 			{
-				int f_p = binned_face_ids_b[N_f+p];
+				int f_p = binned_face_ids_3D[N_f+p];
 				vec3<ufloat_g_t> v1
 				(
 					geom_f_face_X[f_p + 0*n_faces_a],
@@ -115,7 +110,7 @@ void Cu_Voxelize_V1
 				vec3<ufloat_g_t> vi = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
 				{
 					ufloat_g_t d = NormV(vi-vp);
-					if (d < dx_L && (d < dmin || pmin == -1))
+					if (d < Tsqrt(static_cast<ufloat_g_t>(2.0))*dx_L && (d < dmin || pmin == -1))
 					{
 						pmin = p;
 						dmin = d;
@@ -123,31 +118,9 @@ void Cu_Voxelize_V1
 						vimin = vi;
 					}
 				}
-				
-// 				if (i_kap_b == 4683)
-// 				{
-// 					// Print faces in this bin.
-// 					if (threadIdx.x==0)
-// 						printf("fill3([%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],[%17.15f,%17.15f,%17.15f,%17.15f],'b');\n",v1.x,v2.x,v3.x,v1.x,  v1.y,v2.y,v3.y,v1.y,  v1.z,v2.z,v3.z,v1.z);
-// 					
-// 					if (p == n_f-1)
-// 					{
-// 						
-// 						if (dotmin > 0)
-// 						{
-// 							printf("plot3(%17.15f,%17.15f,%17.15f,'k*'); \n",vp.x,vp.y,vp.z);
-// 							printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'mo-'); \n",vp.x,vimin.x,vp.y,vimin.y,vp.z,vimin.z);
-// 							printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vimin.x,vimin.y,vimin.z);
-// 						}
-// 						else
-// 						{
-// 							printf("plot3(%17.15f,%17.15f,%17.15f,'r*'); \n",vp.x,vp.y,vp.z);
-// 						}
-// 					}
-// 				}
 			}
 		}
-			
+		
 		// Now, if there are an even number of intersections, the current cell is in the solid.
 		// Otherwise, it is a fluid cell.
 		s_D[threadIdx.x] = 0;
@@ -158,26 +131,27 @@ void Cu_Voxelize_V1
 				cellmask = V_CELLMASK_SOLID;
 			else
 				cellmask = V_CELLMASK_DUMMY_I;
+			
+			s_D[threadIdx.x] = 1;
 		}
 		s_ID_mask[threadIdx.x] = cellmask;
 		__syncthreads();
 		
 		// Block reduction for sum.
-		//for (int s=blockDim.x/2; s>0; s>>=1)
-		//{
-		//	if (threadIdx.x < s)
-		//	{
-		//		s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
-		//	}
-		//	__syncthreads();
-		//}
+		for (int s=blockDim.x/2; s>0; s>>=1)
+		{
+			if (threadIdx.x < s)
+			{
+				s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
+			}
+			__syncthreads();
+		}
 		
-		//if (s_D[0]>0)
+		if (s_D[0]>0)
 		{
 			// If at least one cell is solid, update the block mask.
 			if (threadIdx.x == 0)
 				cblock_ID_mask[i_kap_b] = global_bin_id;
-			
 			
 			// Internally propagate the cell mask values to the x-edges of the cell-block.
 			for (int l = 0; l < 9; l++)
@@ -233,7 +207,6 @@ void Cu_Voxelize_V1
 				s_ID_mask[threadIdx.x] = cellmask;
 				__syncthreads();
 			}
-			
 			
 			// If there are solid masks in this block, place guard in the masks for the propagation.
 			cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
@@ -1230,9 +1203,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
 		int Nprop_d = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For satisfying the near-wall distance criterion.
 		bool hit_max = L==MAX_LEVELS-1;
-		ufloat_g_t Lx0g = (ufloat_g_t)geometry->Lx/(ufloat_g_t)geometry->G_BIN_DENSITY;
-		ufloat_g_t Ly0g = (ufloat_g_t)geometry->Ly/(ufloat_g_t)geometry->G_BIN_DENSITY;
-		ufloat_g_t Lz0g = (ufloat_g_t)geometry->Lz/(ufloat_g_t)geometry->G_BIN_DENSITY;
+		ufloat_g_t Lx0g = (ufloat_g_t)geometry->bins->Lx/(ufloat_g_t)geometry->bins->n_bin_density;
+		ufloat_g_t Ly0g = (ufloat_g_t)geometry->bins->Ly/(ufloat_g_t)geometry->bins->n_bin_density;
+		ufloat_g_t Lz0g = (ufloat_g_t)geometry->bins->Lz/(ufloat_g_t)geometry->bins->n_bin_density;
 		ufloat_g_t dxg = geometry->dx;
 		
 		// Voxelize the solid, filling in all solid cells.
@@ -1240,8 +1213,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
 		Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
 			n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L], hit_max,
 			c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-			geometry->n_faces[i_dev], geometry->n_faces_a[i_dev], geometry->c_geom_f_face_X[i_dev], geometry->c_geom_f_face_Xt[i_dev],
-			geometry->c_binned_face_ids_n_b[i_dev], geometry->c_binned_face_ids_N_b[i_dev], geometry->c_binned_face_ids_b[i_dev], geometry->G_BIN_DENSITY, Lx0g, Ly0g, Lz0g, dxg
+			geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_X, geometry->c_geom_f_face_Xt,
+			geometry->bins->c_binned_face_ids_n_3D[0], geometry->bins->c_binned_face_ids_N_3D[0], geometry->bins->c_binned_face_ids_3D[0], geometry->bins->n_bin_density, Lx0g, Ly0g, Lz0g, dxg
 		);
 		cudaDeviceSynchronize();
 		std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);

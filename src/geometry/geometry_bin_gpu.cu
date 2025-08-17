@@ -5,259 +5,7 @@
 /*                                                                                    */
 /**************************************************************************************/
 
-#include "geometry.h"
-
-template <typename ufloat_g_t, int N_DIM>
-__device__ __forceinline__
-bool Cu_IncludeInBin
-(
-	const vec3<ufloat_g_t> &vm,
-	const vec3<ufloat_g_t> &vM,
-	const vec3<ufloat_g_t> &vBm,
-	const vec3<ufloat_g_t> &vBM,
-	const vec3<ufloat_g_t> &v1,
-	const vec3<ufloat_g_t> &v2,
-	const vec3<ufloat_g_t> &v3
-)
-{
-	// vm/M are the bin dimensions.
-	// vBm/M is the face bounding box.
-	// v1/2/3 are the face vertices.
-	
-	ufloat_g_t tmp = (ufloat_g_t)(0.0);
-	ufloat_g_t ex1 = (ufloat_g_t)(0.0);
-	ufloat_g_t ey1 = (ufloat_g_t)(0.0);
-	
-if (N_DIM==2)
-{
-	// Only consider this calculation if the bounding box intersects the bin.
-	if ( !( (vBm.x < vm.x && vBM.x < vm.x) || (vBm.x > vM.x && vBM.x > vM.x) || (vBm.y < vm.y && vBM.y < vm.y) || (vBm.y > vM.y && vBM.y > vM.y) ) )
-	{
-		// Check if bounding box is entirely inside current bin.
-		if (vBm.x > vm.x && vBM.x < vM.x && vBm.y > vm.y && vBM.y < vM.y) { return true; }
-		
-		// Check if at least one of the vertices is inside the bin.
-		if (v1.x > vm.x && v1.x < vM.x) { return true; }
-		if (v2.x > vm.x && v2.x < vM.x) { return true; }
-		if (v1.y > vm.y && v1.y < vM.y) { return true; }
-		if (v2.y > vm.y && v2.y < vM.y) { return true; }
-		
-		// Check the bottom edge of the bin.
-		{
-			ey1 = v2.y-v1.y;
-			tmp = (vm.y-v1.y)/(ey1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			if (CheckInLine(tmp,ex1,vm.x,vM.x)) { return true; }
-		}
-		
-		// Check the top edge of the bin.
-		{
-			ey1 = v2.y-v1.y;
-			tmp = (vM.y-v1.y)/(ey1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			if (CheckInLine(tmp,ex1,vm.x,vM.x)) { return true; }
-		}
-		
-		// Check the left edge of the bin.
-		{
-			ex1 = v2.x-v1.x;
-			tmp = (vm.x-v1.x)/(ex1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			if (CheckInLine(tmp,ey1,vm.y,vM.y)) { return true; }
-		}
-		
-		// Check the right edge of the bin.
-		{
-			ex1 = v2.x-v1.x;
-			tmp = (vM.x-v1.x)/(ex1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			if (CheckInLine(tmp,ey1,vm.y,vM.y)) { return true; }
-		}
-	}
-}
-else
-{
-	ufloat_g_t ez1 = (ufloat_g_t)(0.0);
-	
-	if ( !( (vBm.x < vm.x && vBM.x < vm.x) || (vBm.x > vM.x && vBM.x > vM.x) || (vBm.y < vm.y && vBM.y < vm.y) || (vBm.y > vM.y && vBM.y > vM.y) || (vBm.z < vm.z && vBM.z < vm.z) || (vBm.z > vM.z && vBM.z > vM.z) ) )
-	{
-		// Check if bounding box is entirely inside current bin.
-		if (vBm.x > vm.x && vBM.x < vM.x && vBm.y > vm.y && vBM.y < vM.y && vBm.z > vm.z && vBM.z < vM.z) { return true; }
-		
-		// Check if bounding box completely surrounds the bin.
-		if (vBm.x < vm.x && vBM.x > vM.x && vBm.y < vm.y && vBM.y > vM.y) { return true; }
-		if (vBm.y < vm.y && vBM.y > vM.y && vBm.z < vm.z && vBM.z > vM.z) { return true; }
-		if (vBm.z < vm.z && vBM.z > vM.z && vBm.x < vm.x && vBM.x > vM.x) { return true; }
-		
-		// Check if at least one of the vertices is inside the bin.
-		if (v1.x > vm.x && v1.x < vM.x && v1.y > vm.y && v1.y < vM.y && v1.z > vm.z && v1.z < vM.z) { return true; }
-		if (v2.x > vm.x && v2.x < vM.x && v2.y > vm.y && v2.y < vM.y && v2.z > vm.z && v2.z < vM.z) { return true; }
-		if (v3.x > vm.x && v3.x < vM.x && v3.y > vm.y && v3.y < vM.y && v3.z > vm.z && v3.z < vM.z) { return true; }
-		
-		// Check the bottom face of the bin.
-		{
-			ez1 = v2.z-v1.z;
-			tmp = (vm.z-v1.z)/(ez1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		{
-			ez1 = v3.z-v2.z;
-			tmp = (vm.z-v2.z)/(ez1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		{
-			ez1 = v1.z-v3.z;
-			tmp = (vm.z-v3.z)/(ez1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		
-		// Check the top face of the bin.
-		{
-			ez1 = v2.z-v1.z;
-			tmp = (vM.z-v1.z)/(ez1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		{
-			ez1 = v3.z-v2.z;
-			tmp = (vM.z-v2.z)/(ez1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		{
-			ez1 = v1.z-v3.z;
-			tmp = (vM.z-v3.z)/(ez1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ex1,ey1,vm.x,vm.y,vM.x,vM.y)) { return true; }
-		}
-		
-		// Check the back face of the bin.
-		{
-			ey1 = v2.y-v1.y;
-			tmp = (vm.y-v1.y)/(ey1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		{
-			ey1 = v3.y-v2.y;
-			tmp = (vm.y-v2.y)/(ey1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		{
-			ey1 = v1.y-v3.y;
-			tmp = (vm.y-v3.y)/(ey1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		
-		// Check the front face of the bin.
-		{
-			ey1 = v2.y-v1.y;
-			tmp = (vM.y-v1.y)/(ey1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		{
-			ey1 = v3.y-v2.y;
-			tmp = (vM.y-v2.y)/(ey1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		{
-			ey1 = v1.y-v3.y;
-			tmp = (vM.y-v3.y)/(ey1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ex1,ez1,vm.x,vm.z,vM.x,vM.z)) { return true; }
-		}
-		
-		// Check the left face of the bin.
-		{
-			ex1 = v2.x-v1.x;
-			tmp = (vm.x-v1.x)/(ex1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-		{
-			ex1 = v3.x-v2.x;
-			tmp = (vm.x-v2.x)/(ex1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-		{
-			ex1 = v1.x-v3.x;
-			tmp = (vm.x-v3.x)/(ex1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-		
-		// Check the right face of the bin.
-		{
-			ex1 = v2.x-v1.x;
-			tmp = (vM.x-v1.x)/(ex1);
-			ex1 = v1.x + tmp*(v2.x-v1.x);
-			ey1 = v1.y + tmp*(v2.y-v1.y);
-			ez1 = v1.z + tmp*(v2.z-v1.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-		{
-			ex1 = v3.x-v2.x;
-			tmp = (vM.x-v2.x)/(ex1);
-			ex1 = v2.x + tmp*(v3.x-v2.x);
-			ey1 = v2.y + tmp*(v3.y-v2.y);
-			ez1 = v2.z + tmp*(v3.z-v2.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-		{
-			ex1 = v1.x-v3.x;
-			tmp = (vM.x-v3.x)/(ex1);
-			ex1 = v3.x + tmp*(v1.x-v3.x);
-			ey1 = v3.y + tmp*(v1.y-v3.y);
-			ez1 = v3.z + tmp*(v1.z-v3.z);
-			if (CheckInRect(tmp,ey1,ez1,vm.y,vm.z,vM.y,vM.z)) { return true; }
-		}
-	}
-}
-	
-	return false;
-}
+#include "geometry_bins.h"
 
 /**************************************************************************************/
 /*                                                                                    */
@@ -278,107 +26,107 @@ template <typename ufloat_g_t, int N_DIM>
 __global__
 void Cu_ComputeBoundingBoxLimits2D
 (
-	const int n_faces,
-	const int n_faces_a,
-	const ufloat_g_t *__restrict__ geom_f_face_X,
-	int *__restrict__ bounding_box_limits,
-	int *__restrict__ bounding_box_index_limits,
-	const ufloat_g_t dx,
-	const ufloat_g_t Lx,
-	const ufloat_g_t Ly,
-	const ufloat_g_t Lz,
-	const int G_BIN_DENSITY
+    const int n_faces,
+    const int n_faces_a,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
+    int *__restrict__ bounding_box_limits,
+    int *__restrict__ bounding_box_index_limits,
+    const ufloat_g_t dx,
+    const ufloat_g_t Lx,
+    const ufloat_g_t Ly,
+    const ufloat_g_t Lz,
+    const int G_BIN_DENSITY
 )
 {
 int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < n_faces)
-	{
-		if (N_DIM==2)
-		{
-			ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-			ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
-			
-			ufloat_g_t vBx_m = fmin(vx1, vx2);
-			ufloat_g_t vBx_M = fmax(vx1, vx2);
-			ufloat_g_t vBy_m = fmin(vy1, vy2);
-			ufloat_g_t vBy_M = fmax(vy1, vy2);
-			
-			// C is used to determine if a face is completely outside of the bounding box.
-			bool C = true;
-			if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
-				C = false;
-			if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
-				C = false;
-			
-			int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY);
-			int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY);
-			
-			// Note: this assumes that the faces intersect, at most, eight bins.
-			int counter = 0;
-			for (int J = bin_id_yl; J < bin_id_yL+1; J++)
-			{
-				if (C && counter < 4)
-				{
-					int global_id = J;
-					bounding_box_limits[kap + counter*n_faces] = global_id;
-					bounding_box_index_limits[kap + counter*n_faces] = kap;
-					counter++;
-				}
-			}
-		}
-		else // N_DIM==3
-		{
-			ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-			ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-			ufloat_g_t vz1 = geom_f_face_X[kap + 2*n_faces_a];
-			ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-			ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
-			ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
-			ufloat_g_t vx3 = geom_f_face_X[kap + 6*n_faces_a];
-			ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
-			ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
-			
-			ufloat_g_t vBx_m = fmin(fmin(vx1, vx2), vx3);
-			ufloat_g_t vBx_M = fmax(fmax(vx1, vx2), vx3);
-			ufloat_g_t vBy_m = fmin(fmin(vy1, vy2), vy3);
-			ufloat_g_t vBy_M = fmax(fmax(vy1, vy2), vy3);
-			ufloat_g_t vBz_m = fmin(fmin(vz1, vz2), vz3);
-			ufloat_g_t vBz_M = fmax(fmax(vz1, vz2), vz3);
-			
-			// C is used to determine if a face is completely outside of the bounding box.
-			bool C = true;
-			if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
-				C = false;
-			if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
-				C = false;
-			if (vBz_m<-dx&&vBz_M<-dx || vBz_m>Lz+dx&&vBz_M>Lz+dx)
-				C = false;
-			
-			int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY);
-			int bin_id_zl = (int)(vBz_m*G_BIN_DENSITY);
-			int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY);
-			int bin_id_zL = (int)(vBz_M*G_BIN_DENSITY);
-			
-			// Note: this assumes that the faces intersect, at most, eight bins.
-			int counter = 0;
-			for (int K = bin_id_zl; K < bin_id_zL+1; K++)
-			{
-				for (int J = bin_id_yl; J < bin_id_yL+1; J++)
-				{
-					if (C && counter < 16)
-					{
-						int global_id = J + G_BIN_DENSITY*K;
-						bounding_box_limits[kap + counter*n_faces] = global_id;
-						bounding_box_index_limits[kap + counter*n_faces] = kap;
-						counter++;
-					}
-				}
-			}
-		}
-	}
+    
+    if (kap < n_faces)
+    {
+        if (N_DIM==2)
+        {
+            ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
+            ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
+            ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
+            ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
+            
+            ufloat_g_t vBx_m = fmin(vx1, vx2);
+            ufloat_g_t vBx_M = fmax(vx1, vx2);
+            ufloat_g_t vBy_m = fmin(vy1, vy2);
+            ufloat_g_t vBy_M = fmax(vy1, vy2);
+            
+            // C is used to determine if a face is completely outside of the bounding box.
+            bool C = true;
+            if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+                C = false;
+            if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+                C = false;
+            
+            int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY);
+            int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY);
+            
+            // Note: this assumes that the faces intersect, at most, eight bins.
+            int counter = 0;
+            for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+            {
+                if (C && counter < 4)
+                {
+                    int global_id = J;
+                    bounding_box_limits[kap + counter*n_faces] = global_id;
+                    bounding_box_index_limits[kap + counter*n_faces] = kap;
+                    counter++;
+                }
+            }
+        }
+        else // N_DIM==3
+        {
+            ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
+            ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
+            ufloat_g_t vz1 = geom_f_face_X[kap + 2*n_faces_a];
+            ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
+            ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
+            ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
+            ufloat_g_t vx3 = geom_f_face_X[kap + 6*n_faces_a];
+            ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
+            ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
+            
+            ufloat_g_t vBx_m = fmin(fmin(vx1, vx2), vx3);
+            ufloat_g_t vBx_M = fmax(fmax(vx1, vx2), vx3);
+            ufloat_g_t vBy_m = fmin(fmin(vy1, vy2), vy3);
+            ufloat_g_t vBy_M = fmax(fmax(vy1, vy2), vy3);
+            ufloat_g_t vBz_m = fmin(fmin(vz1, vz2), vz3);
+            ufloat_g_t vBz_M = fmax(fmax(vz1, vz2), vz3);
+            
+            // C is used to determine if a face is completely outside of the bounding box.
+            bool C = true;
+            if (vBx_m<-dx&&vBx_M<-dx || vBx_m>Lx+dx&&vBx_M>Lx+dx)
+                C = false;
+            if (vBy_m<-dx&&vBy_M<-dx || vBy_m>Ly+dx&&vBy_M>Ly+dx)
+                C = false;
+            if (vBz_m<-dx&&vBz_M<-dx || vBz_m>Lz+dx&&vBz_M>Lz+dx)
+                C = false;
+            
+            int bin_id_yl = (int)(vBy_m*G_BIN_DENSITY);
+            int bin_id_zl = (int)(vBz_m*G_BIN_DENSITY);
+            int bin_id_yL = (int)(vBy_M*G_BIN_DENSITY);
+            int bin_id_zL = (int)(vBz_M*G_BIN_DENSITY);
+            
+            // Note: this assumes that the faces intersect, at most, eight bins.
+            int counter = 0;
+            for (int K = bin_id_zl; K < bin_id_zL+1; K++)
+            {
+                for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+                {
+                    if (C && counter < 16)
+                    {
+                        int global_id = J + G_BIN_DENSITY*K;
+                        bounding_box_limits[kap + counter*n_faces] = global_id;
+                        bounding_box_index_limits[kap + counter*n_faces] = kap;
+                        counter++;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**************************************************************************************/
@@ -401,139 +149,139 @@ template <typename ufloat_g_t, int N_DIM>
 __global__
 void Cu_ComputeBoundingBoxLimits3D
 (
-	const int n_faces,
-	const int n_faces_a,
-	const ufloat_g_t *__restrict__ geom_f_face_X,
-	int *__restrict__ bounding_box_limits,
-	int *__restrict__ bounding_box_index_limits,
-	const ufloat_g_t dx,
-	const ufloat_g_t Lx,
-	const ufloat_g_t Ly,
-	const ufloat_g_t Lz,
-	const ufloat_g_t Lx0g,
-	const ufloat_g_t Ly0g,
-	const ufloat_g_t Lz0g,
-	const int G_BIN_DENSITY
+    const int n_faces,
+    const int n_faces_a,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
+    int *__restrict__ bounding_box_limits,
+    int *__restrict__ bounding_box_index_limits,
+    const ufloat_g_t dx,
+    const ufloat_g_t Lx,
+    const ufloat_g_t Ly,
+    const ufloat_g_t Lz,
+    const ufloat_g_t Lx0g,
+    const ufloat_g_t Ly0g,
+    const ufloat_g_t Lz0g,
+    const int G_BIN_DENSITY
 )
 {
-	int kap = blockIdx.x*blockDim.x + threadIdx.x;
-	
-	if (kap < n_faces)
-	{
-		if (N_DIM==2)
-		{
-			vec3<ufloat_g_t> v1
-			(
-				geom_f_face_X[kap + 0*n_faces_a],
-				geom_f_face_X[kap + 1*n_faces_a]
-			);
-			vec3<ufloat_g_t> v2
-			(
-				geom_f_face_X[kap + 3*n_faces_a],
-				geom_f_face_X[kap + 4*n_faces_a]
-			);
-			
-			vec3<ufloat_g_t> vBm (Tmin(v1.x, v2.x), Tmin(v1.y, v2.y));
-			vec3<ufloat_g_t> vBM (Tmax(v1.x, v2.x), Tmax(v1.y, v2.y));
-			
-			// C is used to determine if a face is completely outside of the bounding box.
-			bool C = true;
-			if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
-				C = false;
-			if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
-				C = false;
-			
-			int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
-			int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
-			int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
-			int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
-			
-			// Note: this assumes that the faces intersect, at most, eight bins.
-			int counter = 0;
-			for (int J = bin_id_yl; J < bin_id_yL+1; J++)
-			{
-				for (int I = bin_id_xl; I < bin_id_xL+1; I++)
-				{
-					if (C && counter < 16)
-					{
-						vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx);
-						vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
-						C  = Cu_IncludeInBin<ufloat_g_t,2>(vm,vM,vBm,vBM,v1,v2,vec3<ufloat_g_t>());
-						
-						int global_id = I + G_BIN_DENSITY*J;
-						bounding_box_limits[kap + counter*n_faces] = global_id;
-						bounding_box_index_limits[kap + counter*n_faces] = kap;
-						counter++;
-					}
-				}
-			}
-		}
-		else // N_DIM==3
-		{
-			vec3<ufloat_g_t> v1
-			(
-				geom_f_face_X[kap + 0*n_faces_a],
-				geom_f_face_X[kap + 1*n_faces_a],
-				geom_f_face_X[kap + 2*n_faces_a]
-			);
-			vec3<ufloat_g_t> v2
-			(
-				geom_f_face_X[kap + 3*n_faces_a],
-				geom_f_face_X[kap + 4*n_faces_a],
-				geom_f_face_X[kap + 5*n_faces_a]
-			);
-			vec3<ufloat_g_t> v3
-			(
-				geom_f_face_X[kap + 6*n_faces_a],
-				geom_f_face_X[kap + 7*n_faces_a],
-				geom_f_face_X[kap + 8*n_faces_a]
-			);
-			
-			vec3<ufloat_g_t> vBm (Tmin(Tmin(v1.x, v2.x), v3.x), Tmin(Tmin(v1.y, v2.y), v3.y), Tmin(Tmin(v1.z, v2.z), v3.z));
-			vec3<ufloat_g_t> vBM (Tmax(Tmax(v1.x, v2.x), v3.x), Tmax(Tmax(v1.y, v2.y), v3.y), Tmax(Tmax(v1.z, v2.z), v3.z));
-			
-			// C is used to determine if a face is completely outside of the bounding box.
-			bool C = true;
-			if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
-				C = false;
-			if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
-				C = false;
-			if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
-				C = false;
-			
-			int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
-			int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
-			int bin_id_zl = (int)((vBm.z-0*dx)*G_BIN_DENSITY)-1;
-			int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
-			int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
-			int bin_id_zL = (int)((vBM.z+0*dx)*G_BIN_DENSITY)+1;
-			
-			// Note: this assumes that the faces intersect, at most, eight bins.
-			int counter = 0;
-			for (int K = bin_id_zl; K < bin_id_zL+1; K++)
-			{
-				for (int J = bin_id_yl; J < bin_id_yL+1; J++)
-				{
-					for (int I = bin_id_xl; I < bin_id_xL+1; I++)
-					{
-						vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
-						vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
-						C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
-						//C  = Cu_IncludeInBin<ufloat_g_t,3>(vm,vM,vBm,vBM,v1,v2,v3);
-						//C = (!(vBM.x < vm.x || vBm.x > vM.x || vBM.y < vm.y || vBm.y > vM.y || vBM.z < vm.z || vBm.z > vM.z));
-						
-						if (C && counter < 64)
-						{
-							int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
-							bounding_box_limits[kap + counter*n_faces] = global_id;
-							bounding_box_index_limits[kap + counter*n_faces] = kap;
-							counter++;
-						}
-					}
-				}
-			}
-		}
-	}
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < n_faces)
+    {
+        if (N_DIM==2)
+        {
+            vec3<ufloat_g_t> v1
+            (
+                geom_f_face_X[kap + 0*n_faces_a],
+                geom_f_face_X[kap + 1*n_faces_a]
+            );
+            vec3<ufloat_g_t> v2
+            (
+                geom_f_face_X[kap + 3*n_faces_a],
+                geom_f_face_X[kap + 4*n_faces_a]
+            );
+            
+            vec3<ufloat_g_t> vBm (Tmin(v1.x, v2.x), Tmin(v1.y, v2.y));
+            vec3<ufloat_g_t> vBM (Tmax(v1.x, v2.x), Tmax(v1.y, v2.y));
+            
+            // C is used to determine if a face is completely outside of the bounding box.
+            bool C = true;
+            if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
+                C = false;
+            if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
+                C = false;
+            
+            int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
+            int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
+            int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
+            int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
+            
+            // Note: this assumes that the faces intersect, at most, eight bins.
+            int counter = 0;
+            for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+            {
+                for (int I = bin_id_xl; I < bin_id_xL+1; I++)
+                {
+                    if (C && counter < 16)
+                    {
+                        vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx);
+                        vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
+                        C  = IncludeInBin<ufloat_g_t,2>(vm,vM,vBm,vBM,v1,v2,vec3<ufloat_g_t>());
+                        
+                        int global_id = I + G_BIN_DENSITY*J;
+                        bounding_box_limits[kap + counter*n_faces] = global_id;
+                        bounding_box_index_limits[kap + counter*n_faces] = kap;
+                        counter++;
+                    }
+                }
+            }
+        }
+        else // N_DIM==3
+        {
+            vec3<ufloat_g_t> v1
+            (
+                geom_f_face_X[kap + 0*n_faces_a],
+                geom_f_face_X[kap + 1*n_faces_a],
+                geom_f_face_X[kap + 2*n_faces_a]
+            );
+            vec3<ufloat_g_t> v2
+            (
+                geom_f_face_X[kap + 3*n_faces_a],
+                geom_f_face_X[kap + 4*n_faces_a],
+                geom_f_face_X[kap + 5*n_faces_a]
+            );
+            vec3<ufloat_g_t> v3
+            (
+                geom_f_face_X[kap + 6*n_faces_a],
+                geom_f_face_X[kap + 7*n_faces_a],
+                geom_f_face_X[kap + 8*n_faces_a]
+            );
+            
+            vec3<ufloat_g_t> vBm (Tmin(Tmin(v1.x, v2.x), v3.x), Tmin(Tmin(v1.y, v2.y), v3.y), Tmin(Tmin(v1.z, v2.z), v3.z));
+            vec3<ufloat_g_t> vBM (Tmax(Tmax(v1.x, v2.x), v3.x), Tmax(Tmax(v1.y, v2.y), v3.y), Tmax(Tmax(v1.z, v2.z), v3.z));
+            
+            // C is used to determine if a face is completely outside of the bounding box.
+            bool C = true;
+            if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
+                C = false;
+            if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
+                C = false;
+            if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
+                C = false;
+            
+            int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
+            int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
+            int bin_id_zl = (int)((vBm.z-0*dx)*G_BIN_DENSITY)-1;
+            int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
+            int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
+            int bin_id_zL = (int)((vBM.z+0*dx)*G_BIN_DENSITY)+1;
+            
+            // Note: this assumes that the faces intersect, at most, eight bins.
+            int counter = 0;
+            for (int K = bin_id_zl; K < bin_id_zL+1; K++)
+            {
+                for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+                {
+                    for (int I = bin_id_xl; I < bin_id_xL+1; I++)
+                    {
+                        vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
+                        vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
+                        C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+                        //C  = Cu_IncludeInBin<ufloat_g_t,3>(vm,vM,vBm,vBM,v1,v2,v3);
+                        //C = (!(vBM.x < vm.x || vBm.x > vM.x || vBM.y < vm.y || vBm.y > vM.y || vBM.z < vm.z || vBm.z > vM.z));
+                        
+                        if (C && counter < 64)
+                        {
+                            int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
+                            bounding_box_limits[kap + counter*n_faces] = global_id;
+                            bounding_box_index_limits[kap + counter*n_faces] = kap;
+                            counter++;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**************************************************************************************/
@@ -545,7 +293,7 @@ void Cu_ComputeBoundingBoxLimits3D
 /*  is the allocation of memory for and filling of three sets of arrays: 1)           */
 /*  c_binned_ids_v/b, a set of contiguous binned faces such that the first batch      */
 /*  correspond to the faces of bin 0, the second batch corresponds to bin 1 and so    */
-/*  on, 2) c_binned_ids_n_v/b, the sizes of the n_bins_v/b bins, and 3)               */
+/*  on, 2) c_binned_ids_n_v/b, the sizes of the n_bins_2D/b bins, and 3)               */
 /*  c_binned_ids_N_v/b, the starting indices for the faces of each bin in             */
 /*  c_binned_ids_v/b. The set of arrays with '_v' corresponds to a 2D binning which   */
 /*  enables a raycast algorithm for solid-cell identification. The one with '_b'      */
@@ -557,343 +305,343 @@ void Cu_ComputeBoundingBoxLimits3D
 /**************************************************************************************/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Geometry<ufloat_t,ufloat_g_t,AP>::G_MakeBinsGPU(int i_dev)
+int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
 {
-	// Some constants.
-	ufloat_g_t Lx0g __attribute__((unused)) = Lx/(ufloat_g_t)G_BIN_DENSITY;   // Get bin lengths along axes.
-	ufloat_g_t Ly0g __attribute__((unused)) = Ly/(ufloat_g_t)G_BIN_DENSITY;
-	ufloat_g_t Lz0g __attribute__((unused)) = Lz/(ufloat_g_t)G_BIN_DENSITY;
-	ufloat_g_t eps __attribute__((unused)) = 1e-5;                            // An epsilon for the 3D binning.
-	if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
-	if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
-	int use_zip = true;
-	
-	// Proceed only if there are actual faces loaded in the current object.
-	if (v_geom_f_face_1_X.size() > 0)
-	{
-		// Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
-		int n_limits_v = 1;
-		int n_limits_b = 1;
-		int n_bins_v = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_v *= G_BIN_DENSITY; n_limits_v *= 4; }
-		int n_bins_b = 1; for (int d = 0; d < N_DIM; d++)   { n_bins_b *= G_BIN_DENSITY; n_limits_b *= 4; }
-		int n_lim_size_v = n_limits_v*n_faces[i_dev];
-		int n_lim_size_b = n_limits_b*n_faces[i_dev];
-		
-		// Some array declarations.
-		int *c_bounding_box_limits;
-		int *c_bounding_box_index_limits;
-		int *c_tmp_b_i;    // Used to store unique bin Ids.
-		int *c_tmp_b_ii;   // Used to gather starting-location indices.
-		
-		// Declare and allocate memory for the c_bounding_box_limits.
-		tic_simple("");
-		cudaDeviceSynchronize();
-		gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_b*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_b*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_tmp_b_i, n_bins_b*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_tmp_b_ii, n_bins_b*sizeof(int)) );
-		//
-		// Allocate memory for bins sizes and locations.
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_b[i_dev], n_bins_b*sizeof(int)) );
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_b[i_dev], n_bins_b*sizeof(int)) );
-		//
-		// Reset values.
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_b-1)/M_BLOCK, M_BLOCK>>>(n_bins_b, c_binned_face_ids_n_b[i_dev], 0);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_b-1)/M_BLOCK, M_BLOCK>>>(n_bins_b, c_binned_face_ids_N_b[i_dev], 0);
-		Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_limits, n_bins_b);
-		Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_index_limits, -1);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_b-1)/M_BLOCK, M_BLOCK>>>(n_bins_b, c_tmp_b_i, -1);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_b-1)/M_BLOCK, M_BLOCK>>>(n_bins_b, c_tmp_b_ii, -1);
-		cudaDeviceSynchronize();
-		std::cout << "Memory allocation: "; toc_simple("",T_US,1);
-		
-		// Wrap raw pointers with thrust device_ptr. // TODO reword
-		thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
-		thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
-		thrust::device_ptr<int> bnv_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_v[i_dev]);
-		thrust::device_ptr<int> bNv_ptr = thrust::device_pointer_cast(c_binned_face_ids_N_v[i_dev]);
-		thrust::device_ptr<int> bnb_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_b[i_dev]);
-		thrust::device_ptr<int> bNb_ptr = thrust::device_pointer_cast(c_binned_face_ids_N_b[i_dev]);
-		thrust::device_ptr<int> c_tmp_b_i_ptr = thrust::device_pointer_cast(c_tmp_b_i);
-		thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
-		cudaDeviceSynchronize();
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		// STEP 1: Traverse faces and identify the bins they should go in.
-		//std::cout << "Starting GPU binning..." << std::endl;
-		std::cout << "STARTING 3D NOW" << std::endl;
-		tic_simple("");
-		cudaDeviceSynchronize();
-		Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
-			n_faces[i_dev], n_faces_a[i_dev],
-			c_geom_f_face_X[i_dev], c_bounding_box_limits, c_bounding_box_index_limits,
-			(ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
-			Lx/(ufloat_g_t)G_BIN_DENSITY, Ly/(ufloat_g_t)G_BIN_DENSITY, Lz/(ufloat_g_t)G_BIN_DENSITY, G_BIN_DENSITY
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
-		
-		// STEP 2: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
-		// This might speed up the sort-by-key that follows.
-		if (use_zip)
-		{
-			tic_simple("");
-			auto zipped = thrust::make_zip_iterator(thrust::make_tuple(bb_ptr, bbi_ptr));
-			auto zipped_end = thrust::remove_if(thrust::device, zipped, zipped + n_lim_size_b, is_equal_to_zip(n_bins_b));
-			n_lim_size_b = zipped_end - zipped;
-			//n_lim_size_b = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, is_nonnegative_and_less_than(n_bins_b));
-			cudaDeviceSynchronize();
-			std::cout << "Compaction"; toc_simple("",T_US,1);
-		}
-		
-		// STEP 3: Sort by key. // TODO reword
-		tic_simple("");
-		thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, bbi_ptr);
-		int n_binned_faces_b = n_lim_size_b;
-		//int n_binned_faces_b = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, is_nonnegative_and_less_than(n_bins_b));
-		cudaDeviceSynchronize();
-		std::cout << "Sort by key (n_binned_faces=" << n_binned_faces_b << ")"; toc_simple("",T_US,1);
-		
-		// STEP 4: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_v.
-		tic_simple("");
-		auto result = thrust::reduce_by_key(
-			thrust::device, bb_ptr, bb_ptr + n_lim_size_b,
-			thrust::make_constant_iterator(1),
-			c_tmp_b_i_ptr,    // stores unique keys
-			c_tmp_b_ii_ptr    // stores reduction
-		);
-		int n_unique_bins_b = result.first - c_tmp_b_i_ptr;
-		//int n_unique_bins_b2 = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_b, is_nonnegative_and_less_than(n_bins_b));
-		cudaDeviceSynchronize();
-		std::cout << "Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
-		
-		// STEP 5: Scatter the bin sizes.
-		tic_simple("");
-		thrust::scatter(
-			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_b,
-			c_tmp_b_i_ptr,
-			bnb_ptr
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Scatter (1)"; toc_simple("",T_US,1);
-		
-		// STEP 6: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
-		tic_simple("");
-		thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, bb_ptr);
-		cudaDeviceSynchronize();
-		std::cout << "Adjacent difference"; toc_simple("",T_US,1);
-		
-		// STEP 7: Gather the indices of the starting locations.
-		tic_simple("");
-		auto counting_iter = thrust::counting_iterator<int>(1);
-		thrust::transform(
-			thrust::device, counting_iter, counting_iter + n_lim_size_b,
-			bb_ptr, bb_ptr,
-			replace_diff_with_indexM1()
-		);
-		thrust::copy_if(thrust::device, &bb_ptr[1], &bb_ptr[1] + (n_lim_size_b-1), &c_tmp_b_ii_ptr[1], is_positive());
-		int fZ = 0;
-		cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
-		cudaDeviceSynchronize();
-		std::cout << "Copy-if"; toc_simple("",T_US,1);
-		
-		// STEP 8: Now scatter the starting-location indices.
-		tic_simple("");
-		thrust::scatter(
-			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_b,
-			c_tmp_b_i_ptr,
-			bNb_ptr
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Scatter (2)"; toc_simple("",T_US,1);
-		
-		// Copy the indices of the binned faces.
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_b[i_dev], n_binned_faces_b*sizeof(int)) );
-		cudaMemcpy(c_binned_face_ids_b[i_dev], c_bounding_box_index_limits, n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToDevice);
-		//
-		// Copy the GPU data to the CPU for drawing.
-		binned_face_ids_n_b[i_dev] = new int[n_bins_b];
-		binned_face_ids_N_b[i_dev] = new int[n_bins_b];
-		binned_face_ids_b[i_dev] = new int[n_binned_faces_b];
-		cudaMemcpy(binned_face_ids_n_b[i_dev], c_binned_face_ids_n_b[i_dev], n_bins_b*sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(binned_face_ids_N_b[i_dev], c_binned_face_ids_N_b[i_dev], n_bins_b*sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(binned_face_ids_b[i_dev], c_binned_face_ids_b[i_dev], n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToHost);
-		
-		// DEBUG
-// 		for (int i = 0; i < n_bins_b; i++)
-// 		{
-// 			int nbins_i = binned_face_ids_n_b[i_dev][i];
-// 			int Nbins_i = binned_face_ids_N_b[i_dev][i];
-// 			if (nbins_i > 0)
-// 			{
-// 				std::cout << "Bin " << i << ": (nbins=" << nbins_i << ",Nbins=" << Nbins_i << ")" << std::endl;
-// 				for (int j = 0; j < nbins_i; j++)
-// 					std::cout << binned_face_ids_b[i_dev][Nbins_i+j] << " ";
-// 				std::cout << std::endl;
-// 			}
-// 		}
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		// Reset values for the 2D binning part. I can reuse the temporary allocations since they are always larger than needed.
-		std::cout << "STARTING 2D NOW" << std::endl;
-		tic_simple("");
-		cudaDeviceSynchronize();
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_v-1)/M_BLOCK, M_BLOCK>>>(n_bins_v, c_binned_face_ids_n_v[i_dev], 0);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_v-1)/M_BLOCK, M_BLOCK>>>(n_bins_v, c_binned_face_ids_N_v[i_dev], 0);
-		Cu_ResetToValue<<<(M_BLOCK+n_lim_size_v-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_v, c_bounding_box_limits, n_bins_v);
-		Cu_ResetToValue<<<(M_BLOCK+n_lim_size_v-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_v, c_bounding_box_index_limits, -1);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_v-1)/M_BLOCK, M_BLOCK>>>(n_bins_v, c_tmp_b_i, -1);
-		Cu_ResetToValue<<<(M_BLOCK+n_bins_v-1)/M_BLOCK, M_BLOCK>>>(n_bins_v, c_tmp_b_ii, -1);
-		cudaDeviceSynchronize();
-		std::cout << "Memory allocation"; toc_simple("",T_US,1);
-		
-		// STEP 1: Traverse faces and identify the bins they should go in.
-		tic_simple("");
-		cudaDeviceSynchronize();
-		Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces[i_dev]-1)/M_BLOCK,M_BLOCK>>>(
-			n_faces[i_dev], n_faces_a[i_dev],
-			c_geom_f_face_X[i_dev], c_bounding_box_limits, c_bounding_box_index_limits,
-			(ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, G_BIN_DENSITY
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
-		
-		// STEP 2: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
-		// This might speed up the sort-by-key that follows.
-		if (use_zip)
-		{
-			tic_simple("");
-			auto zipped = thrust::make_zip_iterator(thrust::make_tuple(bb_ptr, bbi_ptr));
-			auto zipped_end = thrust::remove_if(thrust::device, zipped, zipped + n_lim_size_v, is_equal_to_zip(n_bins_v));
-			n_lim_size_v = zipped_end - zipped;
-			//n_lim_size_v = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, is_nonnegative_and_less_than(n_bins_v));
-			cudaDeviceSynchronize();
-			std::cout << "Compaction"; toc_simple("",T_US,1);
-		}
-		
-		// STEP 3: Sort by key. // TODO reword
-		tic_simple("");
-		thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, bbi_ptr);
-		int n_binned_faces_v = n_lim_size_v;
-		//int n_binned_faces_v = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, is_nonnegative_and_less_than(n_bins_v));
-		cudaDeviceSynchronize();
-		std::cout << "Sort by key (n_binned_faces=" << n_binned_faces_v << ")"; toc_simple("",T_US,1);
-		
-		// STEP 4: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_v.
-		tic_simple("");
-		result = thrust::reduce_by_key(
-			thrust::device, bb_ptr, bb_ptr + n_lim_size_v,
-			thrust::make_constant_iterator(1),
-			c_tmp_b_i_ptr,    // stores unique keys
-			c_tmp_b_ii_ptr    // stores reduction
-		);
-		int n_unique_bins_v = result.first - c_tmp_b_i_ptr;
-		//int n_unique_bins_v = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_v, is_nonnegative_and_less_than(n_bins_v));
-		cudaDeviceSynchronize();
-		std::cout << "Reduction (nbins=" << n_unique_bins_v << ") by key "; toc_simple("",T_US,1);
-		
-		// STEP 5: Scatter the bin sizes.
-		tic_simple("");
-		thrust::scatter(
-			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_v,
-			c_tmp_b_i_ptr,
-			bnv_ptr
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Scatter (1)"; toc_simple("",T_US,1);
-		
-		// STEP 6: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
-		tic_simple("");
-		thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, bb_ptr);
-		cudaDeviceSynchronize();
-		std::cout << "Adjacent difference"; toc_simple("",T_US,1);
-		
-		// STEP 7: Gather the indices of the starting locations.
-		tic_simple("");
-		counting_iter = thrust::counting_iterator<int>(1);
-		thrust::transform(
-			thrust::device, counting_iter, counting_iter + n_lim_size_v,
-			bb_ptr, bb_ptr,
-			replace_diff_with_indexM1()
-		);
-		thrust::copy_if(thrust::device, &bb_ptr[1], &bb_ptr[1] + (n_lim_size_v-1), &c_tmp_b_ii_ptr[1], is_positive());
-		fZ = 0;
-		cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
-		cudaDeviceSynchronize();
-		std::cout << "Copy-if"; toc_simple("",T_US,1);
-		
-		// STEP 8: Now scatter the starting-location indices.
-		tic_simple("");
-		thrust::scatter(
-			thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_v,
-			c_tmp_b_i_ptr,
-			bNv_ptr
-		);
-		cudaDeviceSynchronize();
-		std::cout << "Scatter (2)"; toc_simple("",T_US,1);
-		
-		// Copy the indices of the binned faces.
-		gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_v[i_dev], n_binned_faces_v*sizeof(int)) );
-		cudaMemcpy(c_binned_face_ids_v[i_dev], c_bounding_box_index_limits, n_binned_faces_v*sizeof(int), cudaMemcpyDeviceToDevice);
-		//
-		// Copy the GPU data to the CPU for drawing.
-		binned_face_ids_n_v[i_dev] = new int[n_bins_v];
-		binned_face_ids_N_v[i_dev] = new int[n_bins_v];
-		binned_face_ids_v[i_dev] = new int[n_binned_faces_v];
-		cudaMemcpy(binned_face_ids_n_v[i_dev], c_binned_face_ids_n_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(binned_face_ids_N_v[i_dev], c_binned_face_ids_N_v[i_dev], n_bins_v*sizeof(int), cudaMemcpyDeviceToHost);
-		cudaMemcpy(binned_face_ids_v[i_dev], c_binned_face_ids_v[i_dev], n_binned_faces_v*sizeof(int), cudaMemcpyDeviceToHost);
-		
-		// DEBUG
-// 		for (int i = 0; i < n_bins_v; i++)
-// 		{
-// 			int nbins_i = binned_face_ids_n_v[i_dev][i];
-// 			int Nbins_i = binned_face_ids_N_v[i_dev][i];
-// 			if (nbins_i > 0)
-// 			{
-// 				std::cout << "Bin " << i << ": (nbins=" << nbins_i << ",Nbins=" << Nbins_i << ")" << std::endl;
-// 				for (int j = 0; j < nbins_i; j++)
-// 					std::cout << binned_face_ids_v[i_dev][Nbins_i+j] << " ";
-// 				std::cout << std::endl;
-// 			}
-// 		}
-		
-		
-		
-		
-		
-		// Free temporary arrays.
-		cudaFree(c_bounding_box_limits);
-		cudaFree(c_bounding_box_index_limits);
-		cudaFree(c_tmp_b_i);
-		cudaFree(c_tmp_b_ii);
-	}
-	
-	return 0;
+    // Some constants.
+    ufloat_g_t Lx0g __attribute__((unused)) = Lx/(ufloat_g_t)G_BIN_DENSITY;   // Get bin lengths along axes.
+    ufloat_g_t Ly0g __attribute__((unused)) = Ly/(ufloat_g_t)G_BIN_DENSITY;
+    ufloat_g_t Lz0g __attribute__((unused)) = Lz/(ufloat_g_t)G_BIN_DENSITY;
+    ufloat_g_t eps __attribute__((unused)) = 1e-5;                            // An epsilon for the 3D binning.
+    if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
+    if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
+    int use_zip = true;
+    
+    // Proceed only if there are actual faces loaded in the current object.
+    if (v_geom_f_face_1_X.size() > 0)
+    {
+        // Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
+        int n_limits_v = 1;
+        int n_limits_b = 1;
+        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_2D[L] *= G_BIN_DENSITY; n_limits_v *= 4; }
+        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   { n_bins_3D[L] *= G_BIN_DENSITY; n_limits_b *= 4; }
+        int n_lim_size_v = n_limits_v*n_faces;
+        int n_lim_size_b = n_limits_b*n_faces;
+        
+        // Some array declarations.
+        int *c_bounding_box_limits;
+        int *c_bounding_box_index_limits;
+        int *c_tmp_b_i;    // Used to store unique bin Ids.
+        int *c_tmp_b_ii;   // Used to gather starting-location indices.
+        
+        // Declare and allocate memory for the c_bounding_box_limits.
+        tic_simple("");
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_b*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_b*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_tmp_b_i, n_bins_3D[L]*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_tmp_b_ii, n_bins_3D[L]*sizeof(int)) );
+        //
+        // Allocate memory for bins sizes and locations.
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_2D[L], n_bins_2D[L]*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_2D[L], n_bins_2D[L]*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_n_3D[L], n_bins_3D[L]*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_3D[L], n_bins_3D[L]*sizeof(int)) );
+        //
+        // Reset values.
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_N_3D[L], 0);
+        Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_limits, n_bins_3D[L]);
+        Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_index_limits, -1);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_i, -1);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_ii, -1);
+        cudaDeviceSynchronize();
+        std::cout << "Memory allocation: "; toc_simple("",T_US,1);
+        
+        // Wrap raw pointers with thrust device_ptr. // TODO reword
+        thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
+        thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
+        thrust::device_ptr<int> bnv_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_2D[L]);
+        thrust::device_ptr<int> bNv_ptr = thrust::device_pointer_cast(c_binned_face_ids_N_2D[L]);
+        thrust::device_ptr<int> bnb_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_3D[L]);
+        thrust::device_ptr<int> bNb_ptr = thrust::device_pointer_cast(c_binned_face_ids_N_3D[L]);
+        thrust::device_ptr<int> c_tmp_b_i_ptr = thrust::device_pointer_cast(c_tmp_b_i);
+        thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
+        cudaDeviceSynchronize();
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        // STEP 1: Traverse faces and identify the bins they should go in.
+        //std::cout << "Starting GPU binning..." << std::endl;
+        std::cout << "STARTING 3D NOW" << std::endl;
+        tic_simple("");
+        cudaDeviceSynchronize();
+        Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
+            n_faces, n_faces_a,
+            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
+            (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
+            Lx/(ufloat_g_t)G_BIN_DENSITY, Ly/(ufloat_g_t)G_BIN_DENSITY, Lz/(ufloat_g_t)G_BIN_DENSITY, G_BIN_DENSITY
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
+        
+        // STEP 2: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
+        // This might speed up the sort-by-key that follows.
+        if (use_zip)
+        {
+            tic_simple("");
+            auto zipped = thrust::make_zip_iterator(thrust::make_tuple(bb_ptr, bbi_ptr));
+            auto zipped_end = thrust::remove_if(thrust::device, zipped, zipped + n_lim_size_b, is_equal_to_zip(n_bins_3D[L]));
+            n_lim_size_b = zipped_end - zipped;
+            //n_lim_size_b = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, is_nonnegative_and_less_than(n_bins_3D[L]));
+            cudaDeviceSynchronize();
+            std::cout << "Compaction"; toc_simple("",T_US,1);
+        }
+        
+        // STEP 3: Sort by key. // TODO reword
+        tic_simple("");
+        thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, bbi_ptr);
+        int n_binned_faces_b = n_lim_size_b;
+        //int n_binned_faces_b = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, is_nonnegative_and_less_than(n_bins_3D[L]));
+        cudaDeviceSynchronize();
+        std::cout << "Sort by key (n_binned_faces=" << n_binned_faces_b << ")"; toc_simple("",T_US,1);
+        
+        // STEP 4: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_2D.
+        tic_simple("");
+        auto result = thrust::reduce_by_key(
+            thrust::device, bb_ptr, bb_ptr + n_lim_size_b,
+            thrust::make_constant_iterator(1),
+            c_tmp_b_i_ptr,    // stores unique keys
+            c_tmp_b_ii_ptr    // stores reduction
+        );
+        int n_unique_bins_b = result.first - c_tmp_b_i_ptr;
+        //int n_unique_bins_b2 = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_3D[L], is_nonnegative_and_less_than(n_bins_3D[L]));
+        cudaDeviceSynchronize();
+        std::cout << "Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
+        
+        // STEP 5: Scatter the bin sizes.
+        tic_simple("");
+        thrust::scatter(
+            thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_b,
+            c_tmp_b_i_ptr,
+            bnb_ptr
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Scatter (1)"; toc_simple("",T_US,1);
+        
+        // STEP 6: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
+        tic_simple("");
+        thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, bb_ptr);
+        cudaDeviceSynchronize();
+        std::cout << "Adjacent difference"; toc_simple("",T_US,1);
+        
+        // STEP 7: Gather the indices of the starting locations.
+        tic_simple("");
+        auto counting_iter = thrust::counting_iterator<int>(1);
+        thrust::transform(
+            thrust::device, counting_iter, counting_iter + n_lim_size_b,
+            bb_ptr, bb_ptr,
+            replace_diff_with_indexM1()
+        );
+        thrust::copy_if(thrust::device, &bb_ptr[1], &bb_ptr[1] + (n_lim_size_b-1), &c_tmp_b_ii_ptr[1], is_positive());
+        int fZ = 0;
+        cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
+        cudaDeviceSynchronize();
+        std::cout << "Copy-if"; toc_simple("",T_US,1);
+        
+        // STEP 8: Now scatter the starting-location indices.
+        tic_simple("");
+        thrust::scatter(
+            thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_b,
+            c_tmp_b_i_ptr,
+            bNb_ptr
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Scatter (2)"; toc_simple("",T_US,1);
+        
+        // Copy the indices of the binned faces.
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_3D, n_binned_faces_b*sizeof(int)) );
+        cudaMemcpy(c_binned_face_ids_3D, c_bounding_box_index_limits, n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToDevice);
+        //
+        // Copy the GPU data to the CPU for drawing.
+        binned_face_ids_n_3D[L] = new int[n_bins_3D[L]];
+        binned_face_ids_N_3D[L] = new int[n_bins_3D[L]];
+        binned_face_ids_3D[L] = new int[n_binned_faces_b];
+        cudaMemcpy(binned_face_ids_n_3D[L], c_binned_face_ids_n_3D[L], n_bins_3D[L]*sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(binned_face_ids_N_3D[L], c_binned_face_ids_N_3D[L], n_bins_3D[L]*sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(binned_face_ids_3D[L], c_binned_face_ids_3D[L], n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToHost);
+        
+        // DEBUG
+//         for (int i = 0; i < n_bins_3D[L]; i++)
+//         {
+//             int nbins_i = binned_face_ids_n_3D[L][i];
+//             int Nbins_i = binned_face_ids_N_3D[L][i];
+//             if (nbins_i > 0)
+//             {
+//                 std::cout << "Bin " << i << ": (nbins=" << nbins_i << ",Nbins=" << Nbins_i << ")" << std::endl;
+//                 for (int j = 0; j < nbins_i; j++)
+//                     std::cout << binned_face_ids_3D[L][Nbins_i+j] << " ";
+//                 std::cout << std::endl;
+//             }
+//         }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        // Reset values for the 2D binning part. I can reuse the temporary allocations since they are always larger than needed.
+        std::cout << "STARTING 2D NOW" << std::endl;
+        tic_simple("");
+        cudaDeviceSynchronize();
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_binned_face_ids_n_2D[L], 0);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_binned_face_ids_N_2D[L], 0);
+        Cu_ResetToValue<<<(M_BLOCK+n_lim_size_v-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_v, c_bounding_box_limits, n_bins_2D[L]);
+        Cu_ResetToValue<<<(M_BLOCK+n_lim_size_v-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_v, c_bounding_box_index_limits, -1);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_tmp_b_i, -1);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_tmp_b_ii, -1);
+        cudaDeviceSynchronize();
+        std::cout << "Memory allocation"; toc_simple("",T_US,1);
+        
+        // STEP 1: Traverse faces and identify the bins they should go in.
+        tic_simple("");
+        cudaDeviceSynchronize();
+        Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
+            n_faces, n_faces_a,
+            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
+            (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, G_BIN_DENSITY
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
+        
+        // STEP 2: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
+        // This might speed up the sort-by-key that follows.
+        if (use_zip)
+        {
+            tic_simple("");
+            auto zipped = thrust::make_zip_iterator(thrust::make_tuple(bb_ptr, bbi_ptr));
+            auto zipped_end = thrust::remove_if(thrust::device, zipped, zipped + n_lim_size_v, is_equal_to_zip(n_bins_2D[L]));
+            n_lim_size_v = zipped_end - zipped;
+            //n_lim_size_v = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, is_nonnegative_and_less_than(n_bins_2D[L]));
+            cudaDeviceSynchronize();
+            std::cout << "Compaction"; toc_simple("",T_US,1);
+        }
+        
+        // STEP 3: Sort by key. // TODO reword
+        tic_simple("");
+        thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, bbi_ptr);
+        int n_binned_faces_v = n_lim_size_v;
+        //int n_binned_faces_v = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, is_nonnegative_and_less_than(n_bins_2D[L]));
+        cudaDeviceSynchronize();
+        std::cout << "Sort by key (n_binned_faces=" << n_binned_faces_v << ")"; toc_simple("",T_US,1);
+        
+        // STEP 4: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_2D.
+        tic_simple("");
+        result = thrust::reduce_by_key(
+            thrust::device, bb_ptr, bb_ptr + n_lim_size_v,
+            thrust::make_constant_iterator(1),
+            c_tmp_b_i_ptr,    // stores unique keys
+            c_tmp_b_ii_ptr    // stores reduction
+        );
+        int n_unique_bins_v = result.first - c_tmp_b_i_ptr;
+        //int n_unique_bins_v = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_2D, is_nonnegative_and_less_than(n_bins_2D));
+        cudaDeviceSynchronize();
+        std::cout << "Reduction (nbins=" << n_unique_bins_v << ") by key "; toc_simple("",T_US,1);
+        
+        // STEP 5: Scatter the bin sizes.
+        tic_simple("");
+        thrust::scatter(
+            thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_v,
+            c_tmp_b_i_ptr,
+            bnv_ptr
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Scatter (1)"; toc_simple("",T_US,1);
+        
+        // STEP 6: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
+        tic_simple("");
+        thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, bb_ptr);
+        cudaDeviceSynchronize();
+        std::cout << "Adjacent difference"; toc_simple("",T_US,1);
+        
+        // STEP 7: Gather the indices of the starting locations.
+        tic_simple("");
+        counting_iter = thrust::counting_iterator<int>(1);
+        thrust::transform(
+            thrust::device, counting_iter, counting_iter + n_lim_size_v,
+            bb_ptr, bb_ptr,
+            replace_diff_with_indexM1()
+        );
+        thrust::copy_if(thrust::device, &bb_ptr[1], &bb_ptr[1] + (n_lim_size_v-1), &c_tmp_b_ii_ptr[1], is_positive());
+        fZ = 0;
+        cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
+        cudaDeviceSynchronize();
+        std::cout << "Copy-if"; toc_simple("",T_US,1);
+        
+        // STEP 8: Now scatter the starting-location indices.
+        tic_simple("");
+        thrust::scatter(
+            thrust::device, c_tmp_b_ii_ptr, c_tmp_b_ii_ptr + n_unique_bins_v,
+            c_tmp_b_i_ptr,
+            bNv_ptr
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Scatter (2)"; toc_simple("",T_US,1);
+        
+        // Copy the indices of the binned faces.
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_2D[L], n_binned_faces_v*sizeof(int)) );
+        cudaMemcpy(c_binned_face_ids_2D[L], c_bounding_box_index_limits, n_binned_faces_v*sizeof(int), cudaMemcpyDeviceToDevice);
+        //
+        // Copy the GPU data to the CPU for drawing.
+        binned_face_ids_n_2D[L] = new int[n_bins_2D[L]];
+        binned_face_ids_N_2D[L] = new int[n_bins_2D[L]];
+        binned_face_ids_2D[L] = new int[n_binned_faces_v];
+        cudaMemcpy(binned_face_ids_n_2D[L], c_binned_face_ids_n_2D[L], n_bins_2D[L]*sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(binned_face_ids_N_2D[L], c_binned_face_ids_N_2D[L], n_bins_2D[L]*sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(binned_face_ids_2D[L], c_binned_face_ids_2D[L], n_binned_faces_v*sizeof(int), cudaMemcpyDeviceToHost);
+        
+        // DEBUG
+//         for (int i = 0; i < n_bins_2D[L]; i++)
+//         {
+//             int nbins_i = binned_face_ids_n_2D[L][i];
+//             int Nbins_i = binned_face_ids_N_2D[L][i];
+//             if (nbins_i > 0)
+//             {
+//                 std::cout << "Bin " << i << ": (nbins=" << nbins_i << ",Nbins=" << Nbins_i << ")" << std::endl;
+//                 for (int j = 0; j < nbins_i; j++)
+//                     std::cout << binned_face_ids_2D[L][Nbins_i+j] << " ";
+//                 std::cout << std::endl;
+//             }
+//         }
+        
+        
+        
+        
+        
+        // Free temporary arrays.
+        cudaFree(c_bounding_box_limits);
+        cudaFree(c_bounding_box_index_limits);
+        cudaFree(c_tmp_b_i);
+        cudaFree(c_tmp_b_ii);
+    }
+    
+    return 0;
 }

@@ -1,10 +1,14 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-template <class T> __host__ __device__ __forceinline__ T EPS(T a);
-template <> __host__ __device__ __forceinline__ float EPS(float a) { return 1e-7F; }
-template <> __host__ __device__ __forceinline__ double EPS(double a) { return 1e-15; }
+// o====================================================================================
+// | Templated math operations.
+// o====================================================================================
 
+template <class T> __host__ __device__ __forceinline__ T EPS();
+template <> __host__ __device__ __forceinline__ float EPS() { return FLT_EPSILON; }
+template <> __host__ __device__ __forceinline__ double EPS() { return DBL_EPSILON; }
+//
 __host__ __device__ __forceinline__ int imin(int a, int b) { return (a < b) ? a : b; }
 __host__ __device__ __forceinline__ int imax(int a, int b) { return (a > b) ? a : b; }
 //
@@ -35,15 +39,9 @@ template <class T> __host__ __device__ __forceinline__ T Tacos(T a);
 template <> __host__ __device__ __forceinline__  float Tacos(float a) { return acosf(a); }
 template <> __host__ __device__ __forceinline__  double Tacos(double a) { return acos(a); }
 
-
-
-
-
-
-
-
-
-
+// o====================================================================================
+// | Vec2.
+// o====================================================================================
 
 template <typename T>
 struct vec2
@@ -132,6 +130,10 @@ __host__ __device__ __forceinline__ vec2<T> ReducedCrossWUnitV(const vec2<T> &a)
 	// Returns the cross product of a vector a=(ax,ay,0), b=(0,0,1).
 	return vec2<T>(a.y,-a.x);
 }
+
+// o====================================================================================
+// | Vec3.
+// o====================================================================================
 
 template <typename T>
 struct vec3
@@ -229,12 +231,9 @@ __host__ __device__ __forceinline__ T DistV(const vec3<T> &a, const vec3<T> &b)
 	return NormV(a-b);
 }
 
-
-
-
-
-
-
+// o====================================================================================
+// | TO BE REMOVED [TODO].
+// o====================================================================================
 
 template <typename T>
 __device__
@@ -302,70 +301,6 @@ bool CheckPointInTriangle(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2
 }
 
 template <typename T>
-__device__
-void GetShortestLinkVertex2D(T &vxp, T &vyp, T &vx1, T &vy1, T &vx2, T &vy2, T &sx, T &sy, T &nx, T &ny, T &dmin, T &tmin)
-{
-	// First link.
-	sx = vx1 + (T)(1e-4)*(vx2-vx1) - vxp;
-	sy = vy1 + (T)(1e-4)*(vy2-vy1) - vyp;
-	dmin = Tsqrt(sx*sx + sy*sy);
-	tmin = sx*nx + sy*ny;
-	tmin = Tacos(tmin);
-	
-	// Second link.
-	sx = vx2 - (T)(1e-4)*(vx2-vx1) - vxp;
-	sy = vy2 - (T)(1e-4)*(vy2-vy1) - vyp;
-	if (Tsqrt(sx*sx + sy*sy) < dmin)
-	{
-		dmin = Tsqrt(sx*sx + sy*sy);
-		tmin = sx*nx + sy*ny;
-		tmin = Tacos(tmin);
-	}
-}
-
-/*
-template <typename T>
-__device__
-void GetShortestLinkEdge3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &sx, T &sy, T &sz, T &nx, T &ny, T &nz, T &dmin, T &tmin, T &tmp, bool &C)
-{
-	// ith link.
-	tmp = (vx2-vx1)*(vx2-vx1) + (vy2-vy1)*(vy2-vy1) + (vz2-vz1)*(vz2-vz1);
-	tmp = ( (vx1-vxp)*(vx2-vx1) + (vy1-vyp)*(vy2-vy1) + (vz1-vzp)*(vz2-vz1) ) / tmp; // tmp now stores dot(v1-vx,v2-v1)/norm(v2-v1)^2;
-	sx = vx1 - (vx2-vx1)*tmp;
-	sy = vy1 - (vy2-vy1)*tmp;
-	sz = vz1 - (vz2-vz1)*tmp;
-	C = CheckPointInLine3D(sx, sy, sz, vx1, vy1, vz1, vx2, vy2, vz2);
-	dmin = Tsqrt((vxp-sx)*(vxp-sx) + (vyp-sy)*(vyp-sy) + (vzp-sz)*(vzp-sz)); // tmp now stores the length of the link
-	tmin = (vxp-sx)*nx + (vyp-sy)*ny + (vzp-sz)*nz;
-	//tmin = Tacos(tmin);
-}
-template <typename T>
-__device__
-void GetShortedLinkVertex3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &vx3, T &vy3, T &vz3, T &nx, T &ny, T &nz, T &dmin, T &tmin, T &tmp)
-{
-	// First vertex.
-	dmin = Tsqrt((vxp-vx1)*(vxp-vx1) + (vyp-vy1)*(vyp-vy1) + (vzp-vz1)*(vzp-vz1));
-	tmin = (vxp-vx1)*nx + (vyp-vy1)*ny + (vzp-vz1)*nz;
-	
-	// Second vertex.
-	tmp = Tsqrt((vxp-vx2)*(vxp-vx2) + (vyp-vy2)*(vyp-vy2) + (vzp-vz2)*(vzp-vz2));
-	if (tmp < dmin)
-	{
-		dmin = tmp;
-		tmin = (vxp-vx2)*nx + (vyp-vy2)*ny + (vzp-vz2)*nz;
-	}
-	
-	// Third vertex.
-	tmp = Tsqrt((vxp-vx3)*(vxp-vx3) + (vyp-vy3)*(vyp-vy3) + (vzp-vz3)*(vzp-vz3));
-	if (tmp < dmin)
-	{
-		dmin = tmp;
-		tmin = (vxp-vx3)*nx + (vyp-vy3)*ny + (vzp-vz3)*nz;
-	}
-}
-*/
-
-template <typename T>
 __host__ __device__ __forceinline__
 bool CheckInLine(T d, T vxp, T vx0, T vx1)
 {
@@ -397,23 +332,9 @@ bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm
 	return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// o====================================================================================
+// | Geometry face operations.
+// o====================================================================================
 
 template <typename T, int N_DIM>
 __device__ __forceinline__ vec3<T> FaceNormal(const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3)
@@ -457,7 +378,6 @@ vec3<T> PointLineIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T
 
 template <typename T>
 __device__ __forceinline__
-// bool CheckPointInTriangleA(T vxp, T vyp, T vzp, T vx1, T vy1, T vz1, T vx2, T vy2, T vz2, T vx3, T vy3, T vz3, T nx, T ny, T nz)
 bool CheckPointInTriangleA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
 {
 	// First edge.
@@ -567,9 +487,50 @@ bool PointInIndexedBin
 	return b;
 }
 
+// o====================================================================================
+// | Auxilliary.
+// o====================================================================================
 
+template <int N_DIM>
+__host__ __device__ __forceinline__
+int Cu_NbrMap(int I, int J, int K)
+{
+    int S = 0;
+    
+    //if (I == -1) S = 0;
+    if (I >= 4) S = 2;
+    if (I >= 0 && I < 4) S = 1;
+    
+    //if (J == -1) S += 3*(0);
+    if (J >= 4) S += 3*(2);
+    if (J >= 0 && J < 4) S += 3*(1);
+    
+    if (N_DIM==3)
+    {
+        //if (K == -1) S += 9*(0);
+        if (K >= 4) S += 9*(2);
+        if (K >= 0 && K < 4) S += 9*(1);
+    }
+    
+    return S;
+}
 
-#include "util_tribin.h"
+template <int N_DIM>
+__host__ __device__ __forceinline__
+int Cu_NbrCellId(int Ip, int Jp, int Kp)
+{
+    // I,J,K are incremented by direction, and can be in {-1,0,1,2,3,4}.
+    Ip = (4 + (Ip % 4)) % 4;
+    Jp = (4 + (Jp % 4)) % 4;
+    if (N_DIM==2)
+        Kp = 0;
+    if (N_DIM==3)
+        Kp = (4 + (Kp % 4)) % 4;
+    return Ip + 4*Jp + 16*Kp;
+}
+
+#include "util_tribin.h"         // Triangle-AABB bin overlap.
+#include "util_tribin_old.h"     // My own triangle-AABB bin overlap test.
 
 
 #endif
