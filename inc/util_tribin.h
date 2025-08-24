@@ -1,3 +1,60 @@
+template <typename T, int axis=0>
+__host__ __device__ __forceinline__ bool TriangleBinOverlap1D_AxisGap
+(
+    const T &v1x,
+    const T &v1y,
+    const T &v2x,
+    const T &v2y,
+    const T &rmx,
+    const T &rmy,
+    const T &rMx,
+    const T &rMy
+)
+{
+    bool b = false;
+    
+    T ex;
+    T ey;
+    if (axis == 0) {ex = static_cast<T>(1.0); ey = static_cast<T>(0.0);}
+    if (axis == 1) {ex = static_cast<T>(0.0); ey = static_cast<T>(1.0);}
+    if (axis == 2) {ex = v2y-v1y; ey = v1x-v2x;}
+    
+    T t = Tmax(v1x*ex+v1y*ey, v2x*ex+v2y*ey);
+    T r = Tmin(Tmin(Tmin(rmx*ex+rmy*ey, rMx*ex+rmy*ey), rmx*ex+rMy*ey), rMx*ex+rMy*ey);
+    b = b || (t<r);
+    
+    t = Tmin(v1x*ex+v1y*ey, v2x*ex+v2y*ey);
+    r = Tmax(Tmax(Tmax(rmx*ex+rmy*ey, rMx*ex+rmy*ey), rmx*ex+rMy*ey), rMx*ex+rMy*ey);
+    b = b || (r<t);
+    
+    return b;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ bool LineBinOverlap2D(const vec2<T> &vm, const vec2<T> &vM, const vec2<T> &v1, const vec2<T> &v2)
+{
+    // Tests.
+    if (TriangleBinOverlap1D_AxisGap<T,0>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    if (TriangleBinOverlap1D_AxisGap<T,1>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    if (TriangleBinOverlap1D_AxisGap<T,2>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    
+    return true;
+}
+template <typename T>
+__host__ __device__ __forceinline__ bool LineBinOverlap2D(const vec3<T> &vm, const vec3<T> &vM, const vec3<T> &v1, const vec3<T> &v2)
+{
+    // Tests.
+    if (TriangleBinOverlap1D_AxisGap<T,0>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    if (TriangleBinOverlap1D_AxisGap<T,1>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    if (TriangleBinOverlap1D_AxisGap<T,2>(v1.x,v1.y,v2.x,v2.y,vm.x,vm.y,vM.x,vM.y)) {return false;}
+    
+    return true;
+}
+
+
+
+
+
 
 
 

@@ -10,10 +10,6 @@
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 {
-	std::cout << " o====================================================================================" << std::endl;
-	std::cout << " | Deleting: Mesh Object                                                                   " << std::endl;
-	std::cout << " o====================================================================================" << std::endl;
-	
 	// Check memory currently being used before freeing for validation.
 	cudaMemGetInfo(&free_t, &total_t);
 	std::cout << "[-] Before freeing:\n";
@@ -93,5 +89,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Dest()
 	std::cout << "[-] After freeing:\n";
 	std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
 	
+        // Print message.
+        std::cout << " o====================================================================================" << std::endl;
+	std::cout << " | Deleted: Mesh Object                                                              |" << std::endl;
+	std::cout << " o====================================================================================" << std::endl;
+        
 	return 0;
 }

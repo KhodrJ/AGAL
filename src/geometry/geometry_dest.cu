@@ -10,10 +10,6 @@
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_Dest()
 {
-    std::cout << " o====================================================================================" << std::endl;
-    std::cout << " | Deleting: Geometry Object                                                          " << std::endl;
-    std::cout << " o====================================================================================" << std::endl;
-    
     // If an index list was constructed, free those arrays.
     if (init_index_lists)
     {
@@ -43,6 +39,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Dest()
         
         init_coords_list = 0;
     }
+    
+    // If bins were initialized, destroy them.
+    if (init_bins)
+        G_DestBins();
+    
+    // Print message.
+    std::cout << " o====================================================================================" << std::endl;
+    std::cout << " | Deleted: Geometry Object                                                          |" << std::endl;
+    std::cout << " o====================================================================================" << std::endl;
     
     return 0;
 }

@@ -5,8 +5,16 @@
 #include "parser.h"
 #include "util.h"
 
-constexpr int V_GEOMETRY_LOADTYPE_STL               = 0;
-constexpr int V_GEOMETRY_LOADTYPE_TXT               = 1;
+enum class BinMake
+{
+    CPU,
+    GPU
+};
+enum class LoadType
+{
+    STL,
+    TXT
+};
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Mesh;
@@ -22,6 +30,7 @@ class Geometry
     
     int             init_index_lists        = 0;                     ///< Indicates if index lists were initialized.
     int             init_coords_list        = 0;                     ///< Indicates if face coordinates list was initialized.
+    int             init_bins               = 0;                     ///< Indicates if face coordinates list was initialized.
     
     // o====================================================================================
     // | Routines.
@@ -36,7 +45,7 @@ class Geometry
     
     public:
     
-    class Bins;    
+    class Bins;
     
     Parser *parser;
     Mesh<ufloat_t,ufloat_g_t,AP> *mesh;
@@ -154,6 +163,8 @@ class Geometry
     int G_Convert_CoordListToIndexLists();
     int G_CoordList_MachineEps();
     int G_RefineFaces_Length();
+    int G_InitBins(int make_type, int draw_type);
+    int G_DestBins();
     
     // Adding primitives to the index lists.
     int G_AddBoundingBox(ufloat_g_t ax, ufloat_g_t bx, ufloat_g_t ay, ufloat_g_t by, ufloat_g_t az, ufloat_g_t bz);

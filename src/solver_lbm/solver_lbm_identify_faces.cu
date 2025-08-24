@@ -192,7 +192,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_IdentifyFaces(int i_dev, int L)
             &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_ID_mask_b[i_dev], mesh->c_cells_f_X_b[i_dev],
             mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_ID_face[i_dev],
             mesh->geometry->n_faces, mesh->geometry->n_faces_a, mesh->geometry->c_geom_f_face_X,
-            mesh->geometry->bins->c_binned_face_ids_n_3D[0], mesh->geometry->bins->c_binned_face_ids_N_3D[0], mesh->geometry->bins->c_binned_face_ids_3D[0], mesh->geometry->bins->n_bin_density
+            mesh->geometry->bins->c_binned_face_ids_n_3D[0], mesh->geometry->bins->c_binned_face_ids_N_3D[0], mesh->geometry->bins->c_binned_face_ids_3D[0], mesh->geometry->bins->n_bin_density[0]
         );
     }
     

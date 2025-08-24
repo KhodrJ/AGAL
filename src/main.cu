@@ -1,13 +1,15 @@
 #include "cppspec.h"
 #include "parser.h"
 #include "geometry.h"
+#include "geometry_bins.h"
 #include "mesh.h"
 #include "solver_lbm.h"
 
 #include "geometry_add.cu"
-#include "geometry_bin_cpu.cu"
-#include "geometry_bin_gpu.cu"
-#include "geometry_bin_draw.cu"
+#include "geometry_bins.cu"
+#include "geometry_bins_cpu.cu"
+#include "geometry_bins_gpu.cu"
+#include "geometry_bins_draw.cu"
 #include "geometry_convert.cu"
 #include "geometry_dest.cu"
 #include "geometry_import.cu"
@@ -95,19 +97,20 @@ int main(int argc, char *argv[])
     
     // Create a new geometry and import from input folder.
     Geometry<REAL_s,REAL_g,&APc> geometry(&parser);
-    if (geometry.G_LOADTYPE == V_GEOMETRY_LOADTYPE_STL)
+    if (geometry.G_LOADTYPE == static_cast<int>(LoadType::STL))
         geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
     else
     {
         geometry.G_ImportBoundariesFromTextFile();
         geometry.G_Convert_IndexListsToCoordList();
     }
+    std::cout << "T1" << std::endl;
     geometry.G_Init_Arrays_CoordsList_CPU();
     if (geometry.G_PRINT)
         geometry.G_PrintSTL();
-    //geometry.G_MakeBinsGPU(0);
-    //geometry.G_MakeBinsCPU(0);
-    //geometry.G_DrawBinsAndFaces(0);
+    std::cout << "T2" << std::endl;
+    geometry.G_InitBins(static_cast<int>(BinMake::GPU),0);
+    std::cout << "T3" << std::endl;
     
     // Create a mesh.
     const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
@@ -120,8 +123,8 @@ int main(int argc, char *argv[])
     
     // Solver loop (includes rendering and printing).
     //mesh.M_AdvanceLoop();
-    //mesh.M_Advance_RefineNearWall();
-    //mesh.M_Advance_PrintData(0,0);
+    mesh.M_Advance_RefineNearWall();
+    mesh.M_Advance_PrintData(0,0);
     
     return 0;
 }

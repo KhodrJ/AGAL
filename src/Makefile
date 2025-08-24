@@ -96,9 +96,10 @@ SRC_GEOMETRY = geometry_init.cu\
       geometry_add.cu\
       geometry_import.cu\
       geometry_convert.cu\
-      geometry_bin_cpu.cu\
-      geometry_bin_gpu.cu\
-      geometry_bin_draw.cu\
+      geometry_bins.cu\
+      geometry_bins_cpu.cu\
+      geometry_bins_gpu.cu\
+      geometry_bins_draw.cu\
       geometry_print.cu\
       geometry_refine.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
@@ -129,7 +130,6 @@ OBJ_MESH = $(SRC_MESH:.cu=.o)
 
 	
 SRC_SOLVER_LBM = solver_lbm_init.cu\
-	solver_lbm_impl.cu\
 	solver_lbm_advance.cu\
 	solver_lbm_compute.cu\
 	solver_lbm_compute_macro.cu\

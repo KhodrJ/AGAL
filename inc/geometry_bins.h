@@ -4,15 +4,11 @@
 #include "geometry.h"
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-class Geometry;
-
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
 {
     private:
     
-    Parser *parser;
-    Geometry *geometry;
+    Geometry<ufloat_t,ufloat_g_t,AP> *geometry;
     
     public:
     
@@ -33,9 +29,22 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     // Bin-related constants.
     int init_bins_2D = 0;
     int init_bins_3D = 0;
-    int n_bin_density = 1;
-    int n_binning_approach = 0;
+    int n_bin_density_root = 1;
+    int n_bin_approach = 0;
     int n_levels = 1;
+    int n_max_levels_wall = 1;
+    int Nx;
+    ufloat_g_t Lx;
+    ufloat_g_t Ly;
+    ufloat_g_t Lz;
+    ufloat_g_t dx;
+    ufloat_g_t dy;
+    ufloat_g_t dz;
+    
+    // Bin-related arrays.
+    int *n_bin_density;
+    ufloat_g_t *dxf_vec;
+    ufloat_g_t *Lx0g_vec;
     
     // 2D bins.
     int *n_bins_2D;
@@ -71,21 +80,49 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     // | Constructor.
     // o====================================================================================
     
-    Bins(Parser *parser_, Geometry *geometry_) : parser(parser_), geometry(geometry_)
+    Bins(Geometry<ufloat_t,ufloat_g_t,AP> *geometry_, const int &make_type, const int &draw_bins) : geometry(geometry_)
     {
+        // make_type: [0: CPU, 1: GPU]
+        // draw_bins: [0: don't, 1: do]
+        
         // Set useful parameters.
-        Lx = parser->params_dbl["L_c"];
-        Ly = parser->params_dbl["L_fy"]*Lx;
-        Lz = parser->params_dbl["L_fz"]*Lx;
-        Nx = parser->params_int["Nx"];
-        n_bin_density = parser->params_int["G_BIN_DENSITY"];
-        n_binning_approach = parser->params_int["G_BIN_APPROACH"];
-        n_levels = parser->params_int["G_BIN_LEVELS"];
+        Lx = geometry->parser->params_dbl["L_c"];
+        Ly = geometry->parser->params_dbl["L_fy"]*Lx;
+        Lz = geometry->parser->params_dbl["L_fz"]*Lx;
+        Nx = geometry->parser->params_int["Nx"];
+        n_bin_density_root = geometry->parser->params_int["G_BIN_DENSITY"];
+        n_bin_approach = geometry->parser->params_int["G_BIN_APPROACH"];
+        n_levels = geometry->parser->params_int["G_BIN_LEVELS"];
+        n_max_levels_wall = geometry->parser->params_int["MAX_LEVELS_WALL"];
         
         // Derived parameters.
         dx = Lx/static_cast<ufloat_g_t>(Nx);
         dy = Ly/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
         dz = Lz/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
+        n_bin_density = new int[n_levels];
+        dxf_vec = new ufloat_g_t[3*n_levels];
+        Lx0g_vec = new ufloat_g_t[3*n_levels];
+        
+        // Cap n_levels using n_max_levels_wall.
+        n_levels = std::min(n_levels, n_max_levels_wall);
+        
+        // Fill vectors based on n_levels.
+        n_bin_density[0] = n_bin_density_root;
+        dxf_vec[0 + 0*n_levels] = dx;
+        dxf_vec[0 + 1*n_levels] = dy;
+        dxf_vec[0 + 2*n_levels] = dz;
+        Lx0g_vec[0 + 0*n_levels] = Lx/static_cast<ufloat_g_t>(n_bin_density_root);
+        Lx0g_vec[0 + 1*n_levels] = Ly/static_cast<ufloat_g_t>(n_bin_density_root);
+        Lx0g_vec[0 + 2*n_levels] = Lz/static_cast<ufloat_g_t>(n_bin_density_root);
+        for (int L = 1; L < n_levels; L++)
+        {
+            n_bin_density[L] = n_bin_density[L-1]*2;
+            for (int d = 0; d < N_DIM; d++)
+            {
+                dxf_vec[L + d*n_levels] = dxf_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
+                Lx0g_vec[L + d*n_levels] = Lx0g_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
+            }
+        }
         
         // Initialize 2D bins.
         n_bins_2D = new int[n_levels];
@@ -109,11 +146,25 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         c_binned_face_ids_n_3D = new int*[n_levels];
         c_binned_face_ids_N_3D = new int*[n_levels];
         
+        // Consider up to n_levels.
+        for (int k = 0; k < n_levels; k++)
+        {
+            // Make the bins based on the specified make_type.
+            if (make_type == static_cast<int>(BinMake::CPU)) G_MakeBinsCPU(k);
+            if (make_type == static_cast<int>(BinMake::GPU)) G_MakeBinsGPU(k);
+            
+            // Draw the bins, if specified to do so.
+            if (draw_bins == 1) G_DrawBinsAndFaces(k);
+        }
+        
         std::cout << "[-] Finished making bins object." << std::endl << std::endl;
     }
     
     ~Bins()
     {
+        delete[] n_bin_density;
+        delete[] dxf_vec;
+        
         if (init_bins_2D)
         {
             for (int j = 0; j < n_levels; j++)

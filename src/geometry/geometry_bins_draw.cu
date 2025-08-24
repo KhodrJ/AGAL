@@ -20,10 +20,11 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_DrawBinsAndFaces(int L)
 {
     // Initial parameters. Open the output file.
+    int n_faces_a = geometry->n_faces_a;
     ufloat_g_t *geom_f_face_X = geometry->geom_f_face_X;
-    ufloat_g_t Lx0g __attribute__((unused)) = Lx/static_cast<ufloat_g_t>(n_bin_density);
-    ufloat_g_t Ly0g __attribute__((unused)) = Ly/static_cast<ufloat_g_t>(n_bin_density);
-    ufloat_g_t Lz0g __attribute__((unused)) = Lz/static_cast<ufloat_g_t>(n_bin_density);
+    ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_levels];
+    ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_levels];
+    ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_levels];
     double c0 = 0.0;
     double c1 = 0.0;
     double c2 = 0.0;
@@ -49,15 +50,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_DrawBinsAndFaces(int L)
     
     int counter_2D = 1;
     int counter_3D = 1;
-    int kmax = N_DIM==2?1:n_bin_density;
+    int kmax = N_DIM==2?1:n_bin_density[L];
     for (int k = 0; k < kmax; k++)
     {
-        for (int j = 0; j < n_bin_density; j++)
+        for (int j = 0; j < n_bin_density[L]; j++)
         {
-            for (int i = 0; i < n_bin_density; i++)
+            for (int i = 0; i < n_bin_density[L]; i++)
             {
                 // Identify the bin.
-                int global_bin_id = i + n_bin_density*j + n_bin_density*n_bin_density*k;
+                int global_bin_id = i + n_bin_density[L]*j + n_bin_density[L]*n_bin_density[L]*k;
                 
                 // Get the number of faces in the bin.
                 int n_f = binned_face_ids_n_3D[L][global_bin_id];
@@ -111,7 +112,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_DrawBinsAndFaces(int L)
             
             
             // Identify the bin.
-            int global_bin_id_2D = j + n_bin_density*k;
+            int global_bin_id_2D = j + n_bin_density[L]*k;
             
             // Get the number of faces in the bin.
             int n_f_2D = binned_face_ids_n_2D[L][global_bin_id_2D];

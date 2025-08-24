@@ -27,65 +27,53 @@ void Cu_SetInitialConditions
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int J = (threadIdx.x / 4) % 4;
     int K = 0;
     if (N_DIM==3)
         K = (threadIdx.x / 4) / 4;
 
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
-    // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
+        // Compute cell coordinates. Obtain the initial conditions from the custom routine.
+        ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
+        ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
+        ufloat_t z __attribute__((unused)) = (ufloat_t)0.0;
+        if (N_DIM==3)
+            z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
+        ufloat_t rho = (ufloat_t)(0.0);
+        ufloat_t u = (ufloat_t)(0.0);
+        ufloat_t v = (ufloat_t)(0.0);
+        ufloat_t w = (ufloat_t)(0.0);
+        Cu_ComputeIC<ufloat_t>(rho, u, v, w, x, y, z);
+        ufloat_t udotu = u*u + v*v + w*w;
         
-        // Latter condition is added only if n>0.
-        if (i_kap_b>-1)
+        // Compute equilibrium distributions from initial macroscopic conditions.
+        int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+        for (int p = 0; p < N_Q; p++)
         {
-            // Compute cell coordinates. Obtain the initial conditions from the custom routine.
-            ufloat_t x __attribute__((unused)) = cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + (ufloat_t)0.5*dx_L;
-            ufloat_t y __attribute__((unused)) = cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + (ufloat_t)0.5*dx_L;
-            ufloat_t z __attribute__((unused)) = (ufloat_t)0.0;
-            if (N_DIM==3)
-                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + (ufloat_t)0.5*dx_L;
-            ufloat_t rho = (ufloat_t)(0.0);
-            ufloat_t u = (ufloat_t)(0.0);
-            ufloat_t v = (ufloat_t)(0.0);
-            ufloat_t w = (ufloat_t)(0.0);
-            Cu_ComputeIC<ufloat_t>(rho, u, v, w, x, y, z);
-            ufloat_t udotu = u*u + v*v + w*w;
-            
-            // Compute equilibrium distributions from initial macroscopic conditions.
-            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-            for (int p = 0; p < N_Q; p++)
-            {
-                ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
-                ufloat_t f_p = (ufloat_t)(-1.0);
-                if (valid_mask != V_CELLMASK_SOLID)
-                    f_p = rho*(ufloat_t)LBMw[p]*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
-            
-                // Note: this is written for solid cells to ensure that they have negative DDFs. This negative value
-                //       is used as a guard during the streaming step.
-                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells] = f_p;
-            }
-            
-            // Write macroscopic properties.
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
-            if (N_DIM==3)
-                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
+            ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
+            ufloat_t f_p = (ufloat_t)(-1.0);
+            if (valid_mask != V_CELLMASK_SOLID)
+                f_p = rho*(ufloat_t)LBMw[p]*( (ufloat_t)1.0 + (ufloat_t)3.0*cdotu + (ufloat_t)4.5*cdotu*cdotu - (ufloat_t)1.5*udotu );
+        
+            // Note: this is written for solid cells to ensure that they have negative DDFs. This negative value
+            //       is used as a guard during the streaming step.
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells] = f_p;
         }
+        
+        // Write macroscopic properties.
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
+        if (N_DIM==3)
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
     }
 }
 
@@ -94,7 +82,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_SetIC(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_SetInitialConditions<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_SetInitialConditions<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,
@@ -135,51 +123,41 @@ void Cu_RefreshVariables
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
     
-    // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
+        // Macroscopic properties.
+        ufloat_t rho = (ufloat_t)0.0;
+        ufloat_t u = (ufloat_t)0.0;
+        ufloat_t v = (ufloat_t)0.0;
+        ufloat_t w = (ufloat_t)0.0;
         
-        // Latter condition is added only if n>0.
-        if (i_kap_b>-1)
+        // Traverse DDFs and compute macroscopic properties.
+        for (int p = 0; p < N_Q; p++)
         {
-            // Macroscopic properties.
-            ufloat_t rho = (ufloat_t)0.0;
-            ufloat_t u = (ufloat_t)0.0;
-            ufloat_t v = (ufloat_t)0.0;
-            ufloat_t w = (ufloat_t)0.0;
-            
-            // Traverse DDFs and compute macroscopic properties.
-            for (int p = 0; p < N_Q; p++)
-            {
-                ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
-                rho += f_pi;
-                u += V_CONN_ID[p+0*27]*f_pi;
-                v += V_CONN_ID[p+1*27]*f_pi;
-                if (N_DIM==3)
-                    w += V_CONN_ID[p+2*27]*f_pi;
-            }
-            u /= rho;
-            v /= rho;
+            ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
+            rho += f_pi;
+            u += V_CONN_ID[p+0*27]*f_pi;
+            v += V_CONN_ID[p+1*27]*f_pi;
             if (N_DIM==3)
-                w /= rho;
-            
-            // Store macroscopic properties.
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
-            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
-            if (N_DIM==3)
-                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
+                w += V_CONN_ID[p+2*27]*f_pi;
         }
+        u /= rho;
+        v /= rho;
+        if (N_DIM==3)
+            w /= rho;
+        
+        // Store macroscopic properties.
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
+        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
+        if (N_DIM==3)
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
     }
 }
 
@@ -188,7 +166,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_RefreshVariables(int i_dev, int L, 
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_RefreshVariables<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_RefreshVariables<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L]-1,M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L], n_maxcells,
             &mesh->c_id_set[i_dev][L*n_maxcblocks],
@@ -243,31 +221,19 @@ void Cu_Collide
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
     
-    // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
-        int i_kap_bc = -1;
-        int valid_block = -1;
-        
-        // Load data for conditions on cell-blocks.
-        if (i_kap_b>-1)
-        {
-            i_kap_bc=cblock_ID_nbr_child[i_kap_b];
-            valid_block=cblock_ID_mask[i_kap_b];
-        }
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+        int valid_block = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_b>-1)&&((i_kap_bc<0)||(valid_block>-3)))
+        if ((i_kap_bc<0) || (valid_block>-3))
         {
             // Get cell mask. Initialize variables for macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
@@ -327,7 +293,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_Collide<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_Collide<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L], n_maxcells,
             n_maxcblocks,
@@ -389,37 +355,20 @@ void Cu_Stream
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    int I = threadIdx.x % 4;
-    int J = (threadIdx.x / 4) % 4;
-    int K = 0;
-    if (N_DIM==3)
-        K = (threadIdx.x / 4) / 4;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
     
-    // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
-        int i_kap_bc = -1;
-        int valid_block = -1;
-        
-        // Load data for conditions on cell-blocks.
-        if (i_kap_b>-1)
-        {
-            i_kap_bc=cblock_ID_nbr_child[i_kap_b];
-            valid_block=cblock_ID_mask[i_kap_b];
-        }
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+        int valid_block = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_b>-1)&&((i_kap_bc<0)||(valid_block>-3)))
+        if ((i_kap_bc<0) || (valid_block>-3))
         {
             // Get masks for possible boundary nodes.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
@@ -435,6 +384,12 @@ void Cu_Stream
             }
             __syncthreads();
             
+            // Compute local cell indices.
+            int I = threadIdx.x % 4;
+            int J = (threadIdx.x / 4) % 4;
+            int K = 0;
+            if (N_DIM==3)
+                K = (threadIdx.x / 4) / 4;
             
             // Loop over DDFs and perform streaming step.
             #pragma unroll
@@ -486,7 +441,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_Stream<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_Stream<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,
@@ -567,36 +522,23 @@ void Cu_ImposeBC
     constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
-    //_shared__ ufloat_t s_u[3*M_TBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
     int I = threadIdx.x % 4;
     int J = (threadIdx.x / 4) % 4;
     int K = 0;
     if (N_DIM==3)
         K = (threadIdx.x / 4) / 4;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
     
-    // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
-        int valid_block = -1;
+        int valid_block = cblock_ID_onb[i_kap_b];
         
-        // Load data for conditions on cell-blocks.
-        if (i_kap_b>-1)
-        {
-            valid_block=cblock_ID_onb[i_kap_b];
-        }
-        
-        // Latter condition is added only if n>0.
-        if ((i_kap_b>-1)&&((valid_block==1)))
+        if (valid_block==1)
         {
             // Compute cell coordinates and retrieve macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
@@ -755,7 +697,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ImposeBC(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_ImposeBC<ufloat_t,ufloat_g_t,AP,LP><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ImposeBC<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,

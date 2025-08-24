@@ -34,20 +34,20 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
     ufloat_g_t *geom_f_face_X = geometry->geom_f_face_X;
     int n_faces = geometry->n_faces;
     int n_faces_a = geometry->n_faces_a;
-    ufloat_g_t Lx0g __attribute__((unused)) = Lx/static_cast<ufloat_g_t>(n_bin_density);
-    ufloat_g_t Ly0g __attribute__((unused)) = Ly/static_cast<ufloat_g_t>(n_bin_density);
-    ufloat_g_t Lz0g __attribute__((unused)) = Lz/static_cast<ufloat_g_t>(n_bin_density);
+    ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_levels];
+    ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_levels];
+    ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_levels];
     ufloat_g_t eps __attribute__((unused)) = EPS<ufloat_g_t>();
-    bool C2D = false; if (G_BIN_APPROACH==0) C2D = true;
-    bool C3D = false; if (G_BIN_APPROACH==0) C3D = true;
+    bool C2D = false; if (n_bin_approach==0) C2D = true;
+    bool C3D = false; if (n_bin_approach==0) C3D = true;
     
     // Proceed only if there are actual faces loaded in the current object.
     tic_simple("");
-    if (v_geom_f_face_1_X.size() > 0)
+    if (n_faces > 0)
     {
         // Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
-        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) n_bins_2D[L] *= n_bin_density;
-        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   n_bins_3D[L] *= n_bin_density;
+        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) n_bins_2D[L] *= n_bin_density[L];
+        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   n_bins_3D[L] *= n_bin_density[L];
         std::vector<int> *bins_a_2D = new std::vector<int>[n_bins_2D[L]];
         std::vector<int> *bins_a_3D = new std::vector<int>[n_bins_3D[L]];
         
@@ -59,34 +59,51 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
             if (j < n_faces)
             {
                 // Load face vertices from coordinate list.
-                ufloat_g_t vx1 = geom_f_face_X[j + 0*n_faces_a];
-                ufloat_g_t vy1 = geom_f_face_X[j + 1*n_faces_a];
-                ufloat_g_t vz1 = geom_f_face_X[j + 2*n_faces_a];
-                ufloat_g_t vx2 = geom_f_face_X[j + 3*n_faces_a];
-                ufloat_g_t vy2 = geom_f_face_X[j + 4*n_faces_a];
-                ufloat_g_t vz2 = geom_f_face_X[j + 5*n_faces_a];
-                ufloat_g_t vx3 = geom_f_face_X[j + 6*n_faces_a];
-                ufloat_g_t vy3 = geom_f_face_X[j + 7*n_faces_a];
-                ufloat_g_t vz3 = geom_f_face_X[j + 8*n_faces_a];
+                vec3<ufloat_g_t> v1
+                (
+                    geom_f_face_X[j + 0*n_faces_a],
+                    geom_f_face_X[j + 1*n_faces_a],
+                    geom_f_face_X[j + 2*n_faces_a]
+                );
+                vec3<ufloat_g_t> v2
+                (
+                    geom_f_face_X[j + 3*n_faces_a],
+                    geom_f_face_X[j + 4*n_faces_a],
+                    geom_f_face_X[j + 5*n_faces_a]
+                );
+                vec3<ufloat_g_t> v3
+                (
+                    geom_f_face_X[j + 6*n_faces_a],
+                    geom_f_face_X[j + 7*n_faces_a],
+                    geom_f_face_X[j + 8*n_faces_a]
+                );
                 
                 if (N_DIM==2)
                 {
                     // Get the bounding box.
                     bool C = true;
-                    ufloat_g_t vBx_m = std::min({vx1,vx2});
-                    ufloat_g_t vBx_M = std::max({vx1,vx2});
-                    ufloat_g_t vBy_m = std::min({vy1,vy2});
-                    ufloat_g_t vBy_M = std::max({vy1,vy2});
-                    if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
+                    vec3<ufloat_g_t> vBm
+                    (
+                        std::min(v1.x, v2.x),
+                        std::min(v1.y, v2.y),
+                        static_cast<ufloat_g_t>(0.0)
+                    );
+                    vec3<ufloat_g_t> vBM
+                    (
+                        std::max(v1.x, v2.x),
+                        std::max(v1.y, v2.y),
+                        static_cast<ufloat_g_t>(0.0)
+                    );
+                    if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
                         C = false;
-                    if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
+                    if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
                         C = false;
                     
                     // Identify the bin indices of the lower and upper bounds.
-                    int bin_id_xl = std::max((int)(vBx_m*n_bin_density)-1, 0);
-                    int bin_id_yl = std::max((int)(vBy_m*n_bin_density)-1, 0);
-                    int bin_id_xL = std::min((int)(vBx_M*n_bin_density)+2, n_bin_density);
-                    int bin_id_yL = std::min((int)(vBy_M*n_bin_density)+2, n_bin_density);
+                    int bin_id_xl = std::max((int)(vBm.x*n_bin_density[L])-1, 0);
+                    int bin_id_yl = std::max((int)(vBm.y*n_bin_density[L])-1, 0);
+                    int bin_id_xL = std::min((int)(vBM.x*n_bin_density[L])+2, n_bin_density[L]);
+                    int bin_id_yL = std::min((int)(vBM.y*n_bin_density[L])+2, n_bin_density[L]);
                     
                     // Traverse bin indices and add this face to the corresponding vectors.
                     if (C)
@@ -95,15 +112,20 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
                         {
                             for (int I = bin_id_xl; I < bin_id_xL; I++)
                             {
-                                if (G_BIN_APPROACH==1)
-                                    C3D = IncludeInBin<ufloat_g_t,2>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
+                                vec3<ufloat_g_t> xIm (I*Lx0g-dx,J*Ly0g-dx,0);
+                                vec3<ufloat_g_t> xIM ((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,0);
+                                
+                                if (n_bin_approach==1)
+                                    C3D = IncludeInBin<ufloat_g_t,2>(xIm,xIM,vBm,vBM,v1,v2,v3);
                                 
                                 if (C3D)
-                                    bins_a_3D[I+G_BIN_DENSITY*J].push_back(j);
+                                    bins_a_3D[I+n_bin_density[L]*J].push_back(j);
                             }
                             
-                            if (G_BIN_APPROACH==1)
-                                C2D = IncludeInBin<ufloat_g_t,2>(-eps,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+eps,0,0,vBx_m,vBx_M,vBy_m,vBy_M,0,0,vx1,vy1,0,vx2,vy2,0,0,0,0);
+                            vec3<ufloat_g_t> xIm (-eps,J*Ly0g-dx,0);
+                            vec3<ufloat_g_t> xIM (Lx+eps,(J+1)*Ly0g+dx,0);
+                            if (n_bin_approach==1)
+                                C2D = IncludeInBin<ufloat_g_t,2>(xIm,xIM,vBm,vBM,v1,v2,v3);
                             
                             if (C2D)
                                 bins_a_2D[J].push_back(j);
@@ -114,26 +136,32 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
                 {
                     // Get bounding box (safe version)
                     bool C = true;
-                    ufloat_g_t vBx_m = std::min(std::min(vx1, vx2), vx3);
-                    ufloat_g_t vBx_M = std::max(std::max(vx1, vx2), vx3);
-                    ufloat_g_t vBy_m = std::min(std::min(vy1, vy2), vy3);
-                    ufloat_g_t vBy_M = std::max(std::max(vy1, vy2), vy3);
-                    ufloat_g_t vBz_m = std::min(std::min(vz1, vz2), vz3);
-                    ufloat_g_t vBz_M = std::max(std::max(vz1, vz2), vz3);
-                    if ((vBx_m<-dx&&vBx_M<-dx) || (vBx_m>Lx+dx&&vBx_M>Lx+dx))
+                    vec3<ufloat_g_t> vBm
+                    (
+                        std::min(std::min(v1.x, v2.x), v3.x),
+                        std::min(std::min(v1.y, v2.y), v3.y),
+                        std::min(std::min(v1.z, v2.z), v3.z)
+                    );
+                    vec3<ufloat_g_t> vBM
+                    (
+                        std::max(std::max(v1.x, v2.x), v3.x),
+                        std::max(std::max(v1.y, v2.y), v3.y),
+                        std::max(std::max(v1.z, v2.z), v3.z)
+                    );
+                    if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
                         C = false;
-                    if ((vBy_m<-dx&&vBy_M<-dx) || (vBy_m>Ly+dx&&vBy_M>Ly+dx))
+                    if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
                         C = false;
-                    if ((vBz_m<-dx&&vBz_M<-dx) || (vBz_m>Lz+dx&&vBz_M>Lz+dx))
+                    if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
                         C = false;
                     
                     // Identify the bin indices of the lower and upper bounds.
-                    int bin_id_xl = std::max((int)(vBx_m*G_BIN_DENSITY)-1, 0);
-                    int bin_id_yl = std::max((int)(vBy_m*G_BIN_DENSITY)-1, 0);
-                    int bin_id_zl = std::max((int)(vBz_m*G_BIN_DENSITY)-1, 0);
-                    int bin_id_xL = std::min((int)(vBx_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
-                    int bin_id_yL = std::min((int)(vBy_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
-                    int bin_id_zL = std::min((int)(vBz_M*G_BIN_DENSITY)+2, G_BIN_DENSITY);
+                    int bin_id_xl = std::max((int)(vBm.x*n_bin_density[L])-1, 0);
+                    int bin_id_yl = std::max((int)(vBm.y*n_bin_density[L])-1, 0);
+                    int bin_id_zl = std::max((int)(vBm.z*n_bin_density[L])-1, 0);
+                    int bin_id_xL = std::min((int)(vBM.x*n_bin_density[L])+2, n_bin_density[L]);
+                    int bin_id_yL = std::min((int)(vBM.y*n_bin_density[L])+2, n_bin_density[L]);
+                    int bin_id_zL = std::min((int)(vBM.z*n_bin_density[L])+2, n_bin_density[L]);
                     
                     // Traverse bin indices and add this face to the corresponding vectors.
                     if (C)
@@ -144,18 +172,23 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
                             {
                                 for (int I = bin_id_xl; I < bin_id_xL; I++)
                                 {
-                                    if (G_BIN_APPROACH==1)
-                                        C3D = IncludeInBin<ufloat_g_t,3>(I*Lx0g-dx,(I+1)*Lx0g+dx,J*Ly0g-dx,(J+1)*Ly0g+dx,K*Lz0g-dx,(K+1)*Lz0g+dx,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
+                                    vec3<ufloat_g_t> xIm (I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
+                                    vec3<ufloat_g_t> xIM ((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
+                                    
+                                    if (n_bin_approach==1)
+                                        C3D = IncludeInBin<ufloat_g_t,3>(xIm,xIM,vBm,vBM,v1,v2,v3);
                                     
                                     if (C3D)
-                                        bins_a_3D[I+G_BIN_DENSITY*J+G_BIN_DENSITY*G_BIN_DENSITY*K].push_back(j);
+                                        bins_a_3D[I+n_bin_density[L]*J+n_bin_density[L]*n_bin_density[L]*K].push_back(j);
                                 }
                                 
-                                if (G_BIN_APPROACH==1)
-                                    C2D = IncludeInBin<ufloat_g_t,3>(-eps,Lx+eps,J*Ly0g-eps,(J+1)*Ly0g+eps,K*Lz0g-eps,(K+1)*Lz0g+eps,vBx_m,vBx_M,vBy_m,vBy_M,vBz_m,vBz_M,vx1,vy1,vz1,vx2,vy2,vz2,vx3,vy3,vz3);
+                                vec3<ufloat_g_t> xIm (-eps,J*Ly0g-dx,K*Lz0g-dx);
+                                vec3<ufloat_g_t> xIM (Lx+eps,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
+                                if (n_bin_approach==1)
+                                    C2D = IncludeInBin<ufloat_g_t,3>(xIm,xIM,vBm,vBM,v1,v2,v3);
                                     
                                 if (C2D)
-                                    bins_a_2D[J+G_BIN_DENSITY*K].push_back(j);
+                                    bins_a_2D[J+n_bin_density[L]*K].push_back(j);
                             }
                         }
                     }
@@ -168,47 +201,51 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
         
         
         // Insert binned faces into GPU memory.
+        const int PADDING = 4;
+        //
+        // 2D
         std::vector<int> bins_n_2D;
         std::vector<int> bins_N_2D;
         std::vector<int> bins_f_2D;
-        std::vector<int> bins_n_3D;
-        std::vector<int> bins_N_3D;
-        std::vector<int> bins_f_3D;
-        int Npv = 0;
-        int Npb = 0;
-        const int PADDING = 4;
+        int Np_2D = 0;
         for (int p = 0; p < n_bins_2D[L]; p++)
         {
-            int npv = bins_a_2D[p].size();
-            bins_n_2D.push_back(npv);
-            bins_N_2D.push_back(Npv);
-            if (npv > 0)
+            int np_2D = bins_a_2D[p].size();
+            bins_n_2D.push_back(np_2D);
+            bins_N_2D.push_back(Np_2D);
+            if (np_2D > 0)
             {
-                for (int k = 0; k < npv; k++)
+                for (int k = 0; k < np_2D; k++)
                     bins_f_2D.push_back(bins_a_2D[p][k]);
                 
-                int rem = PADDING-npv%PADDING;
+                int rem = PADDING-np_2D%PADDING;
                 for (int k = 0; k < rem; k++)
                     bins_f_2D.push_back(-1);
                 
-                Npv += npv + rem;
+                Np_2D += np_2D + rem;
             }
         }
+        //
+        // 3D
+        int Np_3D = 0;
+        std::vector<int> bins_n_3D;
+        std::vector<int> bins_N_3D;
+        std::vector<int> bins_f_3D;
         for (int p = 0; p < n_bins_3D[L]; p++)
         {
-            int npb = bins_a_3D[p].size();
-            bins_n_3D.push_back(npb);
-            bins_N_3D.push_back(Npb);
-            if (npb > 0)
+            int np_3D = bins_a_3D[p].size();
+            bins_n_3D.push_back(np_3D);
+            bins_N_3D.push_back(Np_3D);
+            if (np_3D > 0)
             {
-                for (int k = 0; k < npb; k++)
+                for (int k = 0; k < np_3D; k++)
                     bins_f_3D.push_back(bins_a_3D[p][k]);
                 
-                int rem = PADDING-npb%PADDING;
+                int rem = PADDING-np_3D%PADDING;
                 for (int k = 0; k < rem; k++)
                     bins_f_3D.push_back(-1);
                 
-                Npb += npb + rem;
+                Np_3D += np_3D + rem;
             }
         }
         

@@ -11,13 +11,17 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init()
 {
     // From input.
+    Lx                      = parser->params_dbl["L_c"];
+    Ly                      = parser->params_dbl["L_fy"]*Lx;
+    Lz                      = parser->params_dbl["L_fz"]*Lx;
+    Nx                      = parser->params_int["Nx"];
     input_dir               = parser->params_str["I_DIR_NAME"];
     output_dir              = parser->params_str["P_DIR_NAME"];
-    //MAX_LEVELS_WALL         = parser->params_int["MAX_LEVELS_WALL"];
     G_NEAR_WALL_DISTANCE    = parser->params_dbl["G_NEAR_WALL_DISTANCE"];
     G_FILENAME              = parser->params_str["G_FILENAME"];
     G_LOADTYPE              = parser->params_int["G_LOADTYPE"];
     G_PRINT                 = parser->params_int["G_PRINT"];
+    G_BIN_DENSITY           = parser->params_int["G_BIN_DENSITY"];
     
     return 0;
 }
@@ -117,11 +121,11 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
                 vec3<ufloat_g_t> en2 = UnitV(CrossV(e2,n));
                 vec3<ufloat_g_t> en3 = UnitV(CrossV(e3,n));
                 
-                // Adjust vertices so that cell-face links don't suffer from roundoff problems.
+                // Adjust vertices so that cell-face links with dirty shortcut to account for round-off errors.
                 vec3<ufloat_g_t> vc = (v1 + v2 + v3)*odenom;
-                v1 = v1 - (v1-vc)*eps;
-                v2 = v2 - (v2-vc)*eps;
-                v3 = v3 - (v3-vc)*eps;
+                v1 = v1 + (v1-vc)*eps;
+                v2 = v2 + (v2-vc)*eps;
+                v3 = v3 + (v3-vc)*eps;
                 
                 // Write vertices.
                 geom_f_face_X[j + 0*n_faces_a] = v1.x;

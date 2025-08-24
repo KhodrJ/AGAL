@@ -7,6 +7,173 @@
 
 #include "geometry_bins.h"
 
+template <typename ufloat_g_t, int N_DIM>
+__global__
+void Cu_ComputeVoxelRayIndicators
+(
+    const ufloat_g_t dx_L,
+    const ufloat_g_t dx_Lo2,
+    const int n_faces,
+    const int n_faces_a,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
+    int *__restrict__ ray_indicators
+)
+{
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < n_faces)
+    {
+        // Load face vertices.
+        vec3<ufloat_g_t> v1
+        (
+            geom_f_face_X[kap + 0*n_faces_a],
+            geom_f_face_X[kap + 1*n_faces_a],
+            geom_f_face_X[kap + 2*n_faces_a]
+        );
+        vec3<ufloat_g_t> v2
+        (
+            geom_f_face_X[kap + 3*n_faces_a],
+            geom_f_face_X[kap + 4*n_faces_a],
+            geom_f_face_X[kap + 5*n_faces_a]
+        );
+        vec3<ufloat_g_t> v3
+        (
+            geom_f_face_X[kap + 6*n_faces_a],
+            geom_f_face_X[kap + 7*n_faces_a],
+            geom_f_face_X[kap + 8*n_faces_a]
+        );
+        vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
+        
+        if (N_DIM==2)
+        {
+            constexpr int N_Q_max = 9;
+            
+            // Compute bounding box limits.
+            int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            
+            // Loop over all possible cells in the bounding box.
+            bool found = false;
+            for (int iy = iymin; iy <= iymax; iy++)
+            {
+                for (int ix = ixmin; ix <= ixmax; ix++)
+                {
+                    if (!found)
+                    {
+                        for (int p = 1; p < N_Q_max; p++)
+                        {
+                            // Consider rays in half the possible directions. Both senses will be accounted for.
+                            if (p==1||(p+1)%3==0)
+                            {    
+//                                 vec3<ufloat_g_t> vp
+//                                 (
+//                                     dx_Lo2 + dx_L*ix,
+//                                     dx_Lo2 + dx_L*iy,
+//                                     dx_Lo2 + dx_L*iz
+//                                 );
+//                                 vec3<ufloat_g_t> ray
+//                                 (
+//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+0*27]),
+//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+1*27]),
+//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+2*27])
+//                                 );
+//                                 ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
+//                                 vec3<ufloat_g_t> vi = vp + ray*d;
+//                                 {
+//                                     d = Tabs(d);
+//                                     if (Tabs(d) < dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
+//                                     {
+//                                         found = true;
+//                                     }
+//                                 }
+//                                 
+//                                 if (found)
+//                                     break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else // N_DIM==3
+        {
+            constexpr int N_Q_max = 27;
+            
+            // Compute bounding box limits.
+            int ixmin = static_cast<int>( Tround((Tmin(Tmin(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
+            int iymin = static_cast<int>( Tround((Tmin(Tmin(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
+            int izmin = static_cast<int>( Tround((Tmin(Tmin(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
+            int ixmax = static_cast<int>( Tround((Tmax(Tmax(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
+            int iymax = static_cast<int>( Tround((Tmax(Tmax(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
+            int izmax = static_cast<int>( Tround((Tmax(Tmax(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
+            
+            if (kap == 1000)
+            {
+                printf("fill3([%17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f],'b');\n", v1.x,v2.x,v3.x, v1.y,v2.y,v3.y, v1.z,v2.z,v3.z);
+            }
+            
+            // Loop over all possible cells in the bounding box.
+            bool found = false;
+            for (int iz = izmin; iz <= izmax; iz++)
+            {
+                for (int iy = iymin; iy <= iymax; iy++)
+                {
+                    for (int ix = ixmin; ix <= ixmax; ix++)
+                    {
+                        if (!found)
+                        {
+                            vec3<ufloat_g_t> vp
+                            (
+                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
+                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
+                            );
+                            if (kap == 1000)
+                            {
+                                printf("plot3(%17.15f,%17.15f,%17.15f,'ko');\n", vp.x,vp.y,vp.z);
+                            }
+                            
+                            //for (int p = 1; p < N_Q_max; p++)
+                            {
+                                // Consider rays in half the possible directions. Both senses will be accounted for.
+                                //if (p==26||((p-1)%2==0&&p<25))
+                                {
+                                    vec3<ufloat_g_t> ray
+                                    (
+                                        static_cast<ufloat_g_t>(1.0),
+                                        static_cast<ufloat_g_t>(0.0),
+                                        static_cast<ufloat_g_t>(0.0)
+                                    );
+                                    ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
+                                    vec3<ufloat_g_t> vi = vp + ray*d;
+                                    if (kap == 1000)
+                                    {
+                                        printf("p=%i | RAY: %i %i %i\n", 1.0, 0.0, 0.0);
+                                        printf("n: %17.15f, %17.15f, %17.15f\n", n.x,n.y,n.z);
+                                        printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'ko');\n", vp.x,vi.x,vp.y,vi.y,vp.z,vi.z);
+                                    }
+                                    
+                                    if (Tabs(d) < dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If there was an intersection with one of the cells in the bounding box, consider this face during binning.
+            if (found)
+                ray_indicators[kap] = 1;
+        }
+    }
+}
+
 /**************************************************************************************/
 /*                                                                                    */
 /*  ===[ Cu_ComputeBoundingBoxLimits2D ]============================================  */
@@ -35,12 +202,13 @@ void Cu_ComputeBoundingBoxLimits2D
     const ufloat_g_t Lx,
     const ufloat_g_t Ly,
     const ufloat_g_t Lz,
-    const int G_BIN_DENSITY
+    const int G_BIN_DENSITY,
+    const int *__restrict__ ray_indicators
 )
 {
-int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
-    if (kap < n_faces)
+    if (kap < n_faces && ray_indicators[kap] == 1)
     {
         if (N_DIM==2)
         {
@@ -68,7 +236,7 @@ int kap = blockIdx.x*blockDim.x + threadIdx.x;
             int counter = 0;
             for (int J = bin_id_yl; J < bin_id_yL+1; J++)
             {
-                if (C && counter < 4)
+                if (C && counter < 2)
                 {
                     int global_id = J;
                     bounding_box_limits[kap + counter*n_faces] = global_id;
@@ -116,7 +284,7 @@ int kap = blockIdx.x*blockDim.x + threadIdx.x;
             {
                 for (int J = bin_id_yl; J < bin_id_yL+1; J++)
                 {
-                    if (C && counter < 16)
+                    if (C && counter < 4)
                     {
                         int global_id = J + G_BIN_DENSITY*K;
                         bounding_box_limits[kap + counter*n_faces] = global_id;
@@ -161,12 +329,13 @@ void Cu_ComputeBoundingBoxLimits3D
     const ufloat_g_t Lx0g,
     const ufloat_g_t Ly0g,
     const ufloat_g_t Lz0g,
-    const int G_BIN_DENSITY
+    const int G_BIN_DENSITY,
+    const int *__restrict__ ray_indicators
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
-    if (kap < n_faces)
+    if (kap < n_faces && ray_indicators[kap] == 1)
     {
         if (N_DIM==2)
         {
@@ -186,10 +355,10 @@ void Cu_ComputeBoundingBoxLimits3D
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
-            if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
-                C = false;
-            if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
-                C = false;
+//             if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
+//                 C = false;
+//             if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
+//                 C = false;
             
             int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
             int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
@@ -202,7 +371,7 @@ void Cu_ComputeBoundingBoxLimits3D
             {
                 for (int I = bin_id_xl; I < bin_id_xL+1; I++)
                 {
-                    if (C && counter < 16)
+                    if (C && counter < 4)
                     {
                         vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx);
                         vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
@@ -242,12 +411,12 @@ void Cu_ComputeBoundingBoxLimits3D
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
-            if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
-                C = false;
-            if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
-                C = false;
-            if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
-                C = false;
+//             if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
+//                 C = false;
+//             if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
+//                 C = false;
+//             if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
+//                 C = false;
             
             int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
             int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
@@ -270,7 +439,7 @@ void Cu_ComputeBoundingBoxLimits3D
                         //C  = Cu_IncludeInBin<ufloat_g_t,3>(vm,vM,vBm,vBM,v1,v2,v3);
                         //C = (!(vBM.x < vm.x || vBm.x > vM.x || vBM.y < vm.y || vBm.y > vM.y || vBM.z < vm.z || vBm.z > vM.z));
                         
-                        if (C && counter < 64)
+                        if (C && counter < 8)
                         {
                             int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
                             bounding_box_limits[kap + counter*n_faces] = global_id;
@@ -308,26 +477,28 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
 {
     // Some constants.
-    ufloat_g_t Lx0g __attribute__((unused)) = Lx/(ufloat_g_t)G_BIN_DENSITY;   // Get bin lengths along axes.
-    ufloat_g_t Ly0g __attribute__((unused)) = Ly/(ufloat_g_t)G_BIN_DENSITY;
-    ufloat_g_t Lz0g __attribute__((unused)) = Lz/(ufloat_g_t)G_BIN_DENSITY;
-    ufloat_g_t eps __attribute__((unused)) = 1e-5;                            // An epsilon for the 3D binning.
-    if (std::is_same<ufloat_g_t, float>::value) eps = FLT_EPSILON;
-    if (std::is_same<ufloat_g_t, double>::value) eps = DBL_EPSILON;
+    ufloat_g_t *c_geom_f_face_X = geometry->c_geom_f_face_X;
+    int n_faces = geometry->n_faces;
+    int n_faces_a = geometry->n_faces_a;
+    ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_levels];
+    ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_levels];
+    ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_levels];
+    ufloat_g_t eps __attribute__((unused)) = EPS<ufloat_g_t>();
     int use_zip = true;
     
     // Proceed only if there are actual faces loaded in the current object.
-    if (v_geom_f_face_1_X.size() > 0)
+    if (n_faces > 0)
     {
         // Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
         int n_limits_v = 1;
         int n_limits_b = 1;
-        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_2D[L] *= G_BIN_DENSITY; n_limits_v *= 4; }
-        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   { n_bins_3D[L] *= G_BIN_DENSITY; n_limits_b *= 4; }
+        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_2D[L] *= n_bin_density[L]; n_limits_v *= 2; }
+        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   { n_bins_3D[L] *= n_bin_density[L]; n_limits_b *= 2; }
         int n_lim_size_v = n_limits_v*n_faces;
         int n_lim_size_b = n_limits_b*n_faces;
         
         // Some array declarations.
+        int *c_ray_indicators;
         int *c_bounding_box_limits;
         int *c_bounding_box_index_limits;
         int *c_tmp_b_i;    // Used to store unique bin Ids.
@@ -336,6 +507,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         // Declare and allocate memory for the c_bounding_box_limits.
         tic_simple("");
         cudaDeviceSynchronize();
+        gpuErrchk( cudaMalloc((void **)&c_ray_indicators, n_faces*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_b*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_b*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_tmp_b_i, n_bins_3D[L]*sizeof(int)) );
@@ -348,6 +520,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_3D[L], n_bins_3D[L]*sizeof(int)) );
         //
         // Reset values.
+        Cu_ResetToValue<<<(M_BLOCK+n_faces-1)/M_BLOCK, M_BLOCK>>>(n_faces, c_ray_indicators, 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_N_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_limits, n_bins_3D[L]);
@@ -358,6 +531,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         std::cout << "Memory allocation: "; toc_simple("",T_US,1);
         
         // Wrap raw pointers with thrust device_ptr. // TODO reword
+        thrust::device_ptr<int> ray_ptr = thrust::device_pointer_cast(c_ray_indicators);
         thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
         thrust::device_ptr<int> bnv_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_2D[L]);
@@ -368,8 +542,18 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
         
-        
-        
+        // STEP 0: Traverse faces and identify the bins they should go in.
+        tic_simple("");
+        cudaDeviceSynchronize();
+        Cu_ComputeVoxelRayIndicators<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
+            dx, static_cast<ufloat_g_t>(0.5)*dx,
+            n_faces, n_faces_a,
+            c_geom_f_face_X, c_ray_indicators
+        );
+        cudaDeviceSynchronize();
+        std::cout << "Computing ray indicators"; toc_simple("",T_US,1);
+        int n_indicators = thrust::count_if(thrust::device, ray_ptr, ray_ptr + n_faces, is_equal_to(1));
+        std::cout << "Indicated " << n_indicators << "/" << n_faces << " (" << 100.0F*(float)n_indicators/(float)n_faces << "%) participants..." << std::endl;
         
         
         
@@ -382,7 +566,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         
         // STEP 1: Traverse faces and identify the bins they should go in.
-        //std::cout << "Starting GPU binning..." << std::endl;
         std::cout << "STARTING 3D NOW" << std::endl;
         tic_simple("");
         cudaDeviceSynchronize();
@@ -390,7 +573,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             n_faces, n_faces_a,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
-            Lx/(ufloat_g_t)G_BIN_DENSITY, Ly/(ufloat_g_t)G_BIN_DENSITY, Lz/(ufloat_g_t)G_BIN_DENSITY, G_BIN_DENSITY
+            Lx/(ufloat_g_t)n_bin_density[L], Ly/(ufloat_g_t)n_bin_density[L], Lz/(ufloat_g_t)n_bin_density[L], n_bin_density[L],
+            c_ray_indicators
         );
         cudaDeviceSynchronize();
         std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
@@ -470,8 +654,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         std::cout << "Scatter (2)"; toc_simple("",T_US,1);
         
         // Copy the indices of the binned faces.
-        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_3D, n_binned_faces_b*sizeof(int)) );
-        cudaMemcpy(c_binned_face_ids_3D, c_bounding_box_index_limits, n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToDevice);
+        gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_3D[L], n_binned_faces_b*sizeof(int)) );
+        cudaMemcpy(c_binned_face_ids_3D[L], c_bounding_box_index_limits, n_binned_faces_b*sizeof(int), cudaMemcpyDeviceToDevice);
         //
         // Copy the GPU data to the CPU for drawing.
         binned_face_ids_n_3D[L] = new int[n_bins_3D[L]];
@@ -527,7 +711,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
-            (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, G_BIN_DENSITY
+            (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
+            c_ray_indicators
         );
         cudaDeviceSynchronize();
         std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
