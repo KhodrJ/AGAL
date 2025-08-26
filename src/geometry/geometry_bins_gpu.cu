@@ -9,13 +9,120 @@
 
 template <typename ufloat_g_t, int N_DIM>
 __global__
-void Cu_ComputeVoxelRayIndicators
+void Cu_ComputeVoxelRayIndicators_V2
 (
     const ufloat_g_t dx_L,
     const ufloat_g_t dx_Lo2,
     const int n_faces,
     const int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_X,
+    const ufloat_g_t *__restrict__ geom_f_face_Xt,
+    int *__restrict__ ray_indicators
+)
+{
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int fid = kap / 32;
+    int wid = threadIdx.x / 32;
+    int tid = threadIdx.x % 32;
+    ufloat_g_t fD = static_cast<ufloat_g_t>(0.0);
+    
+    if (kap < 32*n_faces)
+    {
+        if (tid < 16)
+            fD = geom_f_face_Xt[tid + fid*16];
+        __syncwarp();
+        
+        vec3<ufloat_g_t> v1
+        (
+            __shfl_sync(0xFFFFFFFF, fD, 0),
+            __shfl_sync(0xFFFFFFFF, fD, 1),
+            __shfl_sync(0xFFFFFFFF, fD, 2)
+        );
+        vec3<ufloat_g_t> v2
+        (
+            __shfl_sync(0xFFFFFFFF, fD, 3),
+            __shfl_sync(0xFFFFFFFF, fD, 4),
+            __shfl_sync(0xFFFFFFFF, fD, 5)
+        );
+        vec3<ufloat_g_t> v3
+        (
+            __shfl_sync(0xFFFFFFFF, fD, 6),
+            __shfl_sync(0xFFFFFFFF, fD, 7),
+            __shfl_sync(0xFFFFFFFF, fD, 8)
+        );
+        vec3<ufloat_g_t> n
+        (
+            __shfl_sync(0xFFFFFFFF, fD, 9),
+            __shfl_sync(0xFFFFFFFF, fD, 10),
+            __shfl_sync(0xFFFFFFFF, fD, 11)
+        );
+        
+        if (N_DIM==3)
+        {
+            constexpr int N_Q_max = 27;
+            
+            // Compute bounding box limits.
+            int ixmin = static_cast<int>( Tround((Tmin(Tmin(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
+            int iymin = static_cast<int>( Tround((Tmin(Tmin(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
+            int izmin = static_cast<int>( Tround((Tmin(Tmin(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
+            int ixmax = static_cast<int>( Tround((Tmax(Tmax(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
+            int iymax = static_cast<int>( Tround((Tmax(Tmax(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
+            int izmax = static_cast<int>( Tround((Tmax(Tmax(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
+            
+            bool found = false;
+            bool found_global = false;
+            
+            if (tid < 26)
+            {
+                for (int iz = izmin; iz <= izmax; iz++)
+                for (int iy = iymin; iy <= iymax; iy++)
+                for (int ix = ixmin; ix <= ixmax; ix++)
+                {
+                    vec3<ufloat_g_t> vp
+                    (
+                        dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                        dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
+                        dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
+                    );
+                    
+                    vec3<ufloat_g_t> ray
+                    (
+                        static_cast<ufloat_g_t>(V_CONN_ID[tid+0*27]),
+                        static_cast<ufloat_g_t>(V_CONN_ID[tid+1*27]),
+                        static_cast<ufloat_g_t>(V_CONN_ID[tid+2*27])
+                    );
+                    ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
+                    vec3<ufloat_g_t> vi = vp + ray*d;
+                    
+                    if (Tabs(d) < dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                        found = true;
+                    
+                    found_global = __any_sync(0xFFFFFFFF, found);
+                    if (found_global)
+                    {
+                        ixmax = ixmin-1;
+                        iymax = iymin-1;
+                        izmax = izmin-1;
+                    }
+                }
+            }
+            
+            if (tid==0 && found_global)
+                ray_indicators[fid] = 1;
+        }
+    }
+}
+
+template <typename ufloat_g_t, int N_DIM>
+__global__
+void Cu_ComputeVoxelRayIndicators_V1
+(
+    const ufloat_g_t dx_L,
+    const ufloat_g_t dx_Lo2,
+    const int n_faces,
+    const int n_faces_a,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
+    const ufloat_g_t *__restrict__ geom_f_face_Xt,
     int *__restrict__ ray_indicators
 )
 {
@@ -43,6 +150,7 @@ void Cu_ComputeVoxelRayIndicators
             geom_f_face_X[kap + 8*n_faces_a]
         );
         vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
+        bool found = false;
         
         if (N_DIM==2)
         {
@@ -55,46 +163,41 @@ void Cu_ComputeVoxelRayIndicators
             int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
             
             // Loop over all possible cells in the bounding box.
-            bool found = false;
-            for (int iy = iymin; iy <= iymax; iy++)
+            for (int p = 1; p < N_Q_max; p++)
             {
-                for (int ix = ixmin; ix <= ixmax; ix++)
+                // Consider rays in half the possible directions. Both senses will be accounted for.
+                if (p==1||(p+1)%3==0)
                 {
-                    if (!found)
+                    for (int iy = iymin; iy <= iymax; iy++)
+                    for (int ix = ixmin; ix <= ixmax; ix++)
                     {
-                        for (int p = 1; p < N_Q_max; p++)
+                        vec3<ufloat_g_t> vp
+                        (
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
+                            static_cast<ufloat_g_t>(0.0)
+                        );
+                        
+                        vec3<ufloat_g_t> ray
+                        (
+                            static_cast<ufloat_g_t>(V_CONN_ID[p+0*27]),
+                            static_cast<ufloat_g_t>(V_CONN_ID[p+1*27]),
+                            static_cast<ufloat_g_t>(0.0)
+                        );
+                        ufloat_g_t d = DotV2D(v1-vp,n) / DotV2D(ray,n);
+                        vec3<ufloat_g_t> vi = vp + ray*d;
+                        
+                        if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInLineA(vi,v1,v2))
                         {
-                            // Consider rays in half the possible directions. Both senses will be accounted for.
-                            if (p==1||(p+1)%3==0)
-                            {    
-//                                 vec3<ufloat_g_t> vp
-//                                 (
-//                                     dx_Lo2 + dx_L*ix,
-//                                     dx_Lo2 + dx_L*iy,
-//                                     dx_Lo2 + dx_L*iz
-//                                 );
-//                                 vec3<ufloat_g_t> ray
-//                                 (
-//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+0*27]),
-//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+1*27]),
-//                                     static_cast<ufloat_g_t>(V_CONN_ID[p+2*27])
-//                                 );
-//                                 ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
-//                                 vec3<ufloat_g_t> vi = vp + ray*d;
-//                                 {
-//                                     d = Tabs(d);
-//                                     if (Tabs(d) < dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
-//                                     {
-//                                         found = true;
-//                                     }
-//                                 }
-//                                 
-//                                 if (found)
-//                                     break;
-                            }
+                            found = true;
+                            ixmax = ixmin-1;
+                            iymax = iymin-1;
                         }
                     }
                 }
+                
+                if (found)
+                    break;
             }
         }
         else // N_DIM==3
@@ -109,68 +212,50 @@ void Cu_ComputeVoxelRayIndicators
             int iymax = static_cast<int>( Tround((Tmax(Tmax(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
             int izmax = static_cast<int>( Tround((Tmax(Tmax(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
             
-            if (kap == 1000)
+            // Loop over all possible cells in the bounding box.            
+            for (int p = 1; p < N_Q_max; p++)
             {
-                printf("fill3([%17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f],'b');\n", v1.x,v2.x,v3.x, v1.y,v2.y,v3.y, v1.z,v2.z,v3.z);
-            }
-            
-            // Loop over all possible cells in the bounding box.
-            bool found = false;
-            for (int iz = izmin; iz <= izmax; iz++)
-            {
-                for (int iy = iymin; iy <= iymax; iy++)
+                // Consider rays in half the possible directions. Both senses will be accounted for.
+                if (p==26||((p-1)%2==0&&p<25))
                 {
+                    for (int iz = izmin; iz <= izmax; iz++)
+                    for (int iy = iymin; iy <= iymax; iy++)
                     for (int ix = ixmin; ix <= ixmax; ix++)
                     {
-                        if (!found)
+                        vec3<ufloat_g_t> vp
+                        (
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
+                        );
+                        
+                        vec3<ufloat_g_t> ray
+                        (
+                            static_cast<ufloat_g_t>(V_CONN_ID[p+0*27]),
+                            static_cast<ufloat_g_t>(V_CONN_ID[p+1*27]),
+                            static_cast<ufloat_g_t>(V_CONN_ID[p+2*27])
+                        );
+                        ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
+                        vec3<ufloat_g_t> vi = vp + ray*d;
+                        
+                        if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
                         {
-                            vec3<ufloat_g_t> vp
-                            (
-                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
-                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
-                                dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
-                            );
-                            if (kap == 1000)
-                            {
-                                printf("plot3(%17.15f,%17.15f,%17.15f,'ko');\n", vp.x,vp.y,vp.z);
-                            }
-                            
-                            //for (int p = 1; p < N_Q_max; p++)
-                            {
-                                // Consider rays in half the possible directions. Both senses will be accounted for.
-                                //if (p==26||((p-1)%2==0&&p<25))
-                                {
-                                    vec3<ufloat_g_t> ray
-                                    (
-                                        static_cast<ufloat_g_t>(1.0),
-                                        static_cast<ufloat_g_t>(0.0),
-                                        static_cast<ufloat_g_t>(0.0)
-                                    );
-                                    ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
-                                    vec3<ufloat_g_t> vi = vp + ray*d;
-                                    if (kap == 1000)
-                                    {
-                                        printf("p=%i | RAY: %i %i %i\n", 1.0, 0.0, 0.0);
-                                        printf("n: %17.15f, %17.15f, %17.15f\n", n.x,n.y,n.z);
-                                        printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'ko');\n", vp.x,vi.x,vp.y,vi.y,vp.z,vi.z);
-                                    }
-                                    
-                                    if (Tabs(d) < dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                            }
+                            found = true;
+                            ixmax = ixmin-1;
+                            iymax = iymin-1;
+                            izmax = izmin-1;
                         }
                     }
                 }
+                
+                if (found)
+                    break;
             }
-            
-            // If there was an intersection with one of the cells in the bounding box, consider this face during binning.
-            if (found)
-                ray_indicators[kap] = 1;
         }
+        
+        // If there was an intersection with one of the cells in the bounding box, consider this face during binning.
+        if (found)
+            ray_indicators[kap] = 1;
     }
 }
 
@@ -355,32 +440,35 @@ void Cu_ComputeBoundingBoxLimits3D
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
-//             if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
-//                 C = false;
-//             if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
-//                 C = false;
+            if ((vBm.x<-dx && vBM.x<-dx) || (vBm.x>Lx+dx && vBM.x>Lx+dx))
+                C = false;
+            if ((vBm.y<-dx && vBM.y<-dx) || (vBm.y>Ly+dx && vBM.y>Ly+dx))
+                C = false;
             
-            int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
-            int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
-            int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
-            int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
-            
-            // Note: this assumes that the faces intersect, at most, eight bins.
-            int counter = 0;
-            for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+            if (C)
             {
-                for (int I = bin_id_xl; I < bin_id_xL+1; I++)
+                int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
+                int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
+                int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
+                int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
+                
+                // Note: this assumes that the faces intersect, at most, eight bins.
+                int counter = 0;
+                for (int J = bin_id_yl; J < bin_id_yL+1; J++)
                 {
-                    if (C && counter < 4)
+                    for (int I = bin_id_xl; I < bin_id_xL+1; I++)
                     {
                         vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx);
                         vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
-                        C  = IncludeInBin<ufloat_g_t,2>(vm,vM,vBm,vBM,v1,v2,vec3<ufloat_g_t>());
+                        C = LineBinOverlap2D(vm,vM,v1,v2);
                         
-                        int global_id = I + G_BIN_DENSITY*J;
-                        bounding_box_limits[kap + counter*n_faces] = global_id;
-                        bounding_box_index_limits[kap + counter*n_faces] = kap;
-                        counter++;
+                        if (C && counter < 4)
+                        {
+                            int global_id = I + G_BIN_DENSITY*J;
+                            bounding_box_limits[kap + counter*n_faces] = global_id;
+                            bounding_box_index_limits[kap + counter*n_faces] = kap;
+                            counter++;
+                        }
                     }
                 }
             }
@@ -411,40 +499,41 @@ void Cu_ComputeBoundingBoxLimits3D
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
-//             if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
-//                 C = false;
-//             if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
-//                 C = false;
-//             if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
-//                 C = false;
+            if ((vBm.x<-dx&&vBM.x<-dx) || (vBm.x>Lx+dx&&vBM.x>Lx+dx))
+                C = false;
+            if ((vBm.y<-dx&&vBM.y<-dx) || (vBm.y>Ly+dx&&vBM.y>Ly+dx))
+                C = false;
+            if ((vBm.z<-dx&&vBM.z<-dx) || (vBm.z>Lz+dx&&vBM.z>Lz+dx))
+                C = false;
             
-            int bin_id_xl = (int)((vBm.x-0*dx)*G_BIN_DENSITY)-1;
-            int bin_id_yl = (int)((vBm.y-0*dx)*G_BIN_DENSITY)-1;
-            int bin_id_zl = (int)((vBm.z-0*dx)*G_BIN_DENSITY)-1;
-            int bin_id_xL = (int)((vBM.x+0*dx)*G_BIN_DENSITY)+1;
-            int bin_id_yL = (int)((vBM.y+0*dx)*G_BIN_DENSITY)+1;
-            int bin_id_zL = (int)((vBM.z+0*dx)*G_BIN_DENSITY)+1;
-            
-            // Note: this assumes that the faces intersect, at most, eight bins.
-            int counter = 0;
-            for (int K = bin_id_zl; K < bin_id_zL+1; K++)
+            if (C)
             {
-                for (int J = bin_id_yl; J < bin_id_yL+1; J++)
+                int bin_id_xl = (int)((vBm.x)*G_BIN_DENSITY)-1;
+                int bin_id_yl = (int)((vBm.y)*G_BIN_DENSITY)-1;
+                int bin_id_zl = (int)((vBm.z)*G_BIN_DENSITY)-1;
+                int bin_id_xL = (int)((vBM.x)*G_BIN_DENSITY)+1;
+                int bin_id_yL = (int)((vBM.y)*G_BIN_DENSITY)+1;
+                int bin_id_zL = (int)((vBM.z)*G_BIN_DENSITY)+1;
+                
+                // Note: this assumes that the faces intersect, at most, eight bins.
+                int counter = 0;
+                for (int K = bin_id_zl; K < bin_id_zL+1; K++)
                 {
-                    for (int I = bin_id_xl; I < bin_id_xL+1; I++)
+                    for (int J = bin_id_yl; J < bin_id_yL+1; J++)
                     {
-                        vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
-                        vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
-                        C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
-                        //C  = Cu_IncludeInBin<ufloat_g_t,3>(vm,vM,vBm,vBM,v1,v2,v3);
-                        //C = (!(vBM.x < vm.x || vBm.x > vM.x || vBM.y < vm.y || vBm.y > vM.y || vBM.z < vm.z || vBm.z > vM.z));
-                        
-                        if (C && counter < 8)
+                        for (int I = bin_id_xl; I < bin_id_xL+1; I++)
                         {
-                            int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
-                            bounding_box_limits[kap + counter*n_faces] = global_id;
-                            bounding_box_index_limits[kap + counter*n_faces] = kap;
-                            counter++;
+                            vec3<ufloat_g_t> vm(I*Lx0g-dx,J*Ly0g-dx,K*Lz0g-dx);
+                            vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
+                            C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+                            
+                            if (C && counter < 8)
+                            {
+                                int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
+                                bounding_box_limits[kap + counter*n_faces] = global_id;
+                                bounding_box_index_limits[kap + counter*n_faces] = kap;
+                                counter++;
+                            }
                         }
                     }
                 }
@@ -478,6 +567,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
 {
     // Some constants.
     ufloat_g_t *c_geom_f_face_X = geometry->c_geom_f_face_X;
+    ufloat_g_t *c_geom_f_face_Xt = geometry->c_geom_f_face_Xt;
     int n_faces = geometry->n_faces;
     int n_faces_a = geometry->n_faces_a;
     ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_levels];
@@ -542,14 +632,24 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
         
+        // Load connectivity arrays in constant GPU memory if not already done.
+        if (!init_conn)
+            InitConnectivity<AP->N_DIM>();
+        
         // STEP 0: Traverse faces and identify the bins they should go in.
         tic_simple("");
         cudaDeviceSynchronize();
-        Cu_ComputeVoxelRayIndicators<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
+        Cu_ComputeVoxelRayIndicators_V1<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             dx, static_cast<ufloat_g_t>(0.5)*dx,
             n_faces, n_faces_a,
-            c_geom_f_face_X, c_ray_indicators
+            c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
         );
+//         constexpr int M = 128;
+//         Cu_ComputeVoxelRayIndicators_V2<ufloat_g_t,AP->N_DIM><<<(M+(32*n_faces)-1)/M,M>>>(
+//             dx, static_cast<ufloat_g_t>(0.5)*dx,
+//             n_faces, n_faces_a,
+//             c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
+//         );
         cudaDeviceSynchronize();
         std::cout << "Computing ray indicators"; toc_simple("",T_US,1);
         int n_indicators = thrust::count_if(thrust::device, ray_ptr, ray_ptr + n_faces, is_equal_to(1));
@@ -592,7 +692,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             std::cout << "Compaction"; toc_simple("",T_US,1);
         }
         
-        // STEP 3: Sort by key. // TODO reword
+        // STEP 3: Sort by key.
         tic_simple("");
         thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_b, bbi_ptr);
         int n_binned_faces_b = n_lim_size_b;
@@ -730,7 +830,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             std::cout << "Compaction"; toc_simple("",T_US,1);
         }
         
-        // STEP 3: Sort by key. // TODO reword
+        // STEP 3: Sort by key.
         tic_simple("");
         thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_v, bbi_ptr);
         int n_binned_faces_v = n_lim_size_v;
@@ -822,6 +922,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         
         // Free temporary arrays.
+        cudaFree(c_ray_indicators);
         cudaFree(c_bounding_box_limits);
         cudaFree(c_bounding_box_index_limits);
         cudaFree(c_tmp_b_i);

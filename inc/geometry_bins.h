@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 #ifndef GEOMETRY_BIN_H
 #define GEOMETRY_BIN_H
 

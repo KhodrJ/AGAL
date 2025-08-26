@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 #ifndef STRUCTS_H
 #define STRUCTS_H
 

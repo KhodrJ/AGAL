@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 #ifndef MESH_H
 #define MESH_H
 
@@ -104,10 +111,43 @@ constexpr int V_SOLVER_LBM_BGK               = 0;
 constexpr int V_SOLVER_LBM_TRT               = 1;
 constexpr int V_SOLVER_LBM_MRT               = 2;
 
+bool init_conn = false;
 __constant__ int V_CONN_ID[81];
 __constant__ int V_CONN_MAP[27];
 int V_CONN_ID_H[81];
 int V_CONN_MAP_H[27];
+
+template <int N_DIM>
+inline int InitConnectivity()
+{
+    // o====================================================================================
+    // | Load connectivity indices into (GPU) constant memory.
+    // o====================================================================================
+    
+    int V_CONN_ID_2D[81] = {0, 1, 0, -1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int V_CONN_ID_3D[81] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
+    
+    int V_CONN_MAP_2D[27] = {7, 4, 8, 3, 0, 1, 6, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int V_CONN_MAP_3D[27] = {20, 12, 26, 10, 6, 15, 24, 17, 21, 8, 4, 13, 2, 0, 1, 14, 3, 7, 22, 18, 23, 16, 5, 9, 25, 11, 19};
+    
+    if (N_DIM==2)
+    {
+        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_2D, sizeof(int)*81);
+        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_2D, sizeof(int)*27);
+        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_2D[p];
+        for (int p = 0; p < 81; p++) V_CONN_MAP_H[p] = V_CONN_MAP_2D[p];
+    }
+    if (N_DIM==3)
+    {
+        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_3D, sizeof(int)*81);
+        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_3D, sizeof(int)*27);
+        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_3D[p];
+        for (int p = 0; p < 81; p++) V_CONN_MAP_H[p] = V_CONN_MAP_3D[p];
+    }
+    init_conn = true;
+    
+    return 0;
+}
 
 
 #include "structs.h"

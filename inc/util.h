@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 #ifndef UTIL_H
 #define UTIL_H
 
@@ -42,6 +49,14 @@ template <> __host__ __device__ __forceinline__  double Tacos(double a) { return
 template <class T> __host__ __device__ __forceinline__ T Tround(T a);
 template <> __host__ __device__ __forceinline__  float Tround(float a) { return roundf(a); }
 template <> __host__ __device__ __forceinline__  double Tround(double a) { return round(a); }
+//
+template <class T> __host__ __device__ __forceinline__ T Tceil(T a);
+template <> __host__ __device__ __forceinline__  float Tceil(float a) { return ceilf(a); }
+template <> __host__ __device__ __forceinline__  double Tceil(double a) { return ceil(a); }
+//
+template <class T> __host__ __device__ __forceinline__ T Tfloor(T a);
+template <> __host__ __device__ __forceinline__  float Tfloor(float a) { return floorf(a); }
+template <> __host__ __device__ __forceinline__  double Tfloor(double a) { return floor(a); }
 
 // o====================================================================================
 // | Vec2.
@@ -129,6 +144,13 @@ struct vec2
     {
         x = round(x);
         y = round(y);
+        return 0;
+    }
+    template <int N>
+    __host__ __device__ int AddToComp(const T &a)
+    {
+        if (N == 0) x += a;
+        if (N == 1) y += a;
         return 0;
     }
 };
@@ -260,6 +282,14 @@ struct vec3
         z = round(z);
         return 0;
     }
+    template <int N>
+    __host__ __device__ int AddToComp(const T &a)
+    {
+        if (N == 0) x += a;
+        if (N == 1) y += a;
+        if (N == 2) z += a;
+        return 0;
+    }
 };
 
 template <typename T>
@@ -271,6 +301,12 @@ __host__ __device__ vec3<T> __forceinline__ CrossV(const vec3<T> &a, const vec3<
         a.z*b.x - a.x*b.z,
         a.x*b.y - a.y*b.x
     );
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ T DotV2D(const vec3<T> &a, const vec3<T> &b)
+{
+    return (a.x*b.x + a.y*b.y);
 }
 
 template <typename T>
@@ -296,107 +332,6 @@ template <typename T>
 __host__ __device__ __forceinline__ T DistV(const vec3<T> &a, const vec3<T> &b)
 {
     return NormV(a-b);
-}
-
-// o====================================================================================
-// | TO BE REMOVED [TODO].
-// o====================================================================================
-
-template <typename T>
-__device__
-void Cross(T &ax, T &ay, T &az, T &bx, T &by, T &bz, T &sx, T &sy, T &sz)
-{
-    sx = ay*bz - az*by;
-    sy = az*bx - ax*bz;
-    sz = ax*by - ay*bx;
-}
-
-template <typename T>
-__device__
-bool CheckPointInLine(T &vxp, T &vyp, T &vx1, T &vy1, T &vx2, T &vy2)
-{
-    bool C = true;
-    
-    // First point.
-    C = C &&   -( (vx1-vxp)*(vx2-vx1) + (vy1-vyp)*(vy2-vy1) ) > 0;
-    C = C &&   ( (vx2-vxp)*(vx2-vx1) + (vy2-vyp)*(vy2-vy1) ) > 0;
-    
-    return C;
-}
-
-template <typename T>
-__device__
-bool CheckPointInLine3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2)
-{
-    bool C = true;
-    
-    // First point.
-    C = C &&   -( (vx1-vxp)*(vx2-vx1) + (vy1-vyp)*(vy2-vy1) + (vz1-vzp)*(vz2-vz1) ) > 0;
-    C = C &&   ( (vx2-vxp)*(vx2-vx1) + (vy2-vyp)*(vy2-vy1) + (vz2-vzp)*(vz2-vz1) ) > 0;
-    
-    return C;
-}
-
-template <typename T>
-__device__
-bool CheckPointInTriangle(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &vx3, T &vy3, T &vz3, T &nx, T &ny, T &nz, T &sx, T &sy, T &sz, T &ex, T &ey, T &ez)
-{
-    bool C = true;
-    
-    // First edge.
-    ex = vx2-vx1;
-    ey = vy2-vy1;
-    ez = vz2-vz1;
-    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
-    C = C &&   (vx1-vxp)*sx + (vy1-vyp)*sy + (vz1-vzp)*sz > 0;
-    
-    // Second edge.
-    ex = vx3-vx2;
-    ey = vy3-vy2;
-    ez = vz3-vz2;
-    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
-    C = C &&   (vx2-vxp)*sx + (vy2-vyp)*sy + (vz2-vzp)*sz > 0;
-    
-    // Third edge.
-    ex = vx1-vx3;
-    ey = vy1-vy3;
-    ez = vz1-vz3;
-    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
-    C = C &&   (vx3-vxp)*sx + (vy3-vyp)*sy + (vz3-vzp)*sz > 0;
-    
-    return C;
-}
-
-template <typename T>
-__host__ __device__ __forceinline__
-bool CheckInLine(T d, T vxp, T vx0, T vx1)
-{
-    return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1);
-}
-
-template <typename T>
-__host__ __device__ __forceinline__
-bool CheckInRect(T d, T vxp, T vyp, T vx0, T vy0, T vx1, T vy1)
-{
-    return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1 && vyp > vy0 && vyp < vy1);
-}
-
-// Using in:
-// - Control volume force calculations [solver_lbm_compute_forces.cu].
-template <typename T>
-__device__
-bool CheckPointInRegion2D(T vxp, T vyp, T vxm, T vxM, T vym, T vyM)
-{
-    return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM);
-}
-
-// Using in:
-// - Control volume force calculations [solver_lbm_compute_forces.cu].
-template <typename T>
-__device__
-bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm, T vzM)
-{
-    return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
 }
 
 // o====================================================================================
@@ -438,9 +373,54 @@ vec3<T> PointLineIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T
     vec3<T> e = v2-v1;
     vec3<T> w = vp-v1;
     T t = DotV(e,w)/DotV(e,e);
+    
+    return v1 + e*t;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+vec3<T> PointLineIntersectionClamped(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+{
+    vec3<T> e = v2-v1;
+    vec3<T> w = vp-v1;
+    T t = DotV(e,w)/DotV(e,e);
     t = Tmax(static_cast<T>(0.0),Tmin(static_cast<T>(1.0),t));
     
     return v1 + e*t;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInLineA(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2)
+{
+    // Assumes that the point is on an infinite line defined by the segment.
+    
+    // First vertex.
+    if (DotV(vp-v1,v2-v1) <= 0)
+        return false;
+    
+    // Second vertex.
+    if (-DotV(vp-v2,v2-v1) <= 0)
+        return false;
+    
+    return true;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+{
+    // Assumes that the point is on an infinite line defined by the segment.
+    
+    // First vertex.
+    if (DotV2D(vp-v1,v2-v1) <= 0)
+        return false;
+    
+    // Second vertex.
+    if (-DotV2D(vp-v2,v2-v1) <= 0)
+        return false;
+    
+    return true;
 }
 
 template <typename T>
@@ -468,6 +448,15 @@ bool CheckPointInTriangleA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &
     return true;
 }
 
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    if (N_DIM==2)
+        return CheckPointInLineA(vp,v1,v2);
+    return CheckPointInTriangleA(vp,v1,v2,v3,n);
+}
+
 template <typename T>
 __host__ __device__ __forceinline__
 vec3<T> PointTriangleIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
@@ -479,11 +468,11 @@ vec3<T> PointTriangleIntersection(const vec3<T> &vp, const vec3<T> &v1, const ve
     if (!in_T)
     {
         // Line 1.
-        vi = PointLineIntersection(vp,v1,v2);
+        vi = PointLineIntersectionClamped(vp,v1,v2);
         dT = NormV(vp-vi);
         
         // Line 2.
-        vec3<T> vic = PointLineIntersection(vp,v2,v3);
+        vec3<T> vic = PointLineIntersectionClamped(vp,v2,v3);
         T dL = NormV(vp-vic);
         if (dL < dT)
         {
@@ -492,7 +481,7 @@ vec3<T> PointTriangleIntersection(const vec3<T> &vp, const vec3<T> &v1, const ve
         }
         
         // Line 3.
-        vic = PointLineIntersection(vp,v3,v1);
+        vic = PointLineIntersectionClamped(vp,v3,v1);
         dL = NormV(vp-vic);
         if (dL < dT)
         {
@@ -511,6 +500,26 @@ vec3<T> PointFaceIntersection(const vec3<T> &vp, const vec3<T> &v1, const vec3<T
     if (N_DIM==2)
         return PointLineIntersection(vp, v1, v2);
     return PointTriangleIntersection(vp, v1, v2, v3, n);
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool RayFaceIntersection_OneSided(const T &max_length, const vec3<T> &vp, const vec3<T> &ray, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    T d = DotV(v1-vp,n) / DotV(ray,n);
+    vec3<T> vi = vp + ray*d;
+    
+    return ((d > 0 && d < max_length) && CheckPointInFace<T,N_DIM>(vi,v1,v2,v3,n));
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool RayFaceIntersection_TwoSided(const T &max_length, const vec3<T> &vp, const vec3<T> &ray, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    T d = DotV(v1-vp,n) / DotV(ray,n);
+    vec3<T> vi = vp + ray*d;
+    
+    return (Tabs(d) < max_length && CheckPointInFace<T,N_DIM>(vi,v1,v2,v3,n));
 }
 
 template <typename T, int N_DIM>

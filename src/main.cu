@@ -104,13 +104,10 @@ int main(int argc, char *argv[])
         geometry.G_ImportBoundariesFromTextFile();
         geometry.G_Convert_IndexListsToCoordList();
     }
-    std::cout << "T1" << std::endl;
     geometry.G_Init_Arrays_CoordsList_CPU();
     if (geometry.G_PRINT)
         geometry.G_PrintSTL();
-    std::cout << "T2" << std::endl;
     geometry.G_InitBins(static_cast<int>(BinMake::GPU),0);
-    std::cout << "T3" << std::endl;
     
     // Create a mesh.
     const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.

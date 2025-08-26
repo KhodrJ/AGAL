@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 #ifndef CPPSPEC_H
 #define CPPSPEC_H
 

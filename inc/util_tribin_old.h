@@ -1,3 +1,126 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
+#ifndef UTIL_TRIBIN_OLD_H
+#define UTIL_TRIBIN_OLD_H
+
+// o====================================================================================
+// | TO BE REMOVED [TODO].
+// o====================================================================================
+
+template <typename T>
+__device__
+void Cross(T &ax, T &ay, T &az, T &bx, T &by, T &bz, T &sx, T &sy, T &sz)
+{
+    sx = ay*bz - az*by;
+    sy = az*bx - ax*bz;
+    sz = ax*by - ay*bx;
+}
+
+template <typename T>
+__device__
+bool CheckPointInLine(T &vxp, T &vyp, T &vx1, T &vy1, T &vx2, T &vy2)
+{
+    bool C = true;
+    
+    // First point.
+    C = C &&   -( (vx1-vxp)*(vx2-vx1) + (vy1-vyp)*(vy2-vy1) ) > 0;
+    C = C &&   ( (vx2-vxp)*(vx2-vx1) + (vy2-vyp)*(vy2-vy1) ) > 0;
+    
+    return C;
+}
+
+template <typename T>
+__device__
+bool CheckPointInLine3D(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2)
+{
+    bool C = true;
+    
+    // First point.
+    C = C &&   -( (vx1-vxp)*(vx2-vx1) + (vy1-vyp)*(vy2-vy1) + (vz1-vzp)*(vz2-vz1) ) > 0;
+    C = C &&   ( (vx2-vxp)*(vx2-vx1) + (vy2-vyp)*(vy2-vy1) + (vz2-vzp)*(vz2-vz1) ) > 0;
+    
+    return C;
+}
+
+template <typename T>
+__device__
+bool CheckPointInTriangle(T &vxp, T &vyp, T &vzp, T &vx1, T &vy1, T &vz1, T &vx2, T &vy2, T &vz2, T &vx3, T &vy3, T &vz3, T &nx, T &ny, T &nz, T &sx, T &sy, T &sz, T &ex, T &ey, T &ez)
+{
+    bool C = true;
+    
+    // First edge.
+    ex = vx2-vx1;
+    ey = vy2-vy1;
+    ez = vz2-vz1;
+    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
+    C = C &&   (vx1-vxp)*sx + (vy1-vyp)*sy + (vz1-vzp)*sz > 0;
+    
+    // Second edge.
+    ex = vx3-vx2;
+    ey = vy3-vy2;
+    ez = vz3-vz2;
+    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
+    C = C &&   (vx2-vxp)*sx + (vy2-vyp)*sy + (vz2-vzp)*sz > 0;
+    
+    // Third edge.
+    ex = vx1-vx3;
+    ey = vy1-vy3;
+    ez = vz1-vz3;
+    Cross(ex,ey,ez,nx,ny,nz,sx,sy,sz);
+    C = C &&   (vx3-vxp)*sx + (vy3-vyp)*sy + (vz3-vzp)*sz > 0;
+    
+    return C;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckInLine(T d, T vxp, T vx0, T vx1)
+{
+    return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckInRect(T d, T vxp, T vyp, T vx0, T vy0, T vx1, T vy1)
+{
+    return (d > (T)0.0 && d < (T)1.0 && vxp > vx0 && vxp < vx1 && vyp > vy0 && vyp < vy1);
+}
+
+// Using in:
+// - Control volume force calculations [solver_lbm_compute_forces.cu].
+template <typename T>
+__device__
+bool CheckPointInRegion2D(T vxp, T vyp, T vxm, T vxM, T vym, T vyM)
+{
+    return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM);
+}
+
+// Using in:
+// - Control volume force calculations [solver_lbm_compute_forces.cu].
+template <typename T>
+__device__
+bool CheckPointInRegion3D(T vxp, T vyp, T vzp, T vxm, T vxM, T vym, T vyM, T vzm, T vzM)
+{
+    return (vxp > vxm && vxp < vxM && vyp > vym && vyp < vyM && vzp > vzm && vzp < vzM);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 template <typename ufloat_g_t, int N_DIM>
 __host__ __device__ __forceinline__
 bool IncludeInBin
@@ -249,3 +372,5 @@ else
     
     return false;
 }
+
+#endif
