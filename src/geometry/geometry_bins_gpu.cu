@@ -108,7 +108,7 @@ void Cu_ComputeVoxelRayIndicators_V2
             }
             
             if (tid==0 && found_global)
-                ray_indicators[fid] = 1;
+                ray_indicators[fid] = kap;
         }
     }
 }
@@ -202,7 +202,7 @@ void Cu_ComputeVoxelRayIndicators_V1
         }
         else // N_DIM==3
         {
-            constexpr int N_Q_max = 27;
+            constexpr int N_Q_max = 2;
             
             // Compute bounding box limits.
             int ixmin = static_cast<int>( Tround((Tmin(Tmin(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
@@ -212,7 +212,7 @@ void Cu_ComputeVoxelRayIndicators_V1
             int iymax = static_cast<int>( Tround((Tmax(Tmax(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
             int izmax = static_cast<int>( Tround((Tmax(Tmax(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
             
-            // Loop over all possible cells in the bounding box.            
+            // Loop over all possible cells in the bounding box.
             for (int p = 1; p < N_Q_max; p++)
             {
                 // Consider rays in half the possible directions. Both senses will be accounted for.
@@ -238,7 +238,8 @@ void Cu_ComputeVoxelRayIndicators_V1
                         ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
                         vec3<ufloat_g_t> vi = vp + ray*d;
                         
-                        if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                        //if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                        if (CheckPointInTriangleA(vi,v1,v2,v3,n))
                         {
                             found = true;
                             ixmax = ixmin-1;
@@ -255,7 +256,7 @@ void Cu_ComputeVoxelRayIndicators_V1
         
         // If there was an intersection with one of the cells in the bounding box, consider this face during binning.
         if (found)
-            ray_indicators[kap] = 1;
+            ray_indicators[kap] = kap;
     }
 }
 
@@ -288,12 +289,20 @@ void Cu_ComputeBoundingBoxLimits2D
     const ufloat_g_t Ly,
     const ufloat_g_t Lz,
     const int G_BIN_DENSITY,
-    const int *__restrict__ ray_indicators
+    const int *__restrict__ ray_indicators,
+    const bool use_ray,
+    const bool use_map,
+    const int n_filtered
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int map_val = kap;
     
-    if (kap < n_faces && ray_indicators[kap] == 1)
+    // If using rays, get the current indicator value.
+    if (use_ray)
+        map_val = ray_indicators[kap];
+    
+    if (kap < n_faces && map_val > -1)
     {
         if (N_DIM==2)
         {
@@ -321,11 +330,19 @@ void Cu_ComputeBoundingBoxLimits2D
             int counter = 0;
             for (int J = bin_id_yl; J < bin_id_yL+1; J++)
             {
-                if (C && counter < 2)
+                if (C && counter < 3)
                 {
                     int global_id = J;
-                    bounding_box_limits[kap + counter*n_faces] = global_id;
-                    bounding_box_index_limits[kap + counter*n_faces] = kap;
+                    if (use_map)
+                    {
+                        bounding_box_limits[map_val + counter*n_filtered] = global_id;
+                        bounding_box_index_limits[map_val + counter*n_filtered] = kap;
+                    }
+                    else
+                    {
+                        bounding_box_limits[kap + counter*n_faces] = global_id;
+                        bounding_box_index_limits[kap + counter*n_faces] = kap;
+                    }
                     counter++;
                 }
             }
@@ -369,11 +386,19 @@ void Cu_ComputeBoundingBoxLimits2D
             {
                 for (int J = bin_id_yl; J < bin_id_yL+1; J++)
                 {
-                    if (C && counter < 4)
+                    if (C && counter < 9)
                     {
                         int global_id = J + G_BIN_DENSITY*K;
-                        bounding_box_limits[kap + counter*n_faces] = global_id;
-                        bounding_box_index_limits[kap + counter*n_faces] = kap;
+                        if (use_map)
+                        {
+                            bounding_box_limits[map_val + counter*n_filtered] = global_id;
+                            bounding_box_index_limits[map_val + counter*n_filtered] = kap;
+                        }
+                        else
+                        {
+                            bounding_box_limits[kap + counter*n_faces] = global_id;
+                            bounding_box_index_limits[kap + counter*n_faces] = kap;
+                        }
                         counter++;
                     }
                 }
@@ -415,12 +440,18 @@ void Cu_ComputeBoundingBoxLimits3D
     const ufloat_g_t Ly0g,
     const ufloat_g_t Lz0g,
     const int G_BIN_DENSITY,
-    const int *__restrict__ ray_indicators
+    const int *__restrict__ ray_indicators,
+    const bool use_ray,
+    const bool use_map,
+    const int n_filtered
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int map_val = kap;
+    if (use_ray)
+        map_val = ray_indicators[kap];
     
-    if (kap < n_faces && ray_indicators[kap] == 1)
+    if (kap < n_faces && map_val > -1)
     {
         if (N_DIM==2)
         {
@@ -462,11 +493,19 @@ void Cu_ComputeBoundingBoxLimits3D
                         vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx);
                         C = LineBinOverlap2D(vm,vM,v1,v2);
                         
-                        if (C && counter < 4)
+                        if (C && counter < 9)
                         {
                             int global_id = I + G_BIN_DENSITY*J;
-                            bounding_box_limits[kap + counter*n_faces] = global_id;
-                            bounding_box_index_limits[kap + counter*n_faces] = kap;
+                            if (use_map)
+                            {
+                                bounding_box_limits[map_val + counter*n_filtered] = global_id;
+                                bounding_box_index_limits[map_val + counter*n_filtered] = kap;
+                            }
+                            else
+                            {
+                                bounding_box_limits[kap + counter*n_faces] = global_id;
+                                bounding_box_index_limits[kap + counter*n_faces] = kap;
+                            }
                             counter++;
                         }
                     }
@@ -527,11 +566,19 @@ void Cu_ComputeBoundingBoxLimits3D
                             vec3<ufloat_g_t> vM((I+1)*Lx0g+dx,(J+1)*Ly0g+dx,(K+1)*Lz0g+dx);
                             C = TriangleBinOverlap3D(vm,vM,v1,v2,v3);
                             
-                            if (C && counter < 8)
+                            if (C && counter < 27)
                             {
                                 int global_id = I + G_BIN_DENSITY*J + G_BIN_DENSITY*G_BIN_DENSITY*K;
-                                bounding_box_limits[kap + counter*n_faces] = global_id;
-                                bounding_box_index_limits[kap + counter*n_faces] = kap;
+                                if (use_map)
+                                {
+                                    bounding_box_limits[map_val + counter*n_filtered] = global_id;
+                                    bounding_box_index_limits[map_val + counter*n_filtered] = kap;
+                                }
+                                else
+                                {
+                                    bounding_box_limits[kap + counter*n_faces] = global_id;
+                                    bounding_box_index_limits[kap + counter*n_faces] = kap;
+                                }
                                 counter++;
                             }
                         }
@@ -574,30 +621,41 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
     ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_levels];
     ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_levels];
     ufloat_g_t eps __attribute__((unused)) = EPS<ufloat_g_t>();
-    int use_zip = true;
+    int use_ray = false;  // Indicates to use the ray indicators.
+    int use_map = false;  // Indicates to use the indicator map array.
+    int use_zip = true;  // Indicates to perform compaction before sorting by key.
     
     // Proceed only if there are actual faces loaded in the current object.
     if (n_faces > 0)
     {
-        // Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
+        // Compute constants.
         int n_limits_v = 1;
         int n_limits_b = 1;
-        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_2D[L] *= n_bin_density[L]; n_limits_v *= 2; }
-        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM; d++)   { n_bins_3D[L] *= n_bin_density[L]; n_limits_b *= 2; }
+        for (int d = 0; d < N_DIM-1; d++) n_limits_v *= 3;
+        for (int d = 0; d < N_DIM-0; d++) n_limits_b *= 3;
+        int n_filtered = 0;
+        
+        // Declare and allocate std::vector<int> bin arrays, which will be updated during traversal.
+        n_bins_2D[L] = 1; for (int d = 0; d < N_DIM-1; d++) { n_bins_2D[L] *= n_bin_density[L]; }
+        n_bins_3D[L] = 1; for (int d = 0; d < N_DIM-0; d++) { n_bins_3D[L] *= n_bin_density[L]; }
         int n_lim_size_v = n_limits_v*n_faces;
         int n_lim_size_b = n_limits_b*n_faces;
         
         // Some array declarations.
-        int *c_ray_indicators;
-        int *c_bounding_box_limits;
-        int *c_bounding_box_index_limits;
-        int *c_tmp_b_i;    // Used to store unique bin Ids.
-        int *c_tmp_b_ii;   // Used to gather starting-location indices.
+        int *c_ray_indicators;               // Used to filter out faces that never encounter a ray.
+        int *c_indicator_map;                // Stored mapped values of ray indicators.
+        int *c_bounding_box_limits;          // Stores bin values for the faces.
+        int *c_bounding_box_index_limits;    // Stores copies of face values for each bin.
+        int *c_tmp_b_i;                      // Used to store unique bin Ids.
+        int *c_tmp_b_ii;                     // Used to gather starting-location indices.
         
         // Declare and allocate memory for the c_bounding_box_limits.
         tic_simple("");
         cudaDeviceSynchronize();
-        gpuErrchk( cudaMalloc((void **)&c_ray_indicators, n_faces*sizeof(int)) );
+        if (use_ray)
+            gpuErrchk( cudaMalloc((void **)&c_ray_indicators, n_faces*sizeof(int)) );
+        if (use_ray && use_map)
+            gpuErrchk( cudaMalloc((void **)&c_indicator_map, n_faces*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_b*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_b*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_tmp_b_i, n_bins_3D[L]*sizeof(int)) );
@@ -610,8 +668,10 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_N_3D[L], n_bins_3D[L]*sizeof(int)) );
         //
         // Reset values.
-        Cu_ResetToValue<<<(M_BLOCK+n_faces-1)/M_BLOCK, M_BLOCK>>>(n_faces, c_ray_indicators, 0);
-        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
+        if (use_ray)
+            Cu_ResetToValue<<<(M_BLOCK+n_faces-1)/M_BLOCK, M_BLOCK>>>(n_faces, c_ray_indicators, -1);
+        if (use_ray && use_map)
+            Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_N_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_limits, n_bins_3D[L]);
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_b-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_b, c_bounding_box_index_limits, -1);
@@ -622,6 +682,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         // Wrap raw pointers with thrust device_ptr. // TODO reword
         thrust::device_ptr<int> ray_ptr = thrust::device_pointer_cast(c_ray_indicators);
+        thrust::device_ptr<int> map_ptr = thrust::device_pointer_cast(c_indicator_map);
         thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
         thrust::device_ptr<int> bnv_ptr = thrust::device_pointer_cast(c_binned_face_ids_n_2D[L]);
@@ -636,24 +697,64 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         if (!init_conn)
             InitConnectivity<AP->N_DIM>();
         
-        // STEP 0: Traverse faces and identify the bins they should go in.
-        tic_simple("");
-        cudaDeviceSynchronize();
-        Cu_ComputeVoxelRayIndicators_V1<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
-            dx, static_cast<ufloat_g_t>(0.5)*dx,
-            n_faces, n_faces_a,
-            c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
-        );
-//         constexpr int M = 128;
-//         Cu_ComputeVoxelRayIndicators_V2<ufloat_g_t,AP->N_DIM><<<(M+(32*n_faces)-1)/M,M>>>(
-//             dx, static_cast<ufloat_g_t>(0.5)*dx,
-//             n_faces, n_faces_a,
-//             c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
-//         );
-        cudaDeviceSynchronize();
-        std::cout << "Computing ray indicators"; toc_simple("",T_US,1);
-        int n_indicators = thrust::count_if(thrust::device, ray_ptr, ray_ptr + n_faces, is_equal_to(1));
-        std::cout << "Indicated " << n_indicators << "/" << n_faces << " (" << 100.0F*(float)n_indicators/(float)n_faces << "%) participants..." << std::endl;
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        if (use_ray)
+        {
+            // STEP 0A: Traverse faces and identify the bins they should go in.
+            tic_simple("");
+            cudaDeviceSynchronize();
+            Cu_ComputeVoxelRayIndicators_V1<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
+                dx, static_cast<ufloat_g_t>(0.5)*dx,
+                n_faces, n_faces_a,
+                c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
+            );
+            //constexpr int M = 128;
+            //Cu_ComputeVoxelRayIndicators_V2<ufloat_g_t,AP->N_DIM><<<(M+(32*n_faces)-1)/M,M>>>(
+            //    dx, static_cast<ufloat_g_t>(0.5)*dx,
+            //    n_faces, n_faces_a,
+            //    c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
+            //);
+            cudaDeviceSynchronize();
+            std::cout << "Computing ray indicators"; toc_simple("",T_US,1);
+            
+            if (use_map)
+            {
+                // Step 0B: Collect ray indicators.
+                tic_simple("");
+                auto filtered_result = thrust::copy_if(thrust::device, ray_ptr, ray_ptr + n_faces, map_ptr, is_nonnegative());
+                n_filtered = filtered_result - map_ptr;
+                n_lim_size_v = n_limits_v*n_filtered;
+                n_lim_size_b = n_limits_b*n_filtered;
+                cudaDeviceSynchronize();
+                std::cout << "Gathered ray indicators (filtered=" << n_filtered << "/" << n_faces << " [ " << 100.00*(double)n_filtered/(double)n_faces << "%])"; toc_simple("",T_US,1);
+                
+                // Step 0C: Scatter new ray indicators.
+                tic_simple("");
+                auto counting_iter = thrust::counting_iterator<int>(0);
+                thrust::scatter(
+                    thrust::device, counting_iter, counting_iter + n_filtered,
+                    map_ptr,
+                    ray_ptr
+                );
+                cudaDeviceSynchronize();
+                std::cout << "Scattered new ray indicators"; toc_simple("",T_US,1);
+            }
+        }
+        
+        
         
         
         
@@ -674,7 +775,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
             Lx/(ufloat_g_t)n_bin_density[L], Ly/(ufloat_g_t)n_bin_density[L], Lz/(ufloat_g_t)n_bin_density[L], n_bin_density[L],
-            c_ray_indicators
+            c_ray_indicators,
+            use_ray, use_map, n_filtered
         );
         cudaDeviceSynchronize();
         std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
@@ -812,7 +914,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             n_faces, n_faces_a,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dx, (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
-            c_ray_indicators
+            c_ray_indicators,
+            use_ray, use_map, n_filtered
         );
         cudaDeviceSynchronize();
         std::cout << "Computing bounding box limits"; toc_simple("",T_US,1);
@@ -923,6 +1026,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         // Free temporary arrays.
         cudaFree(c_ray_indicators);
+        cudaFree(c_indicator_map);
         cudaFree(c_bounding_box_limits);
         cudaFree(c_bounding_box_index_limits);
         cudaFree(c_tmp_b_i);

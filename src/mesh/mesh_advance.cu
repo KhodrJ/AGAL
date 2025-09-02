@@ -69,7 +69,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
             M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
             M_RefineAndCoarsenBlocks(0);
         }
-        //solver->S_SetIC(0,N_LEVEL_START);
         
         // Near-wall refinement, starting from N_LEVEL_START.
         for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
@@ -84,10 +83,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
                 M_Geometry_FillBinned_S1(0,L);
 
             // Invoke refinement and coarsening routine.
-            if (MAX_LEVELS > 1)
+            tic_simple("");
+            if (MAX_LEVELS > 1 && L < MAX_LEVELS_WALL-1)
                 M_RefineAndCoarsenBlocks(0);
+            cudaDeviceSynchronize();
+            std::cout << "RefAndCoarsen | L=" << L; toc_simple("",T_US,1);
             
-            //std::cout << "(Refine and coarsen time: " << toc_simple("",T_US,0) << std::endl;;
             solver->S_SetIC(0,L);
             cudaDeviceSynchronize();
         }
@@ -95,16 +96,16 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         // After near-wall refinment, 
         if (geometry_init)
         {
-//             for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-//                 M_Geometry_FillBinned_S2(0,L);
-//             M_Geometry_FillBinned_S2A(0);
+            for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+                M_Geometry_FillBinned_S2(0,L);
+            M_Geometry_FillBinned_S2A(0);
         }
         
         // Cell-blocks near the wall construct their list of faces.
         if (geometry_init)
         {
-            for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-                M_IdentifyFaces(0,L);
+//             for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+//                 M_IdentifyFaces(0,L);
         }
         
         // Freeze mesh: these new near-wall cells are not eligible for coarsening.

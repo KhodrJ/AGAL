@@ -10,7 +10,7 @@
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int VS>
 __global__
-void Cu_IdentifyFaces_V2
+void Cu_IdentifyFaces
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
@@ -187,7 +187,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_IdentifyFaces(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_IdentifyFaces_V2<ufloat_t,ufloat_g_t,AP,LP->VS> <<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
+        Cu_IdentifyFaces<ufloat_t,ufloat_g_t,AP,LP->VS> <<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(
             mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, mesh->n_maxcells_b, mesh->n_solidb, dxf_vec[L],
             &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_ID_mask_b[i_dev], mesh->c_cells_f_X_b[i_dev],
             mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_onb_solid[i_dev], mesh->c_cblock_ID_face[i_dev],

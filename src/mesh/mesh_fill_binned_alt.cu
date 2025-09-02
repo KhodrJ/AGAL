@@ -180,8 +180,8 @@ void Cu_Voxelize_V1_WARP
         {
             for (int w = 0; w < 2; w++)
             {
-                if (tid == 0 && w == 0)
-                    cblock_ID_mask[i_kap_b] = global_bin_id;
+                //if (tid == 0 && w == 0)
+                //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
                 
                 if (w == 1)
                     cellmask = cellmask2;
@@ -242,13 +242,12 @@ void Cu_Voxelize_V1
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
-    if (blockIdx.x*M_LBLOCK < n_ids_idev_L)
-        i_kap_b = id_set_idev_L[blockIdx.x*M_LBLOCK];
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // If cell-block Id is valid.
     if (i_kap_b > -1)
@@ -395,8 +394,8 @@ void Cu_Voxelize_V1
         if (s_D[0]>0)
         {
             // If at least one cell is solid, update the block mask.
-            if (threadIdx.x == 0)
-                cblock_ID_mask[i_kap_b] = global_bin_id;
+            //if (threadIdx.x == 0)
+            //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
             
             // Internally propagate the cell mask values to the x-edges of the cell-block.
             for (int l = 0; l < 9; l++)
@@ -597,8 +596,8 @@ void Cu_Voxelize_V2_WARP
         {
             for (int w = 0; w < 2; w++)
             {
-                if (tid == 0 && w == 0)
-                    cblock_ID_mask[i_kap_b] = global_bin_id;
+                //if (tid == 0 && w == 0)
+                //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
                 
                 if (w == 1)
                     cellmask = cellmask2;
@@ -781,8 +780,8 @@ void Cu_Voxelize_V2
         if (s_D[0]>0)
         {
             // If at least one cell is solid, update the block mask.
-            if (threadIdx.x == 0)
-                cblock_ID_mask[i_kap_b] = global_bin_id;
+            //if (threadIdx.x == 0)
+            //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
             
             // Internally propagate the cell mask values to the x-edges of the cell-block.
             for (int l = 0; l < 9; l++)
@@ -841,13 +840,12 @@ void Cu_Voxelize_Propagate_WARP
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
-    if (blockIdx.x*M_LBLOCK < n_ids_idev_L)
-        i_kap_b = id_set_idev_L[blockIdx.x*M_LBLOCK];
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Get the left neighbor.
     int nbr_start_left;
@@ -871,14 +869,21 @@ void Cu_Voxelize_Propagate_WARP
         // Traverse along +x and update masks.
         int nbr_right = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
         int k = 0;
-        while (nbr_right > -1 && k < 100)
+        while (nbr_right > -1 && k < 1000)
         {
+            // Read current cell-block data. Switch the cells to solid if those at the -x edge were solid (i.e., based on status values).
             int cellmask = cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x];
             if (status == V_CELLMASK_SOLID && cellmask == V_CELLMASK_INTERIOR)
                 cellmask = V_CELLMASK_SOLID;
+            
+            // Update shared memory array and status. Then, switch guard cells back to interior cells before writing.
             s_ID_mask[threadIdx.x] = cellmask;
-            cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
             status = s_ID_mask[3 + 4*J + 16*K];
+            if (cellmask == V_CELLMASK_DUMMY_I)
+                cellmask = V_CELLMASK_INTERIOR;
+            
+            // Write data to current cell-block.
+            cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
             
             // Get next neighbor block.
             nbr_right = cblock_ID_nbr[nbr_right + 1*n_maxcblocks];
@@ -906,13 +911,12 @@ void Cu_Voxelize_Propagate
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
-    if (blockIdx.x*M_LBLOCK < n_ids_idev_L)
-        i_kap_b = id_set_idev_L[blockIdx.x*M_LBLOCK];
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Get the left neighbor.
     int nbr_start_left;
@@ -936,14 +940,22 @@ void Cu_Voxelize_Propagate
         // Traverse along +x and update masks.
         int nbr_right = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
         int k = 0;
-        while (nbr_right > -1 && k < 100)
+        while (nbr_right > -1 && k < 1000)
         {
+            // Read current cell-block data. Switch the cells to solid if those at the -x edge were solid (i.e., based on status values).
             int cellmask = cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x];
-            if (status == V_CELLMASK_SOLID && cellmask == V_CELLMASK_INTERIOR)
+            //if (status == V_CELLMASK_SOLID && cellmask == V_CELLMASK_INTERIOR)
+            if (status == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
                 cellmask = V_CELLMASK_SOLID;
+            
+            // Update shared memory array and status. Then, switch guard cells back to interior cells before writing.
             s_ID_mask[threadIdx.x] = cellmask;
-            cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
             status = s_ID_mask[3 + 4*J + 16*K];
+            if (cellmask == V_CELLMASK_DUMMY_I)
+                cellmask = V_CELLMASK_INTERIOR;
+            
+            // Write data to current cell-block.
+            cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
             
             // Get next neighbor block.
             nbr_right = cblock_ID_nbr[nbr_right + 1*n_maxcblocks];
@@ -952,6 +964,90 @@ void Cu_Voxelize_Propagate
         
         if (k == 100)
             printf("MAX REACHED DURING PROPAGATION...\n");
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+__global__
+void Cu_Voxelize_UpdateMasks_WARP
+(
+    const int n_ids_idev_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    int *__restrict__ cblock_ID_mask
+)
+{
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    int kap_b = kap / 32;
+    int tid = threadIdx.x % 32;
+    int i_kap_b = -1;
+    
+    if (kap_b < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[kap_b];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        // Load cell mask values.
+        int cellmask = cells_ID_mask[M_CBLOCK*i_kap_b + tid];
+        int cellmask2 = cells_ID_mask[M_CBLOCK*i_kap_b + tid+32];
+        int s_D = 0;
+        if (cellmask == V_CELLMASK_SOLID || cellmask2 == V_CELLMASK_SOLID)
+            s_D = 1;
+        
+        // Warp reduction for sum.
+        for (int offset = 16; offset > 0; offset /= 2)
+            s_D += __shfl_down_sync(0xFFFFFFFF, s_D, offset);
+        
+        // If at least one cell is solid, mark this block.
+        if (tid==0 && __shfl_sync(0xFFFFFFFF, s_D, 0)>0)
+            cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+__global__
+void Cu_Voxelize_UpdateMasks
+(
+    const int n_ids_idev_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    int *__restrict__ cblock_ID_mask
+)
+{
+    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    __shared__ int s_D[M_TBLOCK];
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        // Load cell mask values.
+        int cellmask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+        s_D[threadIdx.x] = 0;
+        if (cellmask == V_CELLMASK_SOLID)
+            s_D[threadIdx.x] = 1;
+        __syncthreads();
+        
+        // Block reduction for sum.
+        for (int s=blockDim.x/2; s>0; s>>=1)
+        {
+            if (threadIdx.x < s)
+            {
+                s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
+            }
+            __syncthreads();
+        }
+        
+        // If at least one cell is solid, mark this block.
+        if (threadIdx.x==0 && s_D[0]>0)
+            cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
     }
 }
 
@@ -1492,15 +1588,14 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
     {
         // Calculate constants.
         ufloat_g_t R = geometry->G_NEAR_WALL_DISTANCE/pow(2.0,(ufloat_g_t)L);
-        int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
+        //int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
         int Nprop_d = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For satisfying the near-wall distance criterion.
         bool hit_max = L==MAX_LEVELS-1;
-        int L_bin = std::min(L, geometry->bins->n_levels-1);
         
         // Voxelize the solid, filling in all solid cells.
         tic_simple("");
-        Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
-        //Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+        //Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
+        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L],
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
             geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_X, geometry->c_geom_f_face_Xt,
@@ -1513,14 +1608,24 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
         
         // Propagate preliminary solid masks within the interior from both sides.
         tic_simple("");
-        Cu_Voxelize_Propagate<ufloat_t,ufloat_g_t,AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_Voxelize_Propagate<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
         );
         cudaDeviceSynchronize();
+        std::cout << "Counted " << thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID)) << " solid cells..." << std::endl;
         std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate"; toc_simple("",T_US,1);
         
-        /*
+        // Propagate preliminary solid masks within the interior from both sides.
+        tic_simple("");
+        //Cu_Voxelize_UpdateMasks_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
+        Cu_Voxelize_UpdateMasks<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
+            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev]
+        );
+        cudaDeviceSynchronize();
+        std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizeUpdateMasks"; toc_simple("",T_US,1);
+        
         // Identify the cell-blocks on the boundary of the solid. Mark them for refinement, if eligible.
         tic_simple("");
         Cu_MarkBlocks_MarkBoundary<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
@@ -1558,7 +1663,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
         );
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", Finalize"; toc_simple("",T_US,1);
-        */
     }
     
     return 0;
@@ -1570,10 +1674,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
     if (n_ids[i_dev][L] > 0)
     {
         // Reset one of the intermediate arrays in preparation for copying.
+        // Note: I can use id_max instead of n_maxcblocks since refinement and coarsening is finished.
         if (L == 0)
         {
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_1[i_dev], 0);
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_tmp_2[i_dev], 0);
+            Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(id_max[i_dev][MAX_LEVELS], c_tmp_1[i_dev], 0);
+            Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(id_max[i_dev][MAX_LEVELS], c_tmp_2[i_dev], 0);
         }
         
         // Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
@@ -1632,6 +1737,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
         // Now scatter the addresses of these copied Ids so that cell-blocks know where to find the data of their solid-adjacent cells
         // in the new arrays.
         thrust::scatter(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb_old, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev] );
+        cudaDeviceSynchronize();
         
         // Report available memory after these new allocations.
         cudaMemGetInfo(&free_t, &total_t);

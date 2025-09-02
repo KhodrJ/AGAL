@@ -25,7 +25,6 @@ void Cu_SetInitialConditions
 )
 {
     constexpr int N_DIM = AP->N_DIM;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int N_Q = LP->N_Q;
     int I = threadIdx.x % 4;
@@ -119,9 +118,7 @@ void Cu_RefreshVariables
 )
 {
     constexpr int N_DIM = AP->N_DIM;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
     
     int i_kap_b = -1;
@@ -217,9 +214,7 @@ void Cu_Collide
 )
 {
     constexpr int N_DIM = AP->N_DIM;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
     
     int i_kap_b = -1;
@@ -351,9 +346,7 @@ void Cu_Stream
 {
     constexpr int N_DIM = AP->N_DIM;
     constexpr int N_Q_max = AP->N_Q_max;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
     __shared__ int s_ID_nbr[27];
     
@@ -517,9 +510,7 @@ void Cu_ImposeBC
 )
 {
     constexpr int N_DIM = AP->N_DIM;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_Q = LP->N_Q;
     __shared__ int s_ID_nbr[N_Q_max];
