@@ -375,45 +375,4 @@ void Cu_SoA2AoS(const T *__restrict__ in, T *__restrict__ out, int N)
     }
 }
 
-inline int DebugDrawSquareInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double c0, double c1, double c2)
-{
-    out << "plot([" << x0 << " " << x1 << " " << x1 << " " << x0 << " " << x0 << "],[" << y0 << " " << y0 << " " << y1 << " " << y1 << " " << y0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    
-    return 0;
-}
-
-inline int DebugDrawCubeInMATLAB(std::ofstream &out, double x0, double x1, double y0, double y1, double z0, double z1, double c0, double c1, double c2)
-{
-    out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z0 << " " << z0 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    
-    out << "plot3([" << x0 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x0 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y1 << "],[" << z1 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    
-    out << "plot3([" << x0 << " " << x0 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x0 << " " << x0 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x1 << " " << x1 << "],[" << y0 << " " << y0 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    out << "plot3([" << x1 << " " << x1 << "],[" << y1 << " " << y1 << "],[" << z0 << " " << z1 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    
-    return 0;
-}
-
-inline int DebugDrawLineInMATLAB(std::ofstream &out, double vx1, double vy1, double vx2, double vy2, double c0, double c1, double c2)
-{
-    out << "plot([" << vx1 << " " << vx2 << "],[" << vy1 << " " << vy2 << "],'Color',[" << c0 << " " << c1 << " " << c2 << "],'Marker','o');\n";
-    
-    return 0;
-}
-
-inline int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double vx3, double vy3, double vz3, double c0, double c1, double c2)
-{
-    out << "fill3([" << vx1 << " " << vx2 << " " << vx3 << " " << vx1 << "],[" << vy1 << " " << vy2 << " " << vy3 << " " << vy1 << "],[" << vz1 << " " << vz2 << " " << vz3 << " " << vz1 << "],[" << c0 << " " << c1 << " " << c2 << "]);\n";
-    
-    return 0;
-}
-
 #endif

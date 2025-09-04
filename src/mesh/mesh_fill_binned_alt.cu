@@ -322,7 +322,7 @@ void Cu_Voxelize_V1
                 vec3<ufloat_g_t> vi = vp + ray*d;
                 {
                     d = Tabs(d);
-                    if ((d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                    if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
                     {
                         pmin = p;
                         dmin = d;

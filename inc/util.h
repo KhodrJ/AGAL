@@ -396,11 +396,11 @@ bool CheckPointInLineA(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2)
     // Assumes that the point is on an infinite line defined by the segment.
     
     // First vertex.
-    if (DotV(vp-v1,v2-v1) <= 0)
+    if (DotV(vp-v1,v2-v1) <= -EPS<T>())
         return false;
     
     // Second vertex.
-    if (-DotV(vp-v2,v2-v1) <= 0)
+    if (-DotV(vp-v2,v2-v1) <= -EPS<T>())
         return false;
     
     return true;
@@ -413,11 +413,11 @@ bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
     // Assumes that the point is on an infinite line defined by the segment.
     
     // First vertex.
-    if (DotV2D(vp-v1,v2-v1) <= 0)
+    if (DotV2D(vp-v1,v2-v1) <= -EPS<T>())
         return false;
     
     // Second vertex.
-    if (-DotV2D(vp-v2,v2-v1) <= 0)
+    if (-DotV2D(vp-v2,v2-v1) <= -EPS<T>())
         return false;
     
     return true;
@@ -430,19 +430,19 @@ bool CheckPointInTriangleA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &
     // First edge.
     vec3<T> ven = InwardNormalUnit(v1,v2,n);
     T s = DotV(v1-vp,ven);
-    if (s <= 0)
+    if (s <= -EPS<T>())
         return false;
     
     // Second edge.
     ven = InwardNormalUnit(v2,v3,n);
     s = DotV(v2-vp,ven);
-    if (s <= 0)
+    if (s <= -EPS<T>())
         return false;
     
     // Third edge.
     ven = InwardNormalUnit(v3,v1,n);
     s = DotV(v3-vp,ven);
-    if (s <= 0)
+    if (s <= -EPS<T>())
         return false;
     
     return true;
@@ -606,6 +606,7 @@ int Cu_NbrCellId(int Ip, int Jp, int Kp)
 
 #include "util_tribin.h"         // Triangle-AABB bin overlap.
 #include "util_tribin_old.h"     // My own triangle-AABB bin overlap test.
+#include "debug_matlab.h"
 
 
 #endif

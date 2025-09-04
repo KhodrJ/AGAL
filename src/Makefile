@@ -161,7 +161,8 @@ INC_MAIN = cppspec.h\
 	util.h\
 	util_tribin.h\
 	util_tribin_old.h\
-	custom.h
+	custom.h\
+	debug_matlab.h
 # SRC_MAIN = main_read_input.cu
 # OBJ_MAIN = $(SRC_MAIN:.cu=.o)
 # main_%.o: main_%.cu
