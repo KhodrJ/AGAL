@@ -80,6 +80,7 @@ constexpr int V_CELLMASK_INTERIOR            = 0;    ///< Indicates that the cel
 constexpr int V_CELLMASK_INTERFACE           = 1;    ///< Indicates that the cell participates in fine-to-coarse data transfers.
 constexpr int V_CELLMASK_GHOST               = 2;    ///< Indicates that the cell participates in coarse-to-fine data transfers.
 constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
+constexpr int V_CELLMASK_SOLID_VIS           = -8;   ///< Indicates cell-center lies within the solid separately for visualization.
 constexpr int V_CELLMASK_DUMMY_I             = -2;   ///< Indicates a dummy mask value.
 constexpr int V_CELLMASK_DUMMY_II            = -3;   ///< Indicates another dummy mask value.
 constexpr int V_CELLMASK_DUMMY_III           = -4;   ///< Indicates another dummy mask value.
@@ -92,7 +93,7 @@ constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies e
 constexpr int V_BLOCKMASK_SOLIDB             = -1;   ///< This cell-block lies on the boundary of a solid object.
 constexpr int V_BLOCKMASK_SOLIDA             = -2;   ///< This cell-block is adjacent to the boundary of a solid object.
 constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;   ///< This cell-block is in an indeterminate state (odd).
-constexpr int V_BLOCKMASK_INDETERMINATE_E    = -4;   ///< This cell-block is in an indeterminate state (even).
+constexpr int V_BLOCKMASK_INDETERMINATE_E    = -5;   ///< This cell-block is in an indeterminate state (even).
 constexpr int V_BLOCKMASK_DUMMY_I            = -6;   ///< Indicates a dummy mask value.
 constexpr int V_BLOCKMASK_DUMMY_II           = -7;   ///< Indicates another dummy mask value.
 
@@ -364,6 +365,7 @@ class Mesh
     // - Input/Output.
     int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
     int             N_PRINT_LEVELS_LEGACY   = 1;            ///< Number of grid levels to include when printing (legacy .vthb format).
+    int             N_PRINT_LEVELS_IMAGE    = 1;            ///< Number of grid levels to include when printing (image data .vti format).
     int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
     int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.
     std::string     input_dir;                              ///< Input directory.
@@ -725,6 +727,7 @@ class Mesh
     int             M_Geometry_FillBinned_S1(int i_dev, int L);
     int             M_Geometry_FillBinned_S2(int i_dev, int L);
     int             M_Geometry_FillBinned_S2A(int i_dev);
+    int             M_UpdateMasks_Vis(int i_dev, int L);
     int             M_Geometry_FillBinned3D(int i_dev);
     int             M_IdentifyFaces(int i_dev, int L);
     int             M_Advance_InitTextOutput();
@@ -739,6 +742,7 @@ class Mesh
     int             M_Advance_PrintForces(int i, int iter_s, int START);
     int             M_ComplexGeom();
     int             M_ReportForces(int i_dev, int L, int i, double t, int START);
+    int             M_Print_ImageData(int i_dev, int iter);
     
     //! Sets up a solver loop and advances the grid for a specified number of iterations (equal to @ref P_PRINT * @ref N_PRINT) with mesh refinement/coarsening, rendering and printing every @ref P_REFINE, @ref P_RENDER and @ref P_PRINT iterations, respectively.
     int             M_AdvanceLoop();

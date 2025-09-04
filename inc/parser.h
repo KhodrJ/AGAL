@@ -98,6 +98,7 @@ class Parser
             {"N_PROBE_AVE_START",       100*64},
             {"N_PRINT_LEVELS",          2},
             {"N_PRINT_LEVELS_LEGACY",   2},
+            {"N_PRINT_LEVELS_IMAGE",    2},
             {"P_OUTPUT",                1*64},
             {"N_OUTPUT",                10},
             {"N_OUTPUT_START",          0},

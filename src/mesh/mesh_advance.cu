@@ -88,8 +88,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
                 M_RefineAndCoarsenBlocks(0);
             cudaDeviceSynchronize();
             std::cout << "RefAndCoarsen | L=" << L; toc_simple("",T_US,1);
+            M_UpdateMasks_Vis(0,L);
             
-            solver->S_SetIC(0,L);
+//             solver->S_SetIC(0,L);
             cudaDeviceSynchronize();
         }
         
@@ -351,6 +352,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
         // Print to .vthb file.
         M_Print_VTHB(0, i);
         std::cout << "Finished legacy printing..." << std::endl;
+    }
+    if (N_PRINT_LEVELS_IMAGE > 0)
+    {
+        std::cout << "Writing image data output..." << std::endl;
+        // Print to .vti file.
+        M_Print_ImageData(0, i);
+        std::cout << "Finished image data printing..." << std::endl;
     }
     
     return 0;

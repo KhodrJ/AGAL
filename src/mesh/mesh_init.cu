@@ -52,6 +52,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
     N_PROBE_AVE_START       = parser->params_int["N_PROBE_AVE_START"];
     N_PRINT_LEVELS          = parser->params_int["N_PRINT_LEVELS"];
     N_PRINT_LEVELS_LEGACY   = parser->params_int["N_PRINT_LEVELS_LEGACY"];
+    N_PRINT_LEVELS_IMAGE    = parser->params_int["N_PRINT_LEVELS_IMAGE"];
     P_OUTPUT                = parser->params_int["P_OUTPUT"];
     N_OUTPUT_START          = parser->params_int["N_OUTPUT_START"];
     VOL_I_MIN               = parser->params_int["VOL_I_MIN"]/(4*Nqx);

@@ -14,6 +14,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_InitBins(int make_type, int draw_bins)
     if (init_bins == 0)
     {
         bins = new Bins(this, make_type, draw_bins);
+        //bins.reserve(G_BIN_LEVELS);
+        //for (int L = 0; L < G_BIN_LEVELS; L++)
+        //    bins.emplace_back(this, make_type, draw_bins);
         init_bins = 1;
     }
     else

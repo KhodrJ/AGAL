@@ -27,6 +27,7 @@
 #include "mesh_output.cu"
 #include "mesh_print_uniform.cu"
 #include "mesh_print_vthb.cu"
+#include "mesh_print_image.cu"
 #include "mesh_restart.cu"
 //
 #include "solver_lbm_advance.cu"
@@ -110,7 +111,8 @@ int main(int argc, char *argv[])
     geometry.G_InitBins(static_cast<int>(BinMake::GPU),0);
     
     // Create a mesh.
-    const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
+    //const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
+    const int N_U = 1;
     Mesh<REAL_s,REAL_g,&APc> mesh(&parser, N_U);
     mesh.M_AddGeometry(&geometry);
     

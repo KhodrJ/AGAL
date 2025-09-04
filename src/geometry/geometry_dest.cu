@@ -42,7 +42,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Dest()
     
     // If bins were initialized, destroy them.
     if (init_bins)
-        G_DestBins();
+       G_DestBins();
     
     // Print message.
     std::cout << " o====================================================================================" << std::endl;

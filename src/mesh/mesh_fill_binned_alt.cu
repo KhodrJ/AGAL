@@ -238,7 +238,6 @@ void Cu_Voxelize_V1
     const int G_BIN_DENSITY
 )
 {
-    constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
@@ -323,7 +322,7 @@ void Cu_Voxelize_V1
                 vec3<ufloat_g_t> vi = vp + ray*d;
                 {
                     d = Tabs(d);
-                    if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                    if ((d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
                     {
                         pmin = p;
                         dmin = d;
@@ -826,7 +825,7 @@ void Cu_Voxelize_V2
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_Voxelize_Propagate_WARP
+void Cu_Voxelize_Propagate_Right_WARP
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
@@ -897,17 +896,17 @@ void Cu_Voxelize_Propagate_WARP
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_Voxelize_Propagate
+void Cu_Voxelize_Propagate_Right
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
     const int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
-    const int *__restrict__ cblock_ID_nbr
+    const int *__restrict__ cblock_ID_nbr,
+    const bool is_dense
 )
 {
-    constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
@@ -919,12 +918,12 @@ void Cu_Voxelize_Propagate
         i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Get the left neighbor.
-    int nbr_start_left;
-    if (N_DIM==2) nbr_start_left = cblock_ID_nbr[i_kap_b + 3*n_maxcblocks];
-    else          nbr_start_left = cblock_ID_nbr[i_kap_b + 2*n_maxcblocks];
+    int i_nbr_start_left;
+    if (N_DIM==2) i_nbr_start_left = cblock_ID_nbr[i_kap_b + 3*n_maxcblocks];
+    else          i_nbr_start_left = cblock_ID_nbr[i_kap_b + 2*n_maxcblocks];
     
     // If cell-block Id is valid.
-    if (i_kap_b > -1 && nbr_start_left < 0)
+    if (i_kap_b > -1 && i_nbr_start_left < 0)
     {
         // Compute cell coordinates.
         int I = threadIdx.x % 4;
@@ -937,32 +936,106 @@ void Cu_Voxelize_Propagate
         s_ID_mask[threadIdx.x] = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
         int status = s_ID_mask[3 + 4*J + 16*K];
         
-        // Traverse along +x and update masks.
-        int nbr_right = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
+        // Get first neighbor block in the other direction now.
+        int i_nbr_right = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
+        
+        // Traverse along +x/-x and update masks.
         int k = 0;
-        while (nbr_right > -1 && k < 1000)
+        while (i_nbr_right > -1 && k < 1000)
         {
             // Read current cell-block data. Switch the cells to solid if those at the -x edge were solid (i.e., based on status values).
-            int cellmask = cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x];
-            //if (status == V_CELLMASK_SOLID && cellmask == V_CELLMASK_INTERIOR)
+            int cellmask = cells_ID_mask[i_nbr_right*M_CBLOCK + threadIdx.x];
             if (status == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
                 cellmask = V_CELLMASK_SOLID;
             
             // Update shared memory array and status. Then, switch guard cells back to interior cells before writing.
             s_ID_mask[threadIdx.x] = cellmask;
             status = s_ID_mask[3 + 4*J + 16*K];
+            if (is_dense && cellmask == V_CELLMASK_DUMMY_I)
+                cellmask = V_CELLMASK_INTERIOR;
+            
+            // Write data to current cell-block.
+            cells_ID_mask[i_nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
+            
+            // Get next neighbor block.
+            i_nbr_right = cblock_ID_nbr[i_nbr_right + 1*n_maxcblocks];
+            k++;
+        }
+        
+        if (k == 1000)
+            printf("MAX REACHED DURING PROPAGATION...\n");
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+__global__
+void Cu_Voxelize_Propagate_Left
+(
+    const int n_ids_idev_L,
+    const int *__restrict__ id_set_idev_L,
+    const int n_maxcblocks,
+    int *__restrict__ cells_ID_mask,
+    int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_nbr
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    __shared__ int s_D[M_TBLOCK];
+    __shared__ int s_ID_mask[M_TBLOCK];
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // Get the right neighbor.
+    int i_nbr_start_right = cblock_ID_nbr[i_kap_b + 1*n_maxcblocks];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1 && i_nbr_start_right < 0)
+    {
+        // Compute cell coordinates.
+        int I = threadIdx.x % 4;
+        int J = (threadIdx.x / 4) % 4;
+        int K = 0;
+        if (N_DIM==3)
+            K = (threadIdx.x / 4) / 4;
+        
+        // First read of cell masks.
+        s_ID_mask[threadIdx.x] = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+        int status = s_ID_mask[0 + 4*J + 16*K];
+        
+        // Get first neighbor block in the other direction now.
+        int i_nbr_left = -1;
+        if (N_DIM == 2) i_nbr_left = cblock_ID_nbr[i_kap_b + 3*n_maxcblocks];
+        else            i_nbr_left = cblock_ID_nbr[i_kap_b + 2*n_maxcblocks];
+        
+        // Traverse along +x/-x and update masks.
+        int k = 0;
+        while (i_nbr_left > -1 && k < 1000)
+        {
+            // Read current cell-block data. Switch the cells to solid if those at the -x edge were solid (i.e., based on status values).
+            int cellmask = cells_ID_mask[i_nbr_left*M_CBLOCK + threadIdx.x];
+            if (status == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                cellmask = V_CELLMASK_SOLID;
+            
+            // Update shared memory array and status. Then, switch guard cells back to interior cells before writing.
+            s_ID_mask[threadIdx.x] = cellmask;
+            status = s_ID_mask[0 + 4*J + 16*K];
             if (cellmask == V_CELLMASK_DUMMY_I)
                 cellmask = V_CELLMASK_INTERIOR;
             
             // Write data to current cell-block.
-            cells_ID_mask[nbr_right*M_CBLOCK + threadIdx.x] = cellmask;
+            cells_ID_mask[i_nbr_left*M_CBLOCK + threadIdx.x] = cellmask;
             
             // Get next neighbor block.
-            nbr_right = cblock_ID_nbr[nbr_right + 1*n_maxcblocks];
+            if (N_DIM == 2) i_nbr_left = cblock_ID_nbr[i_nbr_left + 3*n_maxcblocks];
+            else            i_nbr_left = cblock_ID_nbr[i_nbr_left + 2*n_maxcblocks];
             k++;
         }
         
-        if (k == 100)
+        if (k == 1000)
             printf("MAX REACHED DURING PROPAGATION...\n");
     }
 }
@@ -1048,6 +1121,36 @@ void Cu_Voxelize_UpdateMasks
         // If at least one cell is solid, mark this block.
         if (threadIdx.x==0 && s_D[0]>0)
             cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+__global__
+void Cu_Voxelize_UpdateMasks_Vis
+(
+    const int n_ids_idev_L,
+    const int *__restrict__ id_set_idev_L,
+    int *__restrict__ cells_ID_mask,
+    const int *__restrict__ cblock_ID_nbr_child
+)
+{
+    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    __shared__ int s_D[M_TBLOCK];
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        // Load cell mask values.
+        int cellmask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+        bool has_child = cblock_ID_nbr_child[i_kap_b] < 0;
+        
+        if (has_child && cellmask == V_CELLMASK_SOLID)
+            cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID_VIS;
     }
 }
 
@@ -1591,6 +1694,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
         //int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
         int Nprop_d = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For satisfying the near-wall distance criterion.
         bool hit_max = L==MAX_LEVELS-1;
+        int Lbin = std::min(L, geometry->bins->n_levels-1);
+        std::cout << "Using bin level " << Lbin << "..." << std::endl;
         
         // Voxelize the solid, filling in all solid cells.
         tic_simple("");
@@ -1599,22 +1704,35 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L],
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
             geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_X, geometry->c_geom_f_face_Xt,
-            geometry->bins->c_binned_face_ids_n_3D[0], geometry->bins->c_binned_face_ids_N_3D[0], geometry->bins->c_binned_face_ids_3D[0], geometry->bins->n_bin_density[0]
+            geometry->bins->c_binned_face_ids_n_3D[Lbin], geometry->bins->c_binned_face_ids_N_3D[Lbin], geometry->bins->c_binned_face_ids_3D[Lbin], geometry->bins->n_bin_density[Lbin]
         );
         cudaDeviceSynchronize();
-        thrust::device_ptr<int> mask_ptr = thrust::device_pointer_cast(c_cells_ID_mask[i_dev]);
-        std::cout << "Counted " << thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID)) << " solid cells..." << std::endl;
         std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);
+        
+        thrust::device_ptr<int> mask_ptr = thrust::device_pointer_cast(c_cells_ID_mask[i_dev]);
+        int ns1 = thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID));
         
         // Propagate preliminary solid masks within the interior from both sides.
         tic_simple("");
-        Cu_Voxelize_Propagate<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_Voxelize_Propagate_Right<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
+            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev],
+            L==N_LEVEL_START
         );
         cudaDeviceSynchronize();
-        std::cout << "Counted " << thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID)) << " solid cells..." << std::endl;
-        std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate"; toc_simple("",T_US,1);
+        std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate (+x)"; toc_simple("",T_US,1);
+        if (L > N_LEVEL_START)
+        {
+            tic_simple("");
+            Cu_Voxelize_Propagate_Left<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+                n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
+                c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
+            );
+            cudaDeviceSynchronize();
+            std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate (-x)"; toc_simple("",T_US,1);
+        }
+        
+        int ns2 = thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID));
         
         // Propagate preliminary solid masks within the interior from both sides.
         tic_simple("");
@@ -1663,6 +1781,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
         );
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", Finalize"; toc_simple("",T_US,1);
+        
+        
+        std::cout << "Counted (pre) " << ns1 << " solid cells..." << std::endl;
+        std::cout << "Counted (post) " << ns2 << " solid cells..." << std::endl;
     }
     
     return 0;
@@ -1684,13 +1806,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
         // Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
         cudaDeviceSynchronize();
         tic_simple("");
-        Cu_MarkBlocks_CheckMasks<AP> <<<(M_LBLOCK+n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_MarkBlocks_CheckMasks<AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
             c_tmp_1[i_dev]
         );
         cudaDeviceSynchronize();
-        std::cout << "MESH_UPDATEMASKS | L=" << L << ", UpdateMasks"; toc_simple("",T_US,1);
+        std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks"; toc_simple("",T_US,1);
     }
     
     return 0;
@@ -1743,6 +1865,20 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
         cudaMemGetInfo(&free_t, &total_t);
         std::cout << "[-] After allocations:\n";
         std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
+    }
+    
+    return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
+{
+    if (n_ids[i_dev][L] > 0)
+    {
+        Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
+            c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
+        );
     }
     
     return 0;

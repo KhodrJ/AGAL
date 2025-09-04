@@ -122,7 +122,8 @@ SRC_MESH = mesh_init.cu\
       mesh_restart.cu\
       mesh_output.cu\
       mesh_print_uniform.cu\
-      mesh_print_vthb.cu
+      mesh_print_vthb.cu\
+      mesh_print_image.cu
 OBJ_MESH = $(SRC_MESH:.cu=.o)
 # mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
 # 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<

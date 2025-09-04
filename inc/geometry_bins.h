@@ -41,6 +41,9 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     int n_levels = 1;
     int n_max_levels_wall = 1;
     int Nx;
+    int Ny;
+    int Nz;
+    int *Nxi_L;
     ufloat_g_t Lx;
     ufloat_g_t Ly;
     ufloat_g_t Lz;
@@ -97,10 +100,13 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         Ly = geometry->parser->params_dbl["L_fy"]*Lx;
         Lz = geometry->parser->params_dbl["L_fz"]*Lx;
         Nx = geometry->parser->params_int["Nx"];
+        Ny = (int)(Nx*(Ly/Lx));
+        Nz = (int)(Nx*(Lz/Lx));
         n_bin_density_root = geometry->parser->params_int["G_BIN_DENSITY"];
         n_bin_approach = geometry->parser->params_int["G_BIN_APPROACH"];
         n_levels = geometry->parser->params_int["G_BIN_LEVELS"];
         n_max_levels_wall = geometry->parser->params_int["MAX_LEVELS_WALL"];
+        Nxi_L = new int[3*n_levels];
         
         // Derived parameters.
         dx = Lx/static_cast<ufloat_g_t>(Nx);
@@ -121,6 +127,9 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         Lx0g_vec[0 + 0*n_levels] = Lx/static_cast<ufloat_g_t>(n_bin_density_root);
         Lx0g_vec[0 + 1*n_levels] = Ly/static_cast<ufloat_g_t>(n_bin_density_root);
         Lx0g_vec[0 + 2*n_levels] = Lz/static_cast<ufloat_g_t>(n_bin_density_root);
+        Nxi_L[0 + 0*n_levels] = Nx;
+        Nxi_L[0 + 1*n_levels] = Ny;
+        Nxi_L[0 + 2*n_levels] = Nz;
         for (int L = 1; L < n_levels; L++)
         {
             n_bin_density[L] = n_bin_density[L-1]*2;
@@ -128,6 +137,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
             {
                 dxf_vec[L + d*n_levels] = dxf_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
                 Lx0g_vec[L + d*n_levels] = Lx0g_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
+                Nxi_L[L + d*n_levels] = Nxi_L[(L-1) + d*n_levels]*2;
             }
         }
         
