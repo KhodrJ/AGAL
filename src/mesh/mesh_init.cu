@@ -83,7 +83,16 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         N_PRINT_LEVELS = MAX_LEVELS;
     if (N_PRINT_LEVELS_LEGACY > MAX_LEVELS)
         N_PRINT_LEVELS_LEGACY = MAX_LEVELS;
+    if (N_PRINT_LEVELS_IMAGE > MAX_LEVELS)
+        N_PRINT_LEVELS_IMAGE = MAX_LEVELS;
     
+    // If only one grid level, revert to image data printing.
+    if (MAX_LEVELS == 1)
+    {
+        N_PRINT_LEVELS_IMAGE = 1;
+        N_PRINT_LEVELS = 0;
+        N_PRINT_LEVELS_LEGACY = 0;
+    }
     
     // Make the output directory if it doesn't already exist.
     if (output_dir.back() != '/')

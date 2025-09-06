@@ -1785,6 +1785,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S1(int i_dev, int L)
         
         std::cout << "Counted (pre) " << ns1 << " solid cells..." << std::endl;
         std::cout << "Counted (post) " << ns2 << " solid cells..." << std::endl;
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;
@@ -1813,6 +1815,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2(int i_dev, int L)
         );
         cudaDeviceSynchronize();
         std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks"; toc_simple("",T_US,1);
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;
@@ -1865,6 +1869,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_FillBinned_S2A(int i_dev)
         cudaMemGetInfo(&free_t, &total_t);
         std::cout << "[-] After allocations:\n";
         std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;
@@ -1879,6 +1885,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
             c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
         );
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;

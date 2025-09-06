@@ -60,7 +60,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
     // If starting on a deeper level, but not uniform:
     // - Refine the root grid to the deeper level.
     // - Then, perform additional near-wall refinement starting on the deeper level.
-    //if (MAX_LEVELS>1 && (MAX_LEVELS!=N_LEVEL_START+1))
     {
         // Initial uniform refinement up to N_LEVEL_START. Initialize only this level.
         for (int L = 0; L < N_LEVEL_START; L++)
@@ -114,21 +113,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
             M_FreezeRefinedCells(0);
         //solver->S_Debug(0,0,0);
     }
-    
-    // If starting on a deeper level, but uniform:
-    // - Refine only to the deeper level.
-    // - Do not refine further.
-//     if (MAX_LEVELS==N_LEVEL_START+1)
-//     {
-//         // Uniform refinement up to N_LEVEL_START. Initialize only this level.
-//         for (int L = 0; L < MAX_LEVELS-1; L++)
-//         {
-//             std::cout << "Refining to get to starting level [L=" << L << "]..." << std::endl;
-//             M_ComputeRefCriteria(0,L,V_MESH_REF_UNIFORM);
-//             M_RefineAndCoarsenBlocks(0);
-//         }
-//         solver->S_SetIC(0,N_LEVEL_START);
-//     }
     
     return 0;
 }
@@ -315,17 +299,17 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     // | Print the solution to the output directory.
     // o====================================================================================
     
-    std::cout << "Printing after iteration " << i << " (t = " << i*dxf_vec[N_LEVEL_START] << ")..." << std::endl;
+    std::cout << "Printing after iteration " << i << " (t = " << i*dxf_vec[N_LEVEL_START] << ")..." << std::endl;  
     
     // Ensure data is valid on all cells. Global average, then interpolate to ghost cells.
     if (MAX_LEVELS > 1)
     {
-        for (int L = MAX_LEVELS-2; L >= 0; L--)
-            solver->S_Average(0,L,V_AVERAGE_GRID);
-        for (int L = 0; L < MAX_LEVELS-1; L++)
-            solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
-        for (int L = 0; L < MAX_LEVELS; L++)
-            solver->S_RefreshVariables(0,L);
+        //for (int L = MAX_LEVELS-2; L >= 0; L--)
+        //    solver->S_Average(0,L,V_AVERAGE_GRID);
+        //for (int L = 0; L < MAX_LEVELS-1; L++)
+        //    solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+        //for (int L = 0; L < MAX_LEVELS; L++)
+        //    solver->S_RefreshVariables(0,L);
     }
     
     // Retrieve data from the GPU.
@@ -350,7 +334,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     {
         std::cout << "Writing legacy output..." << std::endl;
         // Print to .vthb file.
-        M_Print_VTHB(0, i);
+        M_Print_VTHB_Patch(0, i);
         std::cout << "Finished legacy printing..." << std::endl;
     }
     if (N_PRINT_LEVELS_IMAGE > 0)

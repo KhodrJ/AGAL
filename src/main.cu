@@ -27,6 +27,7 @@
 #include "mesh_output.cu"
 #include "mesh_print_uniform.cu"
 #include "mesh_print_vthb.cu"
+#include "mesh_print_vthb_patch.cu"
 #include "mesh_print_image.cu"
 #include "mesh_restart.cu"
 //

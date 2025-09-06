@@ -50,7 +50,7 @@ LIBS = -lcuda\
 
 # Fixed solver parameters (defaults specified).
 N_CASE?=0
-P_SHOW_REFINE?=0
+P_SHOW_REFINE?=1
 P_SHOW_ADVANCE?=1
 N_REGEN?=0
 # OPTS = -DINPUT_CONFMAKE\
@@ -123,6 +123,7 @@ SRC_MESH = mesh_init.cu\
       mesh_output.cu\
       mesh_print_uniform.cu\
       mesh_print_vthb.cu\
+      mesh_print_vthb_patch.cu\
       mesh_print_image.cu
 OBJ_MESH = $(SRC_MESH:.cu=.o)
 # mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h

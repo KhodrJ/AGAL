@@ -106,13 +106,13 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         n_bin_approach = geometry->parser->params_int["G_BIN_APPROACH"];
         n_levels = geometry->parser->params_int["G_BIN_LEVELS"];
         n_max_levels_wall = geometry->parser->params_int["MAX_LEVELS_WALL"];
-        Nxi_L = new int[3*n_levels];
         
         // Derived parameters.
         dx = Lx/static_cast<ufloat_g_t>(Nx);
         dy = Ly/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
         dz = Lz/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
         n_bin_density = new int[n_levels];
+        Nxi_L = new int[3*n_levels];
         dxf_vec = new ufloat_g_t[3*n_levels];
         Lx0g_vec = new ufloat_g_t[3*n_levels];
         

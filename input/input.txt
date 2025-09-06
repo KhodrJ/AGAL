@@ -1,6 +1,6 @@
 # MESH
-MAX_LEVELS_WALL                 1
-MAX_LEVELS_INTERIOR             1
+MAX_LEVELS_WALL                 4
+MAX_LEVELS_INTERIOR             4
 N_LEVEL_START                   0
 L_c                             1.0
 L_fy                            1.0
@@ -9,7 +9,7 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              400
+Nx                              64
 N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
@@ -18,10 +18,10 @@ G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
 G_BIN_OVERLAP                   10
-G_BIN_DENSITY                   100
+G_BIN_DENSITY                   16
 G_BIN_FRAC                      1
 G_BIN_APPROACH                  1
-G_BIN_LEVELS                    1
+G_BIN_LEVELS                    4
 
 # SOLVER
 v0                              5e-5
@@ -68,8 +68,8 @@ N_PROBE_AVE_START               2
 I_DIR_NAME                      ../input/
 P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  0
-N_PRINT_LEVELS_LEGACY           0
-N_PRINT_LEVELS_IMAGE            1
+N_PRINT_LEVELS_LEGACY           4
+N_PRINT_LEVELS_IMAGE            0
 N_OUTPUT_START                  0*Nx
 P_OUTPUT                        10*Nx
 

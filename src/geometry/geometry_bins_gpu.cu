@@ -222,7 +222,7 @@ void Cu_ComputeVoxelRayIndicators_V1
             int izmin = static_cast<int>( (Tmin(Tmin(v1.z,v2.z),v3.z)) * Nz);
             int ixmax = static_cast<int>( (Tmax(Tmax(v1.x,v2.x),v3.x)) * Nx);
             int iymax = static_cast<int>( (Tmax(Tmax(v1.y,v2.y),v3.y)) * Ny);
-            int izmax = static_cast<int>( (Tmax(Tmax(v1.z,v2.z),v3.z)) * Nz);            
+            int izmax = static_cast<int>( (Tmax(Tmax(v1.z,v2.z),v3.z)) * Nz);
             
             // Loop over all possible cells in the bounding box.
             for (int p = 1; p < N_Q_max; p++)
@@ -310,7 +310,7 @@ void Cu_ComputeBoundingBoxLimits2D
     int map_val = kap;
     
     // If using rays, get the current indicator value.
-    if (use_ray)
+    if (use_ray && kap < n_faces)
         map_val = ray_indicators[kap];
     
     if (kap < n_faces && map_val > -1)
@@ -459,7 +459,9 @@ void Cu_ComputeBoundingBoxLimits3D
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     int map_val = kap;
-    if (use_ray)
+    
+    // If using rays, get the current indicator value.
+    if (use_ray && kap < n_faces)
         map_val = ray_indicators[kap];
     
     if (kap < n_faces && map_val > -1)
@@ -690,7 +692,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         if (use_ray)
             Cu_ResetToValue<<<(M_BLOCK+n_faces-1)/M_BLOCK, M_BLOCK>>>(n_faces, c_ray_indicators, -1);
         if (use_ray && use_map)
-            Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
+            Cu_ResetToValue<<<(M_BLOCK+n_faces-1)/M_BLOCK, M_BLOCK>>>(n_faces, c_indicator_map, -1);
+        Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_n_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_N_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_i, -1);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_ii, -1);
@@ -707,6 +710,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> c_tmp_b_i_ptr = thrust::device_pointer_cast(c_tmp_b_i);
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );
         
         // Load connectivity arrays in constant GPU memory if not already done.
         if (!init_conn)
@@ -728,6 +732,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         if (use_ray)
         {
+            std::cout << "RAY COMPUTATION:" << std::endl;
             // STEP 0A: Traverse faces and identify the bins they should go in.
             tic_simple("");
             cudaDeviceSynchronize();
@@ -1047,6 +1052,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         
         // Free temporary arrays.
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );
         if (use_ray)
             cudaFree(c_ray_indicators);
         if (use_ray && use_map)
