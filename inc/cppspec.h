@@ -74,6 +74,7 @@
 #include "vtkRenderWindow.h"
 #include "vtkRenderer.h"
 #include "vtkWindowToImageFilter.h"
+#include "vtkGhostCellsGenerator.h"
 
 
 struct ArgsPack

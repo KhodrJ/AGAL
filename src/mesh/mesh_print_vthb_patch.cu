@@ -57,7 +57,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             Nxp_L[d] = Nxi_L[d]/M_PATCH;
             n_cells_L *= Nxi_L[d];
         }
-        std::cout << "L=" << L << " | Precomputed resolution (1)..." << std::endl;
         
         // Loop over blocks on this level and add to patches.
         for (int kap = 0; kap < n_ids[i_dev][L]; kap++)
@@ -79,12 +78,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             if (N_DIM==3)
                 i_patch_z = static_cast<int>(z * Nxp_L[2]);
             int i_patch_g = i_patch_x + Nxp_L[0]*i_patch_y + Nxp_L[0]*Nxp_L[1]*i_patch_z;
-            std::cout << "L=" << L << " | Added block (ik=" << i_kap_b << ",x=" << x << ",y=" << y << ",z=" << z << ",p=" << i_patch_g << ")..." << std::endl;
             
             // Add this block to the appropriate patch by mapping the patch global index.
             patch2patch[L][i_patch_g].push_back(kap);
         }
-        std::cout << "L=" << L << " | Finished adding blocks to patches..." << std::endl;
         
         // Adjust the number of patches on this level.
         patches_per_level[L] = patch2patch[L].size();
@@ -107,6 +104,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
     for (int L = 0; L < std::min(n_levels_nonzero_patches, N_PRINT_LEVELS_LEGACY); L++)
     {
         // Precompute adjusted resolutions (again; yes, I'm lazy).
+        std::cout << "Filling in level " << L << "..." << std::endl;
         int n_cells_L = 1;
         int Nxi_L[3] = {1,1,1};
         int Nxp_L[3] = {1,1,1};
@@ -117,7 +115,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             Nxp_L[d] = Nxi_L[d]/M_PATCH;
             n_cells_L *= Nxi_L[d];
         }
-        std::cout << "L=" << L << " | Precomputed resolution (2)..." << std::endl;
         
         // Construct spacing array for level L.
         double dxf_L = (double)dxf_vec[L];
@@ -133,7 +130,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
         {
             // pkap.first is the global index.
             // pkap.second is the vector of block Ids in that patch.
-            std::cout << "L=" << L << ", patch=" << counter << " [" << pkap.first << "] | Starting..." << std::endl;
             
             // Get global coordinates based on global index.
             int i_patch_x = pkap.first % Nxp_L[0];
@@ -153,7 +149,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             grid_kap->SetOrigin(origin_kap);
             grid_kap->SetSpacing(h_L_kap);
             grid_kap->SetDimensions(n_dim_lattice);
-            std::cout << "L=" << L << ", patch=" << counter << " | Initialized..." << std::endl;
             
             // Define VTK arrays.
                 // Debug.
@@ -193,8 +188,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             data_kap_w->SetNumberOfTuples(M_PATCH_VOL);
             
             // By default, blank all cells.
-            for (int k = 0; k < M_PATCH_VOL; k++)
-                grid_kap->BlankCell(k);
+            //for (int k = 0; k < M_PATCH_VOL; k++)
+            //    grid_kap->BlankCell(k);
             
             // Now fill the patch with block data.
             for (const int &kap: pkap.second)
@@ -237,7 +232,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
                     int iy = static_cast<int>(y_t * Nxi_L[1]) % M_PATCH;
                     int iz = static_cast<int>(z_t * Nxi_L[2]) % M_PATCH;
                     int i_global = ix + M_PATCH*iy + M_PATCH*M_PATCH*iz;
-                    grid_kap->UnBlankCell(i_global);
+                    //grid_kap->UnBlankCell(i_global);
                     //std::cout << "L=" << L << ", patch=" << counter << " | Precomputed resolution (1)..." << std::endl;
                     
                     // Debug.
@@ -284,7 +279,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
                     );
                 }
             }
-            std::cout << "L=" << L << ", patch=" << counter << " | Added blocks..." << std::endl;
             
             // Add the data arrays to the uniform grid.
             grid_kap->GetCellData()->AddArray(data_kap_ref);
@@ -294,13 +288,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             grid_kap->GetCellData()->AddArray(data_kap_sc);
             grid_kap->GetCellData()->AddArray(data_kap_v);
             grid_kap->GetCellData()->AddArray(data_kap_w);
-            std::cout << "L=" << L << ", patch=" << counter << " | Added data arrays..." << std::endl;
             
             // Create the vtkAMRBox and insert it into AMR object.
             vtkAMRBox box_kap(origin_kap, n_dim_lattice, h_L_kap, data->GetOrigin(), data->GetGridDescription());
             data->SetAMRBox(L, counter, box_kap);
             data->SetDataSet(L, counter, grid_kap);
-            std::cout << "L=" << L << ", patch=" << counter << " | Added to the AMR data set..." << std::endl;
             counter++;
         }
     }
@@ -309,8 +301,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
     // Write the AMR object.
     std::cout << "Finished building VTK dataset, writing..." << std::endl;
     std::string fileName = output_dir + std::string("out_") + std::to_string(iter+1) + ".vthb";
-    vtkNew<vtkXMLHierarchicalBoxDataWriter> writer;
+    //vtkNew<vtkXMLHierarchicalBoxDataWriter> writer;
+    vtkNew<vtkXMLUniformGridAMRWriter> writer;
     writer->SetInputData(data);
+    //writer->SetInputData(data_w_ghosts);
     writer->SetFileName(fileName.c_str());
     writer->Write();
     std::cout << "Finished writing VTK dataset..." << std::endl;

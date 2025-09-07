@@ -1,5 +1,5 @@
 # Library paths.
-VTK_VER = 9.2
+VTK_VER = 9.5
 EIG_VER = 3.4.0
 #|
 #Use this for personal installation.
@@ -8,8 +8,8 @@ EIG_VER = 3.4.0
 #EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this on the Mist cluster.
-#VTK_INC ?= ../lib/vtk/include/vtk-$(VTK_VER)
-#VTK_LIB ?= ../lib/vtk/lib64/
+#VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk/vtk-$(VTK_VER)/lib64/
 #EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this on the Narval cluster.
@@ -18,10 +18,10 @@ EIG_VER = 3.4.0
 #EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this for my personal laptop build.
-#VTK_INC ?= ../lib/vtk/include/vtk-$(VTK_VER)
-#VTK_LIB ?= ../lib/vtk/lib/
-VTK_INC ?= ../../AGAL-latest/lib/vtk/include/vtk-$(VTK_VER)/
-VTK_LIB ?= ../../AGAL-latest/lib/vtk/lib/
+#VTK_INC ?= ../lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk-$(VTK_VER)/lib/
+VTK_INC ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)/
+VTK_LIB ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/lib/
 EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
 LIBS = -lcuda\
        -lgomp\
@@ -42,7 +42,8 @@ LIBS = -lcuda\
        -lvtkRenderingFreeType-$(VTK_VER) \
        -lvtkRenderingGL2PSOpenGL2-$(VTK_VER) \
        -lvtkRenderingOpenGL2-$(VTK_VER)\
-       -lvtkImagingCore-$(VTK_VER)
+       -lvtkImagingCore-$(VTK_VER)\
+       -lvtkFiltersParallelDIY2-$(VTK_VER)
 
 
 
