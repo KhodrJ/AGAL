@@ -1,3 +1,10 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
 template <typename ufloat_t>
 __host__ __device__ __forceinline__
 ufloat_t Cu_Interp2D(int i, ufloat_t *s_F)

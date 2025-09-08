@@ -20,7 +20,7 @@
 #include "mesh_advance.cu"
 #include "mesh_amr.cu"
 #include "mesh_comm.cu"
-#include "mesh_fill_binned_alt.cu"
+#include "mesh_voxelizer.cu"
 #include "mesh_criterion.cu"
 #include "mesh_dest.cu"
 #include "mesh_init.cu"

@@ -116,8 +116,11 @@ SRC_MESH = mesh_init.cu\
       mesh_dest.cu\
       mesh_comm.cu\
       mesh_criterion.cu\
-      mesh_fill_binned.cu\
-      mesh_fill_binned_alt.cu\
+      mesh_voxelizer.cu\
+      mesh_voxelizer_voxelize.cu\
+      mesh_voxelizer_propagate.cu\
+      mesh_voxelizer_refine.cu\
+      mesh_voxelizer_masks.cu\
       mesh_amr.cu\
       mesh_advance.cu\
       mesh_restart.cu\

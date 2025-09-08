@@ -724,9 +724,9 @@ class Mesh
     int             M_ComputeRefCriteria(int i_dev, int L, int var);
     int             M_ComputeRefCriteria_Geometry_Naive(int i_dev, int L);
     int             M_ComputeRefCriteria_Geometry_Binned(int i_dev, int L);
-    int             M_Geometry_FillBinned_S1(int i_dev, int L);
-    int             M_Geometry_FillBinned_S2(int i_dev, int L);
-    int             M_Geometry_FillBinned_S2A(int i_dev);
+    int             M_Geometry_Voxelize_S1(int i_dev, int L);
+    int             M_Geometry_Voxelize_S2(int i_dev, int L);
+    int             M_Geometry_Voxelize_S3(int i_dev);
     int             M_UpdateMasks_Vis(int i_dev, int L);
     int             M_Geometry_FillBinned3D(int i_dev);
     int             M_IdentifyFaces(int i_dev, int L);
@@ -740,7 +740,6 @@ class Mesh
     int             M_Advance_ProbeAverage(int i, int iter_s, int &N_iter_ave);
     int             M_Advance_PrintData(int i, int iter_s);
     int             M_Advance_PrintForces(int i, int iter_s, int START);
-    int             M_ComplexGeom();
     int             M_ReportForces(int i_dev, int L, int i, double t, int START);
     int             M_Print_VTHB_Patch(int i_dev, int iter);
     int             M_Print_ImageData(int i_dev, int iter);

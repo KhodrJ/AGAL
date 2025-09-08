@@ -79,7 +79,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
             
             // Fill solid cells and mark blocks nearby.
             if (geometry_init)
-                M_Geometry_FillBinned_S1(0,L);
+                M_Geometry_Voxelize_S1(0,L);
 
             // Invoke refinement and coarsening routine.
             tic_simple("");
@@ -97,8 +97,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         if (geometry_init)
         {
             for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-                M_Geometry_FillBinned_S2(0,L);
-            M_Geometry_FillBinned_S2A(0);
+                M_Geometry_Voxelize_S2(0,L);
+            M_Geometry_Voxelize_S3(0);
         }
         
         // Cell-blocks near the wall construct their list of faces.
