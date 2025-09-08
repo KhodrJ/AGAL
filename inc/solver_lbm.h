@@ -159,6 +159,11 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     int S_IdentifyFaces(int i_dev, int L);
     int S_ComputePressureOnWall(int i_dev, int L, int var);
     
+    int S_Average(int i_dev, int L, int var);
+    int S_Interpolate_Linear(int i_dev, int L, int var);
+    int S_Interpolate_Cubic(int i_dev, int L, int var);
+    int S_Debug_DrawGeometry(int i_dev, int L);
+    
     // o====================================================================================
     // | Routines required from base class.
     // o====================================================================================
@@ -177,50 +182,21 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     // o====================================================================================
     
     // Interpolation.
-    int S_Interpolate_Linear_D2Q9(int i_dev, int L, int var);
-    int S_Interpolate_Linear_D3Q19(int i_dev, int L, int var);
-    int S_Interpolate_Linear_D3Q27(int i_dev, int L, int var);
-    int S_Interpolate_Quadratic_D2Q9(int i_dev, int L, int var); // TODO
-    int S_Interpolate_Quadratic_D3Q19(int i_dev, int L, int var); // TODO
-    int S_Interpolate_Quadratic_D3Q27(int i_dev, int L, int var); // TODO
-    int S_Interpolate_Cubic_D2Q9(int i_dev, int L, int var);
-    int S_Interpolate_Cubic_D3Q19(int i_dev, int L, int var);
-    int S_Interpolate_Cubic_D3Q27(int i_dev, int L, int var);
-    int S_Interpolate_Linear_Original_D2Q9(int i_dev, int L, int var);
-    int S_Interpolate_Linear_Original_D3Q19(int i_dev, int L, int var);
-    int S_Interpolate_Linear_Original_D3Q27(int i_dev, int L, int var);
-    int S_Interpolate_Cubic_Original_D2Q9(int i_dev, int L, int var);
-    int S_Interpolate_Cubic_Original_D3Q19(int i_dev, int L, int var);
-    int S_Interpolate_Cubic_Original_D3Q27(int i_dev, int L, int var);
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D2Q9 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D2Q9(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q19 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D3Q19(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q27 && IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Linear_Original_D3Q27(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D2Q9 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D2Q9(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q19 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D3Q19(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, int IM=LP->IM, typename std::enable_if<(VS==VS_D3Q27 && IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) { S_Interpolate_Cubic_Original_D3Q27(i_dev, L, var); return 0; }
-    int S_Interpolate(int i_dev, int L, int var) { S_InterpolateW(i_dev, L, var); return 0; }
-    
-    // Averaging.
-    int S_Average_D2Q9(int i_dev, int L, int var);
-    int S_Average_D3Q19(int i_dev, int L, int var);
-    int S_Average_D3Q27(int i_dev, int L, int var);
-    int S_Average_Original_D2Q9(int i_dev, int L, int var);
-    int S_Average_Original_D3Q19(int i_dev, int L, int var);
-    int S_Average_Original_D3Q27(int i_dev, int L, int var);
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D2Q9(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D3Q19(i_dev, L, var); return 0; }
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_AverageW(int i_dev, int L, int var) { S_Average_Original_D3Q27(i_dev, L, var); return 0; }
-    int S_Average(int i_dev, int L, int var) { S_AverageW(i_dev, L, var); return 0; }
-    
-    // DEBUG: Draw geometry.
-    int S_Debug_DrawGeometry_D2Q9(int i_dev, int L);
-    int S_Debug_DrawGeometry_D3Q19(int i_dev, int L);
-    int S_Debug_DrawGeometry_D3Q27(int i_dev, int L);
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D2Q9), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D2Q9(i_dev, L); return 0; }
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q19), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D3Q19(i_dev, L); return 0; }
-    template <int VS=LP->VS, typename std::enable_if<(VS==VS_D3Q27), int>::type = 0> int S_Debug_DrawGeometry(int i_dev, int L) { S_Debug_DrawGeometry_D3Q27(i_dev, L); return 0; }
-    
-    
+    template <int IM=LP->IM, typename std::enable_if<(IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var)
+    {
+        S_Interpolate_Linear(i_dev, L, var);
+        return 0;
+    }
+    template <int IM=LP->IM, typename std::enable_if<(IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) 
+    {
+        S_Interpolate_Cubic(i_dev, L, var);
+        return 0;
+    }
+    int S_Interpolate(int i_dev, int L, int var)
+    {
+        S_InterpolateW(i_dev, L, var);
+        return 0;
+    }
     
     Solver_LBM(Mesh<ufloat_t,ufloat_g_t,AP> *mesh_) : Solver<ufloat_t,ufloat_g_t,AP>(mesh_)
     {

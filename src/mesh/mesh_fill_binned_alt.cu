@@ -839,7 +839,6 @@ void Cu_Voxelize_Propagate_Right_WARP
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
@@ -855,7 +854,7 @@ void Cu_Voxelize_Propagate_Right_WARP
     if (i_kap_b > -1 && nbr_start_left < 0)
     {
         // Compute cell coordinates.
-        int I = threadIdx.x % 4;
+        //int I = threadIdx.x % 4;
         int J = (threadIdx.x / 4) % 4;
         int K = 0;
         if (N_DIM==3)
@@ -910,7 +909,6 @@ void Cu_Voxelize_Propagate_Right
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
@@ -926,7 +924,7 @@ void Cu_Voxelize_Propagate_Right
     if (i_kap_b > -1 && i_nbr_start_left < 0)
     {
         // Compute cell coordinates.
-        int I = threadIdx.x % 4;
+        //int I = threadIdx.x % 4;
         int J = (threadIdx.x / 4) % 4;
         int K = 0;
         if (N_DIM==3)
@@ -982,7 +980,6 @@ void Cu_Voxelize_Propagate_Left
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_mask[M_TBLOCK];
     
     int i_kap_b = -1;
@@ -996,7 +993,7 @@ void Cu_Voxelize_Propagate_Left
     if (i_kap_b > -1 && i_nbr_start_right < 0)
     {
         // Compute cell coordinates.
-        int I = threadIdx.x % 4;
+        //int I = threadIdx.x % 4;
         int J = (threadIdx.x / 4) % 4;
         int K = 0;
         if (N_DIM==3)
@@ -1134,9 +1131,7 @@ void Cu_Voxelize_UpdateMasks_Vis
     const int *__restrict__ cblock_ID_nbr_child
 )
 {
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    __shared__ int s_D[M_TBLOCK];
     
     int i_kap_b = -1;
     if (blockIdx.x < n_ids_idev_L)

@@ -37,27 +37,9 @@
 #include "solver_lbm_criterion.cu"
 #include "solver_lbm_init.cu"
 #include "solver_lbm_identify_faces.cu"
-#ifdef USED2Q9
-    #include "solver_lbm_kernels.cu"
-    #include "solver_lbm_interp_linear_original_D2Q9.cu"
-    #include "solver_lbm_interp_cubic_original_D2Q9.cu"
-    #include "solver_lbm_average_original_D2Q9.cu"
-    #include "solver_lbm_debug_drawgeom_D2Q9.cu"
-#endif
-#ifdef USED3Q19
-    #include "solver_lbm_kernels.cu"
-    #include "solver_lbm_interp_linear_original_D3Q19.cu"
-    #include "solver_lbm_interp_cubic_original_D3Q19.cu"
-    #include "solver_lbm_average_original_D3Q19.cu"
-    #include "solver_lbm_debug_drawgeom_D3Q19.cu"
-#endif
-#ifdef USED3Q27
-    #include "solver_lbm_kernels.cu"
-    #include "solver_lbm_interp_linear_original_D3Q27.cu"
-    #include "solver_lbm_interp_cubic_original_D3Q27.cu"
-    #include "solver_lbm_average_original_D3Q27.cu"
-    #include "solver_lbm_debug_drawgeom_D3Q27.cu"
-#endif
+#include "solver_lbm_kernels.cu"
+#include "solver_lbm_kernels_comm.cu"
+#include "solver_lbm_kernels_debug.cu"
 
 //int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);
 
@@ -69,9 +51,9 @@ constexpr ArgsPack AP2D __attribute__((unused)) = ArgsPack(2,M_BLOCK_C,1,1,M_LBL
 constexpr ArgsPack AP3D __attribute__((unused)) = ArgsPack(3,M_BLOCK_C,1,1,M_LBLOCK_C,M_LWBLOCK_C,2048);
 
 // Define some LBM argument packs for the tests.
-constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VS_D2Q9, CM_BGK, IM_LINEAR);
-constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_LINEAR);
-constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_LINEAR);
+constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VS_D2Q9, CM_BGK, IM_CUBIC);
+constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_CUBIC);
+constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_CUBIC);
 
 // Typedefs and chosen packs.
 typedef float REAL_s;

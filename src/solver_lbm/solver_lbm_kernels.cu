@@ -201,16 +201,16 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMP
 __global__
 void Cu_Collide
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const ufloat_t dx_L,
-	const ufloat_t tau_L,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	ufloat_t *__restrict__ cells_f_F,
-	const int *__restrict__ cblock_ID_nbr_child,
-	const int *__restrict__ cblock_ID_mask
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const ufloat_t dx_L,
+    const ufloat_t tau_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -329,19 +329,19 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMP
 __global__
 void Cu_Stream
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const int n_maxcells_b,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	ufloat_t *__restrict__ cells_f_F,
-	const ufloat_g_t *__restrict__ cells_f_X_b,
-	const int *__restrict__ cblock_ID_nbr,
-	const int *__restrict__ cblock_ID_nbr_child,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb_solid,
-	const bool geometry_init
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const int n_maxcells_b,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const ufloat_g_t *__restrict__ cells_f_X_b,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_onb_solid,
+    const bool geometry_init
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -585,7 +585,7 @@ void Cu_ImposeBC
                         
                         // Impose default BC.
                         if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
-                            f_p = Cu_ImposeBC(nbr_kap_b, f_p, rho, u, v, w, x, y, z, (ufloat_t)LBMw[p], (ufloat_t)V_CONN_ID[p+0*27], (ufloat_t)V_CONN_ID[p+1*27], (ufloat_t)V_CONN_ID[p+2*27]);
+                            f_p = Cu_ImposeBC(nbr_kap_b, f_p, rho, u, v, w, x, y, z, static_cast<ufloat_t>(LBMw[p]), (ufloat_t)V_CONN_ID[p+0*27], (ufloat_t)V_CONN_ID[p+1*27], (ufloat_t)V_CONN_ID[p+2*27]);
                     }
 
                     // Do interpolated bounce-back, if applicable.
@@ -636,7 +636,7 @@ void Cu_ImposeBC
                         
                         // Impose default BC.
                         if (nbr_kap_b < 0 && nbr_kap_b != N_SKIPID)
-                            f_q = Cu_ImposeBC(nbr_kap_b, f_q, rho, u, v, w, x, y, z, (ufloat_t)LBMw[LBMpb[p]], (ufloat_t)V_CONN_ID[LBMpb[p]+0*27], (ufloat_t)V_CONN_ID[LBMpb[p]+1*27], (ufloat_t)V_CONN_ID[LBMpb[p]+2*27]);
+                            f_q = Cu_ImposeBC(nbr_kap_b, f_q, rho, u, v, w, x, y, z, static_cast<ufloat_t>(LBMw[LBMpb[p]]), (ufloat_t)V_CONN_ID[LBMpb[p]+0*27], (ufloat_t)V_CONN_ID[LBMpb[p]+1*27], (ufloat_t)V_CONN_ID[LBMpb[p]+2*27]);
                     }
                     
                     // Do interpolated bounce-back, if applicable.
@@ -749,25 +749,25 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMP
 __global__
 void Cu_ComputeForcesCV
 (
-	const int is_root,
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const ufloat_t dx_L,
-	const ufloat_t dv_L,
-	const ufloat_t otau_0,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	const ufloat_t *__restrict__ cells_f_F,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr_child,
-	ufloat_t *__restrict__ cblock_f_Ff,
-	const ufloat_t cv_xm,
-	const ufloat_t cv_xM,
-	const ufloat_t cv_ym,
-	const ufloat_t cv_yM,
-	const ufloat_t cv_zm,
-	const ufloat_t cv_zM
+    const int is_root,
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const ufloat_t dx_L,
+    const ufloat_t dv_L,
+    const ufloat_t otau_0,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    const ufloat_t *__restrict__ cells_f_F,
+    const ufloat_t *__restrict__ cblock_f_X,
+    const int *__restrict__ cblock_ID_nbr_child,
+    ufloat_t *__restrict__ cblock_f_Ff,
+    const ufloat_t cv_xm,
+    const ufloat_t cv_xM,
+    const ufloat_t cv_ym,
+    const ufloat_t cv_yM,
+    const ufloat_t cv_zm,
+    const ufloat_t cv_zM
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1021,7 +1021,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesCV(int i_dev, int L, i
         );
     }
 
-	return 0;
+    return 0;
 }
 
 
@@ -1055,25 +1055,25 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMP
 __global__
 void Cu_ComputeForcesMEA
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const int n_maxcells_b,
-	const int n_maxblocks_b,
-	const ufloat_t dx_L,
-	const ufloat_t dv_L,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	const ufloat_t *__restrict__ cells_f_F,
-	const ufloat_g_t *__restrict__ cells_f_X_b,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb,
-	const int *__restrict__ cblock_ID_onb_solid,
-	ufloat_t *__restrict__ cblock_f_Ff,
-	const bool geometry_init,
-	const int order
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const int n_maxcells_b,
+    const int n_maxblocks_b,
+    const ufloat_t dx_L,
+    const ufloat_t dv_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    const ufloat_t *__restrict__ cells_f_F,
+    const ufloat_g_t *__restrict__ cells_f_X_b,
+    const ufloat_t *__restrict__ cblock_f_X,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_onb,
+    const int *__restrict__ cblock_ID_onb_solid,
+    ufloat_t *__restrict__ cblock_f_Ff,
+    const bool geometry_init,
+    const int order
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1326,7 +1326,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
         );
     }
 
-	return 0;
+    return 0;
 }
 
 
@@ -1371,24 +1371,24 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMP
 __global__
 void Cu_ComputePressureOnWall
 (
-	const int n_ids_idev_L,
-	const long int n_maxcells,
-	const int n_maxcblocks,
-	const int n_maxcells_b,
-	const int n_maxblocks_b,
-	const ufloat_t dx_L,
-	const ufloat_t dv_L,
-	const int *__restrict__ id_set_idev_L,
-	const int *__restrict__ cells_ID_mask,
-	const ufloat_t *__restrict__ cells_f_F,
-	const ufloat_g_t *__restrict__ cells_f_X_b,
-	const ufloat_t *__restrict__ cblock_f_X,
-	const int *__restrict__ cblock_ID_nbr,
-	const int *__restrict__ cblock_ID_mask,
-	const int *__restrict__ cblock_ID_onb,
-	const int *__restrict__ cblock_ID_onb_solid,
-	const bool geometry_init,
-	const int order
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const int n_maxcells_b,
+    const int n_maxblocks_b,
+    const ufloat_t dx_L,
+    const ufloat_t dv_L,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    const ufloat_t *__restrict__ cells_f_F,
+    const ufloat_g_t *__restrict__ cells_f_X_b,
+    const ufloat_t *__restrict__ cblock_f_X,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_onb,
+    const int *__restrict__ cblock_ID_onb_solid,
+    const bool geometry_init,
+    const int order
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1572,7 +1572,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputePressureOnWall(int i_dev, in
         );
     }
 
-	return 0;
+    return 0;
 }
 
 

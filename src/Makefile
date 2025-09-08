@@ -163,6 +163,7 @@ INC_MAIN = cppspec.h\
 	util.h\
 	util_tribin.h\
 	util_tribin_old.h\
+	util_interp.h\
 	custom.h\
 	debug_matlab.h
 # SRC_MAIN = main_read_input.cu
