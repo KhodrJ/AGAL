@@ -40,19 +40,20 @@ template <int N_DIM>
 __host__ __device__ __forceinline__
 int Cu_NbrMap(int I, int J, int K)
 {
+    // Default case (I==-1 [==0] or J==-1 [+=3*0] or K==-1 [+=9*0])
     int S = 0;
     
-    //if (I == -1) S = 0;
+    // X
     if (I >= 4) S = 2;
     if (I >= 0 && I < 4) S = 1;
     
-    //if (J == -1) S += 3*(0);
+    // Y
     if (J >= 4) S += 3*(2);
     if (J >= 0 && J < 4) S += 3*(1);
     
     if (N_DIM==3)
     {
-        //if (K == -1) S += 9*(0);
+        // Z
         if (K >= 4) S += 9*(2);
         if (K >= 0 && K < 4) S += 9*(1);
     }
@@ -74,31 +75,35 @@ int Cu_NbrCellId(int Ip, int Jp, int Kp)
     return Ip + 4*Jp + 16*Kp;
 }
 
-template <int N_DIM>
+template <int N_DIM, int incr=1, int wid=1>
 __device__ __forceinline__
-int Cu_HaloCellId(int p, int incr, int wid, int I, int J, int K)
+int Cu_HaloCellId(int p, int I, int J, int K)
 {
     // First, increment indices along pth direction.
-    int Ip = I + V_CONN_ID[p + 0*27];
-    int Jp = J + V_CONN_ID[p + 1*27];
-    int Kp = 0;
-    if (N_DIM==3)
-        Kp = K + V_CONN_ID[p + 2*27];
+    int Ip = I;
+    int Jp = J;
+    int Kp = K;
+    if (incr != 0)
+    {
+        Ip = I + incr*V_CONN_ID[p + 0*27];
+        Jp = J + incr*V_CONN_ID[p + 1*27];
+        if (N_DIM==3)
+            Kp = K + incr*V_CONN_ID[p + 2*27];
+    }
     
     // Store the resulting halo index.
-    int nbr_kap_h = (Ip+incr+1) + (4+2*wid)*(Jp+incr+1);
+    int nbr_kap_h = (Ip+wid) + (4+2*wid)*(Jp+wid);
     if (N_DIM==3)
-        nbr_kap_h += (4+2*wid)*(4+2*wid)*(Kp+incr+1);
+        nbr_kap_h += (4+2*wid)*(4+2*wid)*(Kp+wid);
     
     return nbr_kap_h;
 }
 
-template <int N_DIM, int get_halo=0>
+template <int N_DIM, int get_halo=0, int incr=1, int wid=1>
 __device__ __forceinline__
 int Cu_GetNbrIndices
 (
     const int p,
-    const int incr,
     int *nbr_kap_b,
     int *nbr_kap_c,
     int *nbr_kap_h,
@@ -120,17 +125,23 @@ int Cu_GetNbrIndices
     // }
     //__syncthreads();
     
+    // incr is how much to increment along a particular direction (1 means move one cell along dir. p etc.).
+    // wid is the width of the halo (one cell layer needs 1, two cell layer needs 2 etc.)
+    
     // First, increment indices along pth direction. Store the resulting halo index.
     int Ip = I + incr*V_CONN_ID[p + 0*27];
     int Jp = J + incr*V_CONN_ID[p + 1*27];
     int Kp = 0;
     if (N_DIM==3)
         Kp = K + incr*V_CONN_ID[p + 2*27];
+    
+    // Get halo index, if applicable.
     if (get_halo == 1 && nbr_kap_h != nullptr)
     {
-        *nbr_kap_h = (Ip+incr) + (4+2*incr)*(Jp+incr);
+        *nbr_kap_h = 
+        *nbr_kap_h = (Ip+wid) + (4+2*wid)*(Jp+wid);
         if (N_DIM==3)
-            *nbr_kap_h += (4+2*incr)*(4+2*incr)*(Kp+incr);
+            *nbr_kap_h += (4+2*wid)*(4+2*wid)*(Kp+wid);
     }
     
     // Then, identify the appropriate neighbor block to store the retrieved cell masks.
@@ -141,6 +152,7 @@ int Cu_GetNbrIndices
         Kp = (4 + (Kp % 4)) % 4;
     *nbr_kap_c = Ip + 4*Jp + 16*Kp;
     
+    // Get halo change indicator, if applicable.
     if (get_halo == 1 && halo_change != nullptr)
     {
         *halo_change = (Ip != I+incr*V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && (Jp != J+incr*V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && (Kp != K+incr*V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);

@@ -339,10 +339,10 @@ void Cu_MarkBlocks_MarkInterior_V2
     // If cell-block Id is valid.
     if (i_kap_b > -1)
     {
-        int valid_mask = cblock_ID_mask[i_kap_b];
+        //int valid_mask = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if (valid_mask < 0 && valid_mask != V_BLOCKMASK_SOLID)
+        //if (valid_mask < 0)
         {
             // Calculate cell indices.
             int I = threadIdx.x % 4;
@@ -369,7 +369,11 @@ void Cu_MarkBlocks_MarkInterior_V2
                 int nbr_kap_c = N_SKIPID;
                 int nbr_kap_h = N_SKIPID;
                 bool halo_changed = false;
-                Cu_GetNbrIndices<N_DIM,1>(p,2,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
+                Cu_GetNbrIndices<N_DIM,1,2,2>(p,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
+//                 if (i_kap_b == 0)
+//                 {
+//                     printf("(%i %i %i),%i -> %i\n", I,J,K,);
+//                 }
                 
                 // Write cell mask to the halo.
                 if (halo_changed && nbr_kap_b > -1)
@@ -380,23 +384,33 @@ void Cu_MarkBlocks_MarkInterior_V2
             __syncthreads();
             
             // Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
+            bool is_near_fluid = false;
             bool is_well_inside = false;
-            for (int p = 0; p < N_Q_max; p++)
+            for (int p = 1; p < N_Q_max; p++)
             {
-                // First, increment indices along pth direction. Store the resulting halo index.
-                int nbr_kap_h1 = Cu_HaloCellId<N_DIM>(p,-1,2,I,J,K);
-                int nbr_kap_h2 = Cu_HaloCellId<N_DIM>(p,-2,2,I,J,K);
-                int nbr_kap_h3 = Cu_HaloCellId<N_DIM>(p,1,2,I,J,K);
-                int nbr_kap_h4 = Cu_HaloCellId<N_DIM>(p,2,2,I,J,K);
-                
-                // Now, check the neighboring cell mask for all cells using values stored in shared memory.
-                if (s_ID_mask[nbr_kap_h1] == V_CELLMASK_SOLID)
-                    is_well_inside = true;
+                if ( (N_DIM==2 && (p==1||(p+1)%3==0))   ||   (N_DIM==3 && (p==26||((p-1)%2==0&&p<25))) )
+                {
+                    // First, increment indices along pth direction. Store the resulting halo index.
+                    int nbr_kap_hm1 = s_ID_mask[Cu_HaloCellId<N_DIM,-1,2>(p,I,J,K)];
+                    int nbr_kap_hm2 = s_ID_mask[Cu_HaloCellId<N_DIM,-2,2>(p,I,J,K)];
+                    int nbr_kap_hp1 = s_ID_mask[Cu_HaloCellId<N_DIM,1,2>(p,I,J,K)];
+                    int nbr_kap_hp2 = s_ID_mask[Cu_HaloCellId<N_DIM,2,2>(p,I,J,K)];
+                    
+                    // Conditions:
+                    // b1: Is this cell adjacent to a fluid cell?
+                    // b2: Is this cell two cells away (inclusive) from a fluid cell?
+                    bool b1 = nbr_kap_hm1==V_CELLMASK_INTERIOR || nbr_kap_hp1==V_CELLMASK_INTERIOR;
+                    bool b2 = nbr_kap_hm2==V_CELLMASK_INTERIOR || nbr_kap_hp2==V_CELLMASK_INTERIOR;
+                    
+                    // Now, check the neighboring cell mask for all cells using values stored in shared memory.
+                    if (b1) is_near_fluid = true;
+                    if (b2) is_well_inside = true;
+                }
             }
             
             
 //             s_D[threadIdx.x] = 0;
-            if (is_well_inside && curr_mask != V_CELLMASK_SOLID)
+            if (!is_near_fluid && is_well_inside && curr_mask == V_CELLMASK_SOLID_VIS)
             {
                 cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID_DIFF;
 //                 s_D[threadIdx.x] = 1;
