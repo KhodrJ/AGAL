@@ -39,6 +39,7 @@
 #include "solver_lbm_identify_faces.cu"
 #include "solver_lbm_kernels.cu"
 #include "solver_lbm_kernels_comm.cu"
+#include "solver_lbm_kernels_forces.cu"
 #include "solver_lbm_kernels_debug.cu"
 
 //int ReadInputFile(std::string input_file_directory, std::map<std::string, int> &input_map_int, std::map<std::string, double> &input_map_dbl, std::map<std::string, std::string> &input_map_str);

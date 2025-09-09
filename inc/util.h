@@ -578,6 +578,8 @@ int BlockwiseReduction(int t, int B, T *s_data)
         }
         __syncthreads();
     }
+    
+    return 0;
 }
 
 #include "util_tribin.h"         // Triangle-AABB bin overlap.

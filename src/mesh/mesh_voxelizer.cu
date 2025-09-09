@@ -230,7 +230,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
             c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
         );
         cudaDeviceSynchronize();
-        gpuErrchk( cudaPeekAtLastError() );;
+        gpuErrchk( cudaPeekAtLastError() );
+        
+        Cu_MarkBlocks_MarkInterior_V2<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
+            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
+        );
     }
     
     return 0;

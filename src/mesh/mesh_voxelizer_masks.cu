@@ -302,7 +302,7 @@ void Cu_Voxelize_UpdateMasks_Vis
     }
 }
 
-template <const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_MarkInterior_V2
 (
@@ -311,25 +311,22 @@ void Cu_MarkBlocks_MarkInterior_V2
     const int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
-    const int *__restrict__ cblock_ID_nbr,
-    const int *__restrict__ cblock_ID_nbr_child,
-    int *__restrict__ cblock_ID_onb,
-    int *tmp_1
+    const int *__restrict__ cblock_ID_nbr
 )
 {
     constexpr int N_DIM = AP->N_DIM;
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_HBLOCK = AP->M_HBLOCK;
-    __shared__ int s_D[M_TBLOCK];
+    constexpr int M_HBLOCK2 = N_DIM==2 ? (4+2+2)*(4+2+2) : (4+2+2)*(4+2+2)*(4+2+2);
+//     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
-    __shared__ int s_ID_mask[M_HBLOCK];
+    __shared__ int s_ID_mask[M_HBLOCK2];
     
     // Reset halo array.
-    for (int k = 0; k < M_HBLOCK/M_TBLOCK+1; k++)
+    for (int k = 0; k < M_HBLOCK2/M_TBLOCK+1; k++)
     {
-        if (k*M_TBLOCK + threadIdx.x < M_HBLOCK)
+        if (k*M_TBLOCK + threadIdx.x < M_HBLOCK2)
             s_ID_mask[k*M_TBLOCK + threadIdx.x] = N_SKIPID;
     }
     __syncthreads();
@@ -342,11 +339,10 @@ void Cu_MarkBlocks_MarkInterior_V2
     // If cell-block Id is valid.
     if (i_kap_b > -1)
     {
-        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
         int valid_mask = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if (i_kap_bc < 0 && (valid_mask < 0 && valid_mask != V_BLOCKMASK_SOLID))
+        if (valid_mask < 0 && valid_mask != V_BLOCKMASK_SOLID)
         {
             // Calculate cell indices.
             int I = threadIdx.x % 4;
@@ -372,48 +368,51 @@ void Cu_MarkBlocks_MarkInterior_V2
                 int nbr_kap_b = N_SKIPID;
                 int nbr_kap_c = N_SKIPID;
                 int nbr_kap_h = N_SKIPID;
-                int halo_changed = false;
-                Cu_GetNbrIndices<N_DIM,1>(p,1,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,halo_changed,I,J,K,s_ID_nbr);
+                bool halo_changed = false;
+                Cu_GetNbrIndices<N_DIM,1>(p,2,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
                 
                 // Write cell mask to the halo.
                 if (halo_changed && nbr_kap_b > -1)
                     s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
             }
             int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-            s_ID_mask[(I+1)+6*(J+1)+(N_DIM-2)*36*(K+1)] = curr_mask;
+            s_ID_mask[(I+2)+8*(J+2)+(N_DIM-2)*64*(K+2)] = curr_mask;
             __syncthreads();
             
             // Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
-            bool near_a_solid_cell = false;
+            bool is_well_inside = false;
             for (int p = 0; p < N_Q_max; p++)
             {
                 // First, increment indices along pth direction. Store the resulting halo index.
-                int nbr_kap_h = Cu_HaloCellId<N_DIM>(p,I,J,K);
+                int nbr_kap_h1 = Cu_HaloCellId<N_DIM>(p,-1,2,I,J,K);
+                int nbr_kap_h2 = Cu_HaloCellId<N_DIM>(p,-2,2,I,J,K);
+                int nbr_kap_h3 = Cu_HaloCellId<N_DIM>(p,1,2,I,J,K);
+                int nbr_kap_h4 = Cu_HaloCellId<N_DIM>(p,2,2,I,J,K);
                 
                 // Now, check the neighboring cell mask for all cells using values stored in shared memory.
-                if (s_ID_mask[nbr_kap_h] == V_CELLMASK_SOLID)
-                    near_a_solid_cell = true;
+                if (s_ID_mask[nbr_kap_h1] == V_CELLMASK_SOLID)
+                    is_well_inside = true;
             }
             
             
-            s_D[threadIdx.x] = 0;
-            if (near_a_solid_cell && curr_mask != V_CELLMASK_SOLID)
+//             s_D[threadIdx.x] = 0;
+            if (is_well_inside && curr_mask != V_CELLMASK_SOLID)
             {
-                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_BOUNDARY;
-                s_D[threadIdx.x] = 1;
+                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID_DIFF;
+//                 s_D[threadIdx.x] = 1;
             }
             __syncthreads();
             
             // Block reduction for sum.
-            BlockwiseReduction<int>(threadIdx.x,blockDim.x,s_D);
+//             BlockwiseReduction<int>(threadIdx.x,blockDim.x,s_D);
             
             // If at least one cell was a boundary cell, mark this block as along the boundary.
             // Also, store the total number of boundary cells in this cell-block in tmp1.
-            if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
-            {
-                tmp_1[i_kap_b] = s_D[threadIdx.x];
-                cblock_ID_onb[i_kap_b] = 1;
-            }
+//             if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
+//             {
+//                 tmp_1[i_kap_b] = s_D[threadIdx.x];
+//                 cblock_ID_onb[i_kap_b] = 1;
+//             }
         }
     }
 }

@@ -9,6 +9,34 @@
 #define INDEX_MAPPER
 
 template <int N_DIM>
+struct Coords : public vec3<int>
+{
+    __host__ __device__ Coords() : vec3<int>(0,0,0) {}
+    __host__ __device__ Coords(int x_) : vec3<int>(x_,0,0) {}
+    __host__ __device__ Coords(int x_, int y_) : vec3<int>(x_,y_,0) {}
+    __host__ __device__ Coords(int x_, int y_, int z_) : vec3<int>(x_,y_,z_) {}
+    __host__ __device__ Coords(uint t)
+    {
+        x = t % 4;
+        y = (t / 4) % 4;
+        z = 0;
+        if (N_DIM==3)
+            z = (t / 4) / 4;
+    }
+    
+    // Useful routines.
+    template <int N_DIM_>
+    __device__ static Coords<N_DIM_> Increment(Coords<N_DIM_> coords, int p, int incr=1)
+    {
+        return Coords<N_DIM_>(
+            coords.x + incr*V_CONN_ID[p+0*27],
+            coords.y + incr*V_CONN_ID[p+1*27],
+            coords.z + incr*V_CONN_ID[p+2*27]
+        );
+    }
+};
+
+template <int N_DIM>
 __host__ __device__ __forceinline__
 int Cu_NbrMap(int I, int J, int K)
 {
@@ -48,17 +76,19 @@ int Cu_NbrCellId(int Ip, int Jp, int Kp)
 
 template <int N_DIM>
 __device__ __forceinline__
-int Cu_HaloCellId(int p, int I, int J, int K)
+int Cu_HaloCellId(int p, int incr, int wid, int I, int J, int K)
 {
-    // First, increment indices along pth direction. Store the resulting halo index.
+    // First, increment indices along pth direction.
     int Ip = I + V_CONN_ID[p + 0*27];
     int Jp = J + V_CONN_ID[p + 1*27];
     int Kp = 0;
     if (N_DIM==3)
         Kp = K + V_CONN_ID[p + 2*27];
-    int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+    
+    // Store the resulting halo index.
+    int nbr_kap_h = (Ip+incr+1) + (4+2*wid)*(Jp+incr+1);
     if (N_DIM==3)
-        nbr_kap_h += 36*(Kp+1);
+        nbr_kap_h += (4+2*wid)*(4+2*wid)*(Kp+incr+1);
     
     return nbr_kap_h;
 }
@@ -98,9 +128,9 @@ int Cu_GetNbrIndices
         Kp = K + incr*V_CONN_ID[p + 2*27];
     if (get_halo == 1 && nbr_kap_h != nullptr)
     {
-        *nbr_kap_h = (Ip+1) + 6*(Jp+1);
+        *nbr_kap_h = (Ip+incr) + (4+2*incr)*(Jp+incr);
         if (N_DIM==3)
-            *nbr_kap_h += 36*(Kp+1);
+            *nbr_kap_h += (4+2*incr)*(4+2*incr)*(Kp+incr);
     }
     
     // Then, identify the appropriate neighbor block to store the retrieved cell masks.

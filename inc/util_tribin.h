@@ -1,3 +1,13 @@
+/**************************************************************************************/
+/*                                                                                    */
+/*  Author: Khodr Jaber                                                               */
+/*  Affiliation: Turbulence Research Lab, University of Toronto                       */
+/*                                                                                    */
+/**************************************************************************************/
+
+#ifndef UTIL_TRIBIN
+#define UTIL_TRIBIN
+
 template <typename T, int axis=0>
 __host__ __device__ __forceinline__ bool TriangleBinOverlap1D_AxisGap
 (
@@ -148,3 +158,5 @@ __host__ __device__ __forceinline__ bool TriangleBinOverlap3D(const vec3<T> &vm,
     
     return true;
 }
+
+#endif
