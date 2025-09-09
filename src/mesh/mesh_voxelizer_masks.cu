@@ -405,7 +405,7 @@ void Cu_MarkBlocks_MarkInterior_V2
             __syncthreads();
             
             // Block reduction for sum.
-            BlockwiseReduction<int>(t,blockDim.x,s_D);
+            BlockwiseReduction<int>(threadIdx.x,blockDim.x,s_D);
             
             // If at least one cell was a boundary cell, mark this block as along the boundary.
             // Also, store the total number of boundary cells in this cell-block in tmp1.

@@ -47,7 +47,7 @@ int Cu_NbrCellId(int Ip, int Jp, int Kp)
 }
 
 template <int N_DIM>
-__host__ __device__ __forceinline__
+__device__ __forceinline__
 int Cu_HaloCellId(int p, int I, int J, int K)
 {
     // First, increment indices along pth direction. Store the resulting halo index.
