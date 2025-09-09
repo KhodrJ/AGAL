@@ -29,9 +29,11 @@
 #include <thrust/device_ptr.h>
 #include <thrust/extrema.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/gather.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/adjacent_difference.h>
+#include <thrust/gather.h>
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/sort.h>
@@ -74,7 +76,6 @@
 #include "vtkRenderWindow.h"
 #include "vtkRenderer.h"
 #include "vtkWindowToImageFilter.h"
-#include "vtkGhostCellsGenerator.h"
 
 
 struct ArgsPack

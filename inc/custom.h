@@ -118,4 +118,75 @@ ufloat_t Cu_ImposeBC
     return f;
 }
 
+
+
+
+
+
+
+
+
+/*
+template <ufloat_t>
+__host__ __device__ __forceinline__
+int Cu_SwapData
+(
+    const int i_kap_b,
+    const int i_kap_c,
+    const int c_nbr_x,
+    const int c_nbr_y,
+    const int c_nbr_z,
+    const int i1,
+    const int i2,
+    const ufloat_t *__restrict__ cells_f_F
+)
+{
+    ufloat_t f_p = cells_f_F[i_kap_b*M_CBLOCK + i_kap_c + i1*n_maxcells];
+    ufloat_t f_pb = cells_f_F[i_kap_b*M_CBLOCK + nbr_kap_c + i2*n_maxcells];
+    
+    cells_f_F[i_kap_b*M_CBLOCK + i_kap_c + i1*n_maxcells] = f_pb;
+    cells_f_F[i_kap_b*M_CBLOCK + nbr_kap_c + i2*n_maxcells] = f_p;
+    
+    return 0;
+}
+
+template <typename ufloat_t>
+__device__ __forceinline__
+ufloat_t Cu_EnforceSlip(int kap, ufloat_t *cells_f_F)
+{
+    //
+    // 2D
+    //
+    
+    // Bottom surface
+    if (nbr_kap_c == -3)
+    {
+        // nbr_kap_c gets (+1,0,0).
+        if (nbr_kap_c > -1) Cu_SwapData(i_kap_b, threadIdx.x, nbr_kap_c, 5, 6, cells_f_F);
+    }
+    //
+    // Top surface.
+    if (nbr_kap_c == -4)
+    {
+        // nbr_kap_c gets (+1,0,0).
+        if (nbr_kap_c > -1)
+        {
+            ufloat_t f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells];
+            ufloat_t f_pb = cells_f_F[i_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells];
+            
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + 8*n_maxcells] = f_pb;
+            cells_f_F[i_kap_b*M_CBLOCK + nbr_kap_c + 7*n_maxcells] = f_p;
+        }
+    }
+    
+    
+    //
+    // 3D
+    //
+    
+    // Top surface.
+    
+}
+*/
+
 #endif

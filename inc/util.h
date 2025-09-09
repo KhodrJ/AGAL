@@ -566,42 +566,18 @@ bool PointInIndexedBin
 // | Auxilliary.
 // o====================================================================================
 
-template <int N_DIM>
-__host__ __device__ __forceinline__
-int Cu_NbrMap(int I, int J, int K)
+template <typename T>
+__device__ __forceinline__
+int BlockwiseReduction(int t, int B, T *s_data)
 {
-    int S = 0;
-    
-    //if (I == -1) S = 0;
-    if (I >= 4) S = 2;
-    if (I >= 0 && I < 4) S = 1;
-    
-    //if (J == -1) S += 3*(0);
-    if (J >= 4) S += 3*(2);
-    if (J >= 0 && J < 4) S += 3*(1);
-    
-    if (N_DIM==3)
+    for (int s=B/2; s>0; s>>=1)
     {
-        //if (K == -1) S += 9*(0);
-        if (K >= 4) S += 9*(2);
-        if (K >= 0 && K < 4) S += 9*(1);
+        if (t < s)
+        {
+            s_data[t] = s_data[t] + s_data[t+s];
+        }
+        __syncthreads();
     }
-    
-    return S;
-}
-
-template <int N_DIM>
-__host__ __device__ __forceinline__
-int Cu_NbrCellId(int Ip, int Jp, int Kp)
-{
-    // I,J,K are incremented by direction, and can be in {-1,0,1,2,3,4}.
-    Ip = (4 + (Ip % 4)) % 4;
-    Jp = (4 + (Jp % 4)) % 4;
-    if (N_DIM==2)
-        Kp = 0;
-    if (N_DIM==3)
-        Kp = (4 + (Kp % 4)) % 4;
-    return Ip + 4*Jp + 16*Kp;
 }
 
 #include "util_tribin.h"         // Triangle-AABB bin overlap.

@@ -304,7 +304,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
     //vtkNew<vtkXMLHierarchicalBoxDataWriter> writer;
     vtkNew<vtkXMLUniformGridAMRWriter> writer;
     writer->SetInputData(data);
-    //writer->SetInputData(data_w_ghosts);
     writer->SetFileName(fileName.c_str());
     writer->Write();
     std::cout << "Finished writing VTK dataset..." << std::endl;

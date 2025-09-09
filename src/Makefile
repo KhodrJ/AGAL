@@ -42,8 +42,7 @@ LIBS = -lcuda\
        -lvtkRenderingFreeType-$(VTK_VER) \
        -lvtkRenderingGL2PSOpenGL2-$(VTK_VER) \
        -lvtkRenderingOpenGL2-$(VTK_VER)\
-       -lvtkImagingCore-$(VTK_VER)\
-       -lvtkFiltersParallelDIY2-$(VTK_VER)
+       -lvtkImagingCore-$(VTK_VER)
 
 
 
@@ -54,16 +53,6 @@ N_CASE?=0
 P_SHOW_REFINE?=1
 P_SHOW_ADVANCE?=1
 N_REGEN?=0
-# OPTS = -DINPUT_CONFMAKE\
-#        -DN_PRECISION=$(N_PRECISION)\
-#        -DN_PRECISION_G=$(N_PRECISION_G)\
-#        -DN_DIM=$(N_DIM)\
-#        -DN_Q=$(N_Q)\
-#        -DNqx=$(Nqx)\
-#        -DM_LBLOCK=$(M_LBLOCK)\
-#        -DN_CASE=$(N_CASE)\
-#        -DP_SHOW_REFINE=$(P_SHOW_REFINE)\
-#        -DP_SHOW_ADVANCE=$(P_SHOW_ADVANCE)
 OPTS = -DN_CASE=$(N_CASE)\
        -DP_SHOW_REFINE=$(P_SHOW_REFINE)\
        -DP_SHOW_ADVANCE=$(P_SHOW_ADVANCE)
@@ -82,11 +71,6 @@ LDFLAGS =
 INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC) -I./geometry -I./mesh -I./solver_lbm
 LIB = -L. -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
 VPATH = ../inc/:./geometry:./mesh:./solver_lbm
-#|
-# MQ = 
-# ifeq ($(shell expr $(Nqx) \> 1), 1)
-#    MQ = _mq
-# endif
 
 all: a.out
 
@@ -167,6 +151,7 @@ INC_MAIN = cppspec.h\
 	util_tribin.h\
 	util_tribin_old.h\
 	util_interp.h\
+	index_mapper.h\
 	custom.h\
 	debug_matlab.h
 # SRC_MAIN = main_read_input.cu
@@ -206,5 +191,9 @@ clean:
 .PHONY: clean pxtas all geometry mesh solver_lbm
 
 
-
-#make pxtas VSET=D3Q27 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
+# Shortcuts:
+#
+# make pxtas VSET=D3Q27 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
+#
+# git fetch -all
+# git reset --hard origin/develop

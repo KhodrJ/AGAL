@@ -154,6 +154,7 @@ inline int InitConnectivity()
 #include "structs.h"
 #include "custom.h"
 #include "util.h"
+#include "index_mapper.h"
 
 
 

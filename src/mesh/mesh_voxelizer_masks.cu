@@ -179,6 +179,8 @@ void Cu_MarkBlocks_CheckMasks
                 __syncthreads();
             }
             
+            // If at least one cell was a boundary cell, mark this block as along the boundary.
+            // Also, store the total number of boundary cells in this cell-block in tmp1.
             if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
             {
                 tmp_1[i_kap_b] = s_D[threadIdx.x];
@@ -319,9 +321,7 @@ void Cu_MarkBlocks_MarkInterior_V2
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
     __shared__ int s_ID_mask[M_HBLOCK];
@@ -334,8 +334,10 @@ void Cu_MarkBlocks_MarkInterior_V2
     }
     __syncthreads();
     
-    if (kap_b < n_ids_idev_L)
-        i_kap_b = id_set_idev_L[kap_b];
+    // Get cell-block Id.
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // If cell-block Id is valid.
     if (i_kap_b > -1)
@@ -356,7 +358,6 @@ void Cu_MarkBlocks_MarkInterior_V2
             // Load neighbor-block indices into shared memory.
             if (threadIdx.x==0)
             {
-                //#pragma unroll
                 for (int p = 0; p < N_Q_max; p++)
                     s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
             }
@@ -368,28 +369,14 @@ void Cu_MarkBlocks_MarkInterior_V2
                 // nbr_kap_b is the index of the neighboring block w.r.t the current cell.
                 // nbr_kap_c is the index of the cell in that neighboring block.
                 // nbr_kap_h is the index of the halo to store that value.
-                
-                // First, increment indices along pth direction. Store the resulting halo index.
-                int Ip = I + V_CONN_ID[p + 0*27];
-                int Jp = J + V_CONN_ID[p + 1*27];
-                int Kp = 0;
-                if (N_DIM==3)
-                    Kp = K + V_CONN_ID[p + 2*27];
-                int nbr_kap_h = (Ip+1) + 6*(Jp+1);
-                if (N_DIM==3)
-                    nbr_kap_h += 36*(Kp+1);
-                
-                // Then, identify the appropriate neighbor block to store the retrieved cell masks.
-                int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                if (N_DIM==3)
-                    Kp = (4 + (Kp % 4)) % 4;
-                int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                int nbr_kap_b = N_SKIPID;
+                int nbr_kap_c = N_SKIPID;
+                int nbr_kap_h = N_SKIPID;
+                int halo_changed = false;
+                Cu_GetNbrIndices<N_DIM,1>(p,1,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,halo_changed,I,J,K,s_ID_nbr);
                 
                 // Write cell mask to the halo.
-                bool changed = (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
-                if (changed && nbr_kap_b > -1)
+                if (halo_changed && nbr_kap_b > -1)
                     s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
             }
             int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
@@ -401,14 +388,7 @@ void Cu_MarkBlocks_MarkInterior_V2
             for (int p = 0; p < N_Q_max; p++)
             {
                 // First, increment indices along pth direction. Store the resulting halo index.
-                int Ip = I + V_CONN_ID[p + 0*27];
-                int Jp = J + V_CONN_ID[p + 1*27];
-                int Kp = 0;
-                if (N_DIM==3)
-                    Kp = K + V_CONN_ID[p + 2*27];
-                int nbr_kap_h = (Ip+1) + 6*(Jp+1);
-                if (N_DIM==3)
-                    nbr_kap_h += 36*(Kp+1);
+                int nbr_kap_h = Cu_HaloCellId<N_DIM>(p,I,J,K);
                 
                 // Now, check the neighboring cell mask for all cells using values stored in shared memory.
                 if (s_ID_mask[nbr_kap_h] == V_CELLMASK_SOLID)
@@ -425,15 +405,10 @@ void Cu_MarkBlocks_MarkInterior_V2
             __syncthreads();
             
             // Block reduction for sum.
-            for (int s=blockDim.x/2; s>0; s>>=1)
-            {
-                if (threadIdx.x < s)
-                {
-                    s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
-                }
-                __syncthreads();
-            }
+            BlockwiseReduction<int>(t,blockDim.x,s_D);
             
+            // If at least one cell was a boundary cell, mark this block as along the boundary.
+            // Also, store the total number of boundary cells in this cell-block in tmp1.
             if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
             {
                 tmp_1[i_kap_b] = s_D[threadIdx.x];
