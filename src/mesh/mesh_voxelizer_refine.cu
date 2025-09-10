@@ -94,6 +94,7 @@ void Cu_MarkBlocks_MarkBoundary
     if (kap < id_max_curr && mark_solid_boundary && cblock_ID_ref[kap] == V_REF_ID_UNREFINED)
     {
         cblock_ID_mask[kap] = V_BLOCKMASK_SOLIDB;
+        
         // Only refine if not on the finest grid level.
         if (!hit_max)
         {
@@ -111,7 +112,7 @@ void Cu_MarkBlocks_MarkBoundary
 
 /**************************************************************************************/
 /*                                                                                    */
-/*  ===[ Cu_MarkBlocks_MarkInterior ]===============================================  */
+/*  ===[ Cu_MarkBlocks_MarkExterior ]===============================================  */
 /*                                                                                    */
 /*  Cell-blocks adjacent to those that lie on the boundary of the voxelized solid     */
 /*  are marked with this kernel. These cell-blocks contain at least one boundary      */
@@ -121,7 +122,7 @@ void Cu_MarkBlocks_MarkBoundary
 
 template <const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_MarkInterior
+void Cu_MarkBlocks_MarkExterior
 (
     const int id_max_curr,
     const int n_maxcblocks,
@@ -148,7 +149,7 @@ void Cu_MarkBlocks_MarkInterior
     for (int k = 0; k < (N_DIM==2?1:3); k++)
     {
         // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-        if (kap < id_max_curr && cblock_level[kap] == L)
+        if (kap < id_max_curr && cblock_level[kap]==L) // && cblock_ID_mask[kap]==V_BLOCKMASK_REGULAR)
         {
             for (int p = 0; p < 9; p++)
                 s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
@@ -187,7 +188,7 @@ void Cu_MarkBlocks_MarkInterior
     }
     
     // If at least one neighbor was a boundary-interface block, then mark intermediate.
-    // Make sure to refine only eligible blocks (should be currently unrefined, 2:1 balanced afterwards).
+    // Make sure to refine only eligible blocks (should be currently unrefined and then 2:1 balanced afterwards).
     if (kap < id_max_curr && mark_for_refinement && cblock_ID_ref[kap] == V_REF_ID_UNREFINED)
     {
         if (!hit_max)
@@ -204,6 +205,47 @@ void Cu_MarkBlocks_MarkInterior
         
         if (cblock_ID_mask[kap] == V_BLOCKMASK_REGULAR)
             cblock_ID_mask[kap] = V_BLOCKMASK_SOLIDA;
+    }
+}
+
+template <const ArgsPack *AP>
+__global__
+void Cu_MarkBlocks_UpdateSolidChildren
+(
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int L,
+    const int *__restrict__ cblock_ID_mask,
+    int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_level
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int N_CHILDREN = AP->N_CHILDREN;
+    constexpr int M_BLOCK = AP->M_BLOCK;
+    constexpr int N_LEFT = N_DIM==2 ? 3 : 2;
+    __shared__ int s_ID_child[M_BLOCK*N_CHILDREN];
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    for (int p = 0; p < N_CHILDREN; p++)
+        s_ID_child[p + threadIdx.x*N_CHILDREN] = -1;
+    __syncthreads();
+    
+    // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
+    if (kap < id_max_curr && cblock_level[kap]==L && cblock_ID_mask[kap]==V_BLOCKMASK_SOLID)
+    {
+        for (int p = 0; p < N_CHILDREN; p++)
+            s_ID_child[p + threadIdx.x*N_CHILDREN] = cblock_ID_nbr_child[kap] + p;
+    }
+    __syncthreads();
+    
+    // Replace neighbor Ids with their respective marks.
+    for (int p = 0; p < N_CHILDREN; p++)
+    {
+        int i_p = s_ID_child[threadIdx.x + p*M_BLOCK];
+        if (i_p > -1 && cblock_ID_nbr[i_p + N_LEFT*n_maxcblocks] == N_SKIPID)
+            cblock_ID_nbr[i_p + N_LEFT*n_maxcblocks] = N_SPECID;
     }
 }
 

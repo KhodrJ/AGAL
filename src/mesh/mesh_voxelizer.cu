@@ -97,14 +97,23 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", MarkBoundary"; toc_simple("",T_US,1);
         
-        // Now, mark blocks adjacent to these solid-boundary cell-blocks for refinement if eligible as well.
+        // Now, mark regular blocks adjacent to these solid-boundary cell-blocks for refinement, if eligible.
         tic_simple("");
-        Cu_MarkBlocks_MarkInterior<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+        Cu_MarkBlocks_MarkExterior<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
             id_max[i_dev][L], n_maxcblocks, hit_max, L,
             c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev]
         );
         cudaDeviceSynchronize();
-        std::cout << "MESH_VOXELIZE | L=" << L << ", MarkInterior"; toc_simple("",T_US,1);
+        std::cout << "MESH_VOXELIZE | L=" << L << ", MarkExterior"; toc_simple("",T_US,1);
+        
+        // Also, mark appropriate solid blocks adjacent to these solid-boundary cell-blocks for refinement, if eligible.
+//         tic_simple("");
+//         Cu_MarkBlocks_MarkInterior<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+//             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
+//             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_ref[i_dev], hit_max
+//         );
+//         cudaDeviceSynchronize();
+//         std::cout << "MESH_VOXELIZE | L=" << L << ", MarkInterior"; toc_simple("",T_US,1);
         
         // Propagate these latter marks until the specified near-wall refinement criterion is approximately reached.
         for (int j = 0; j < Nprop_d; j++)
@@ -225,17 +234,20 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
 {
     if (n_ids[i_dev][L] > 0)
     {
+        tic_simple("");
+        Cu_MarkBlocks_UpdateSolidChildren<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
+            id_max[i_dev][L], n_maxcblocks, L,
+            c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_level[i_dev]
+        );
+        cudaDeviceSynchronize();
+        std::cout << "MESH_VOXELIZE | L=" << L << ", UpdateSolidChildren"; toc_simple("",T_US,1);
+        
         Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
             c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
         );
         cudaDeviceSynchronize();
         gpuErrchk( cudaPeekAtLastError() );
-        
-        Cu_MarkBlocks_MarkInterior_V2<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
-        );
     }
     
     return 0;

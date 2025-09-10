@@ -125,9 +125,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
                 
                 // Adjust vertices so that cell-face links with dirty shortcut to account for round-off errors.
                 vec3<ufloat_g_t> vc = (v1 + v2 + v3)*odenom;
-                v1 = v1 + (v1-vc)*eps;
-                v2 = v2 + (v2-vc)*eps;
-                v3 = v3 + (v3-vc)*eps;
+                v1 = v1 + UnitV(v1-vc)*eps;
+                v2 = v2 + UnitV(v2-vc)*eps;
+                v3 = v3 + UnitV(v3-vc)*eps;
                 
                 // Write vertices.
                 geom_f_face_X[j + 0*n_faces_a] = v1.x;
@@ -224,14 +224,14 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::G_UpdateCounts()
 {
-    if (init_index_lists)
+    if (v_geom_f_node_X.size() > 0)
     {
         n_nodes = v_geom_f_node_X.size();
         n_faces = v_geom_ID_face_1.size();
         n_nodes_a = n_nodes + 128-(n_nodes%128);
         n_faces_a = n_faces + 128-(n_faces%128);
     }
-    if (init_coords_list)
+    if (v_geom_f_face_1_X.size() > 0)
     {
         n_faces = v_geom_f_face_1_X.size();
         n_nodes = 3*n_faces;
@@ -239,7 +239,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_UpdateCounts()
         n_faces_a = n_faces + 128-(n_faces%128);
     }
     
-    if (!init_index_lists && !init_coords_list)
+    if (v_geom_f_node_X.size() == 0 && v_geom_f_face_1_X.size() == 0)
         std::cout << "[-] Warning: neither set of lists has been loaded. Count is zero..." << std::endl;
     
     return 0;

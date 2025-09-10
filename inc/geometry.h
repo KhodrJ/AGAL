@@ -89,9 +89,7 @@ class Geometry
     int             G_LOADTYPE              = 0;                     ///< The type of load to perform [0: from and STL file, 1: from the txt file].
     int             G_PRINT                 = 0;                     ///< Indicates if the geometry should be printed in STL format\
                                                                           after processing.
-    int             G_BIN_OVERLAP           = 10;                    ///< Factor accounting for the overlap of faces among bins
     int             G_BIN_DENSITY           = 1;                     ///< The number of bins to divide the geometry surface.
-    int             G_BIN_FRAC              = 1;                     ///< Fraction of bin arrays to consider at a time.
     int             G_BIN_APPROACH          = 0;                     ///< The approach to take for classifying faces\
                                                                           [0: bounding-box, 1: intersection].
     int             G_BIN_LEVELS            = 1;                     ///< Number of bin levels to use.

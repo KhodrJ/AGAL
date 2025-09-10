@@ -304,14 +304,16 @@ void Cu_Voxelize_UpdateMasks_Vis
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_MarkBlocks_MarkInterior_V2
+void Cu_MarkBlocks_MarkInterior
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
     const int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
-    const int *__restrict__ cblock_ID_nbr
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ cblock_ID_ref,
+    const bool hit_max
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -319,7 +321,7 @@ void Cu_MarkBlocks_MarkInterior_V2
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_HBLOCK2 = N_DIM==2 ? (4+2+2)*(4+2+2) : (4+2+2)*(4+2+2)*(4+2+2);
-//     __shared__ int s_D[M_TBLOCK];
+    __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
     __shared__ int s_ID_mask[M_HBLOCK2];
     
@@ -339,10 +341,10 @@ void Cu_MarkBlocks_MarkInterior_V2
     // If cell-block Id is valid.
     if (i_kap_b > -1)
     {
-        //int valid_mask = cblock_ID_mask[i_kap_b];
+        int valid_mask = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        //if (valid_mask < 0)
+        if (valid_mask < 0)
         {
             // Calculate cell indices.
             int I = threadIdx.x % 4;
@@ -370,10 +372,6 @@ void Cu_MarkBlocks_MarkInterior_V2
                 int nbr_kap_h = N_SKIPID;
                 bool halo_changed = false;
                 Cu_GetNbrIndices<N_DIM,1,2,2>(p,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
-//                 if (i_kap_b == 0)
-//                 {
-//                     printf("(%i %i %i),%i -> %i\n", I,J,K,);
-//                 }
                 
                 // Write cell mask to the halo.
                 if (halo_changed && nbr_kap_b > -1)
@@ -409,24 +407,34 @@ void Cu_MarkBlocks_MarkInterior_V2
             }
             
             
-//             s_D[threadIdx.x] = 0;
-            if (!is_near_fluid && is_well_inside && curr_mask == V_CELLMASK_SOLID_VIS)
+            s_D[threadIdx.x] = 0;
+            if (!is_near_fluid && is_well_inside && curr_mask == V_CELLMASK_SOLID)
             {
-                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID_DIFF;
-//                 s_D[threadIdx.x] = 1;
+                //cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_SOLID_DIFF;
+                s_D[threadIdx.x] = 1;
             }
             __syncthreads();
             
             // Block reduction for sum.
-//             BlockwiseReduction<int>(threadIdx.x,blockDim.x,s_D);
+            BlockwiseReduction<int>(threadIdx.x,blockDim.x,s_D);
             
-            // If at least one cell was a boundary cell, mark this block as along the boundary.
-            // Also, store the total number of boundary cells in this cell-block in tmp1.
-//             if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
-//             {
-//                 tmp_1[i_kap_b] = s_D[threadIdx.x];
-//                 cblock_ID_onb[i_kap_b] = 1;
-//             }
+            // If at least one cell satisfies the above condition, mark for refinement (accounting for 2:1 balancing).
+            if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
+            {
+                // Only refine if not on the finest grid level.
+                if (!hit_max)
+                {
+                    bool eligible = true;
+//                     for (int p = 0; p < N_Q_max; p++)
+//                     {
+//                         if (s_ID_nbr[p] == N_SKIPID)
+//                             eligible = false;
+//                     }
+//                     
+                    if (eligible)
+                        cblock_ID_ref[i_kap_b] = V_REF_ID_MARK_REFINE;
+                }
+            }
         }
     }
 }

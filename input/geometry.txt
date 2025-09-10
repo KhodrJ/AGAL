@@ -27,7 +27,7 @@
 
 
 # For testing the 'draw' function.
-CIRCLE 8 0.3125 0.50 0.5
+#CIRCLE 8 0.3125 0.50 0.5
 #SPHERE 8 8 0.3125 0.50 0.50 0.1
 
 # For testing voxelization of a bunch of particles.
@@ -39,7 +39,7 @@ CIRCLE 8 0.3125 0.50 0.5
 
 # For testing airfoils.
 #NACA002D CENTER 128 15 0.5 0.5 0.3 0.2 1
-#NACA003D CENTER 128 15 0.5 0.5 0.5 0.0625 1 0.015625 1
+NACA003D CENTER 16 15 0.5 0.5 0.5 0.0625 1 0.015625 1
 
 # Some other stuff I forgot.
 #NACA002D CENTER 128 15 0.5 0.5 0.3 0.2 1

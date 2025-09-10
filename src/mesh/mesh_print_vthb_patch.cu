@@ -188,8 +188,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
             data_kap_w->SetNumberOfTuples(M_PATCH_VOL);
             
             // By default, blank all cells.
-            //for (int k = 0; k < M_PATCH_VOL; k++)
-            //    grid_kap->BlankCell(k);
+            for (int k = 0; k < M_PATCH_VOL; k++)
+               grid_kap->BlankCell(k);
             
             // Now fill the patch with block data.
             for (const int &kap: pkap.second)
@@ -232,8 +232,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
                     int iy = static_cast<int>(y_t * Nxi_L[1]) % M_PATCH;
                     int iz = static_cast<int>(z_t * Nxi_L[2]) % M_PATCH;
                     int i_global = ix + M_PATCH*iy + M_PATCH*M_PATCH*iz;
-                    //grid_kap->UnBlankCell(i_global);
-                    //std::cout << "L=" << L << ", patch=" << counter << " | Precomputed resolution (1)..." << std::endl;
+                    grid_kap->UnBlankCell(i_global);
                     
                     // Debug.
                     data_kap_ref->SetTuple1(i_global, (double)cblock_ID_ref[i_dev][i_kap_b]);

@@ -121,7 +121,7 @@ constexpr ArgsPack AP2D_DEF = ArgsPack(2); /// Default 2D argument pack.
 constexpr ArgsPack AP3D_DEF = ArgsPack(3); /// Default 3D argument pack.
 
 // constexpr int Nbx = 4;
-constexpr int N_SYMMETRY = -998;
+constexpr int N_SPECID = -998;
 constexpr int N_SKIPID = -999;
 constexpr double CONV_B2GB = 9.313225746154785e-10;
 constexpr int T_S = 0;
