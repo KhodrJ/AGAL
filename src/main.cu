@@ -57,8 +57,8 @@ constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_B
 constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_CUBIC);
 
 // Typedefs and chosen packs.
-typedef float REAL_s;
-typedef float REAL_g;
+typedef double REAL_s;
+typedef double REAL_g;
 
 #ifdef USED2Q9
     constexpr ArgsPack APc = AP2D;
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     geometry.G_Init_Arrays_CoordsList_CPU();
     if (geometry.G_PRINT)
         geometry.G_PrintSTL();
-    geometry.G_InitBins(static_cast<int>(BinMake::GPU),0);
+    geometry.G_InitBins(BinMake::GPU,0);
     
     // Create a mesh.
     //const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.

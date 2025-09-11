@@ -93,6 +93,7 @@ class Geometry
     int             G_BIN_APPROACH          = 0;                     ///< The approach to take for classifying faces\
                                                                           [0: bounding-box, 1: intersection].
     int             G_BIN_LEVELS            = 1;                     ///< Number of bin levels to use.
+    int             G_BIN_SPEC              = 1;                     ///< Number of bins (2+G_BIN_SPEC)^D that defines maximum length of a face.
     std::string     input_dir;                                       ///< Input directory.
     std::string     output_dir;                                      ///< Output directory.
     std::string     G_FILENAME;
@@ -168,7 +169,7 @@ class Geometry
     int G_Convert_CoordListToIndexLists();
     int G_CoordList_MachineEps();
     int G_RefineFaces_Length();
-    int G_InitBins(int make_type, int draw_type);
+    int G_InitBins(BinMake make_type, int draw_type);
     int G_DestBins();
     
     // Adding primitives to the index lists.

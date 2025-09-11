@@ -38,7 +38,8 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     int init_bins_3D = 0;
     int n_bin_density_root = 1;
     int n_bin_approach = 0;
-    int n_levels = 1;
+    int n_bin_levels = 1;
+    int n_bin_spec;
     int n_max_levels_wall = 1;
     int Nx;
     int Ny;
@@ -90,7 +91,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     // | Constructor.
     // o====================================================================================
     
-    Bins(Geometry<ufloat_t,ufloat_g_t,AP> *geometry_, const int &make_type, const int &draw_bins) : geometry(geometry_)
+    Bins(Geometry<ufloat_t,ufloat_g_t,AP> *geometry_, const BinMake &make_type, const int &draw_bins) : geometry(geometry_)
     {
         // make_type: [0: CPU, 1: GPU]
         // draw_bins: [0: don't, 1: do]
@@ -104,71 +105,72 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         Nz = (int)(Nx*(Lz/Lx));
         n_bin_density_root = geometry->parser->params_int["G_BIN_DENSITY"];
         n_bin_approach = geometry->parser->params_int["G_BIN_APPROACH"];
-        n_levels = geometry->parser->params_int["G_BIN_LEVELS"];
+        n_bin_levels = geometry->parser->params_int["G_BIN_LEVELS"];
+        n_bin_spec = geometry->parser->params_int["G_BIN_SPEC"];
         n_max_levels_wall = geometry->parser->params_int["MAX_LEVELS_WALL"];
         
         // Derived parameters.
         dx = Lx/static_cast<ufloat_g_t>(Nx);
         dy = Ly/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
         dz = Lz/static_cast<ufloat_g_t>((static_cast<int>(Nx*(Ly/Lx))));
-        n_bin_density = new int[n_levels];
-        Nxi_L = new int[3*n_levels];
-        dxf_vec = new ufloat_g_t[3*n_levels];
-        Lx0g_vec = new ufloat_g_t[3*n_levels];
+        n_bin_density = new int[n_bin_levels];
+        Nxi_L = new int[3*n_bin_levels];
+        dxf_vec = new ufloat_g_t[3*n_bin_levels];
+        Lx0g_vec = new ufloat_g_t[3*n_bin_levels];
         
-        // Cap n_levels using n_max_levels_wall.
-        n_levels = std::min(n_levels, n_max_levels_wall);
+        // Cap n_bin_levels using n_max_levels_wall.
+        n_bin_levels = std::min(n_bin_levels, n_max_levels_wall);
         
-        // Fill vectors based on n_levels.
+        // Fill vectors based on n_bin_levels.
         n_bin_density[0] = n_bin_density_root;
-        dxf_vec[0 + 0*n_levels] = dx;
-        dxf_vec[0 + 1*n_levels] = dy;
-        dxf_vec[0 + 2*n_levels] = dz;
-        Lx0g_vec[0 + 0*n_levels] = Lx/static_cast<ufloat_g_t>(n_bin_density_root);
-        Lx0g_vec[0 + 1*n_levels] = Ly/static_cast<ufloat_g_t>(n_bin_density_root);
-        Lx0g_vec[0 + 2*n_levels] = Lz/static_cast<ufloat_g_t>(n_bin_density_root);
-        Nxi_L[0 + 0*n_levels] = Nx;
-        Nxi_L[0 + 1*n_levels] = Ny;
-        Nxi_L[0 + 2*n_levels] = Nz;
-        for (int L = 1; L < n_levels; L++)
+        dxf_vec[0 + 0*n_bin_levels] = dx;
+        dxf_vec[0 + 1*n_bin_levels] = dy;
+        dxf_vec[0 + 2*n_bin_levels] = dz;
+        Lx0g_vec[0 + 0*n_bin_levels] = Lx/static_cast<ufloat_g_t>(n_bin_density_root);
+        Lx0g_vec[0 + 1*n_bin_levels] = Ly/static_cast<ufloat_g_t>(n_bin_density_root);
+        Lx0g_vec[0 + 2*n_bin_levels] = Lz/static_cast<ufloat_g_t>(n_bin_density_root);
+        Nxi_L[0 + 0*n_bin_levels] = Nx;
+        Nxi_L[0 + 1*n_bin_levels] = Ny;
+        Nxi_L[0 + 2*n_bin_levels] = Nz;
+        for (int L = 1; L < n_bin_levels; L++)
         {
             n_bin_density[L] = n_bin_density[L-1]*2;
             for (int d = 0; d < N_DIM; d++)
             {
-                dxf_vec[L + d*n_levels] = dxf_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
-                Lx0g_vec[L + d*n_levels] = Lx0g_vec[(L-1) + d*n_levels]*static_cast<ufloat_g_t>(0.5);
-                Nxi_L[L + d*n_levels] = Nxi_L[(L-1) + d*n_levels]*2;
+                dxf_vec[L + d*n_bin_levels] = dxf_vec[(L-1) + d*n_bin_levels]*static_cast<ufloat_g_t>(0.5);
+                Lx0g_vec[L + d*n_bin_levels] = Lx0g_vec[(L-1) + d*n_bin_levels]*static_cast<ufloat_g_t>(0.5);
+                Nxi_L[L + d*n_bin_levels] = Nxi_L[(L-1) + d*n_bin_levels]*2;
             }
         }
         
         // Initialize 2D bins.
-        n_bins_2D = new int[n_levels];
-        bin_indicators_2D = new int*[n_levels];
-        binned_face_ids_2D = new int*[n_levels];
-        binned_face_ids_n_2D = new int*[n_levels];
-        binned_face_ids_N_2D = new int*[n_levels];
-        c_bin_indicators_2D = new int*[n_levels];
-        c_binned_face_ids_2D = new int*[n_levels];
-        c_binned_face_ids_n_2D = new int*[n_levels];
-        c_binned_face_ids_N_2D = new int*[n_levels];
+        n_bins_2D = new int[n_bin_levels];
+        bin_indicators_2D = new int*[n_bin_levels];
+        binned_face_ids_2D = new int*[n_bin_levels];
+        binned_face_ids_n_2D = new int*[n_bin_levels];
+        binned_face_ids_N_2D = new int*[n_bin_levels];
+        c_bin_indicators_2D = new int*[n_bin_levels];
+        c_binned_face_ids_2D = new int*[n_bin_levels];
+        c_binned_face_ids_n_2D = new int*[n_bin_levels];
+        c_binned_face_ids_N_2D = new int*[n_bin_levels];
         
         // Initialize 3D bins.
-        n_bins_3D = new int[n_levels];
-        bin_indicators_3D = new int*[n_levels];
-        binned_face_ids_3D = new int*[n_levels];
-        binned_face_ids_n_3D = new int*[n_levels];
-        binned_face_ids_N_3D = new int*[n_levels];
-        c_bin_indicators_3D = new int*[n_levels];
-        c_binned_face_ids_3D = new int*[n_levels];
-        c_binned_face_ids_n_3D = new int*[n_levels];
-        c_binned_face_ids_N_3D = new int*[n_levels];
+        n_bins_3D = new int[n_bin_levels];
+        bin_indicators_3D = new int*[n_bin_levels];
+        binned_face_ids_3D = new int*[n_bin_levels];
+        binned_face_ids_n_3D = new int*[n_bin_levels];
+        binned_face_ids_N_3D = new int*[n_bin_levels];
+        c_bin_indicators_3D = new int*[n_bin_levels];
+        c_binned_face_ids_3D = new int*[n_bin_levels];
+        c_binned_face_ids_n_3D = new int*[n_bin_levels];
+        c_binned_face_ids_N_3D = new int*[n_bin_levels];
         
-        // Consider up to n_levels.
-        for (int k = 0; k < n_levels; k++)
+        // Consider up to n_bin_levels.
+        for (int k = 0; k < n_bin_levels; k++)
         {
             // Make the bins based on the specified make_type.
-            if (make_type == static_cast<int>(BinMake::CPU)) G_MakeBinsCPU(k);
-            if (make_type == static_cast<int>(BinMake::GPU)) G_MakeBinsGPU(k);
+            if (make_type == BinMake::CPU) G_MakeBinsCPU(k);
+            if (make_type == BinMake::GPU) G_MakeBinsGPU(k);
             
             // Draw the bins, if specified to do so.
             if (draw_bins == 1) G_DrawBinsAndFaces(k);
@@ -184,7 +186,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         
         if (init_bins_2D)
         {
-            for (int j = 0; j < n_levels; j++)
+            for (int j = 0; j < n_bin_levels; j++)
             {
                 delete[] bin_indicators_2D[j];
                 delete[] binned_face_ids_2D[j];
@@ -207,7 +209,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         
         if (init_bins_3D)
         {
-            for (int j = 0; j < n_levels; j++)
+            for (int j = 0; j < n_bin_levels; j++)
             {
                 delete[] bin_indicators_3D[j];
                 delete[] binned_face_ids_3D[j];

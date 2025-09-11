@@ -57,6 +57,11 @@ template <> __host__ __device__ __forceinline__  double Tceil(double a) { return
 template <class T> __host__ __device__ __forceinline__ T Tfloor(T a);
 template <> __host__ __device__ __forceinline__  float Tfloor(float a) { return floorf(a); }
 template <> __host__ __device__ __forceinline__  double Tfloor(double a) { return floor(a); }
+//
+template <class T> __host__ __device__ __forceinline__ bool LTZ_E(T a) { return a < -EPS<T>(); } // Less-than-zero exclusive.
+template <class T> __host__ __device__ __forceinline__ bool LTZ_I(T a) { return a <  EPS<T>(); } // Less-than-zero inclusive.
+template <class T> __host__ __device__ __forceinline__ bool GTZ_E(T a) { return a >  EPS<T>(); } // Greater-than-zero exclusive.
+template <class T> __host__ __device__ __forceinline__ bool GTZ_I(T a) { return a > -EPS<T>(); } // Greater-than-zero inclusive.
 
 // o====================================================================================
 // | Vec2.
@@ -425,24 +430,27 @@ bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInTriangleA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+bool CheckPointInTriangleI(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
 {
     // First edge.
     vec3<T> ven = InwardNormalUnit(v1,v2,n);
     T s = DotV(v1-vp,ven);
-    if (s <= -EPS<T>())
+    //if (s <= -EPS<T>())
+    if ( LTZ_I(s) )
         return false;
     
     // Second edge.
     ven = InwardNormalUnit(v2,v3,n);
     s = DotV(v2-vp,ven);
-    if (s <= -EPS<T>())
+    //if (s <= -EPS<T>())
+    if ( LTZ_I(s) )
         return false;
     
     // Third edge.
     ven = InwardNormalUnit(v3,v1,n);
     s = DotV(v3-vp,ven);
-    if (s <= -EPS<T>())
+    //if (s <= -EPS<T>())
+    if ( LTZ_I(s) )
         return false;
     
     return true;
@@ -454,7 +462,7 @@ bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, c
 {
     if (N_DIM==2)
         return CheckPointInLineA(vp,v1,v2);
-    return CheckPointInTriangleA(vp,v1,v2,v3,n);
+    return CheckPointInTriangleI(vp,v1,v2,v3,n);
 }
 
 template <typename T>
@@ -463,7 +471,7 @@ vec3<T> PointTriangleIntersection(const vec3<T> &vp, const vec3<T> &v1, const ve
 {
     T dT = DotV(v1-vp,n) / DotV(n,n);
     vec3<T> vi = vp + n*dT;
-    bool in_T = CheckPointInTriangleA(vi, v1, v2, v3, n);
+    bool in_T = CheckPointInTriangleI(vi, v1, v2, v3, n);
     
     if (!in_T)
     {

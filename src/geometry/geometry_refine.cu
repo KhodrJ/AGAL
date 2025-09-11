@@ -181,8 +181,14 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_RefineFaces_Length()
     {
         G_UpdateCounts();
         constexpr int N_DIMg = AP->N_DIM;
-        ufloat_g_t finest_density = pow(static_cast<ufloat_g_t>(2.0), static_cast<ufloat_g_t>(G_BIN_LEVELS-1)) * static_cast<ufloat_g_t>(G_BIN_DENSITY);
-        ufloat_g_t l_spec = static_cast<ufloat_g_t>(0.95*1.0) * (static_cast<ufloat_g_t>(Lx) / finest_density);
+        ufloat_g_t multiplier = static_cast<ufloat_g_t>(0.95)*static_cast<ufloat_g_t>(G_BIN_SPEC);
+        ufloat_g_t Lx_g = std::min({Lx, Ly, Lz});
+        ufloat_g_t n_bin_levels_m1 = static_cast<ufloat_g_t>(G_BIN_LEVELS-1);
+        ufloat_g_t n_bin_density = static_cast<ufloat_g_t>(G_BIN_DENSITY);
+        
+        // Compute the specified length.
+        ufloat_g_t finest_density = pow(static_cast<ufloat_g_t>(2.0), n_bin_levels_m1) * n_bin_density;
+        ufloat_g_t l_spec = multiplier * Lx_g / finest_density;
         
         // This needs to be done before calling G_Init_Arrays_CoordsList_CPU to make sure that n_faces is finalized
         // before GPU memory is allocated.

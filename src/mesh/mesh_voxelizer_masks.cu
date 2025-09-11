@@ -36,26 +36,12 @@ void Cu_MarkBlocks_CheckMasks
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_D[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
     __shared__ int s_ID_mask[M_HBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    int i_kap_b = -1;
-    int I = threadIdx.x % 4;
-    int J = (threadIdx.x / 4) % 4;
-    int K = 0;
-    if (N_DIM==3)
-        K = (threadIdx.x / 4) / 4;
     bool near_a_solid_cell = false;
     
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x < M_LBLOCK)and(kap < n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
     for (int k = 0; k < M_HBLOCK/M_TBLOCK+1; k++)
     {
         if (k*M_TBLOCK + threadIdx.x < M_HBLOCK)
@@ -63,13 +49,15 @@ void Cu_MarkBlocks_CheckMasks
     }
     __syncthreads();
     
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
     // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    if (i_kap_b > -1)
     {
-        i_kap_b = s_ID_cblock[k];
-
         // Latter condition is added only if n>0.
-        if (i_kap_b > -1 && cblock_ID_nbr_child[i_kap_b] < 0 && (cblock_ID_mask[i_kap_b]<0 && cblock_ID_mask[i_kap_b] != V_BLOCKMASK_SOLID))
+        if (cblock_ID_nbr_child[i_kap_b] < 0 && (cblock_ID_mask[i_kap_b]<0 && cblock_ID_mask[i_kap_b] != V_BLOCKMASK_SOLID))
         {
             // Load neighbor-block indices into shared memory.
             if (threadIdx.x==0)
@@ -79,6 +67,13 @@ void Cu_MarkBlocks_CheckMasks
                     s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
             }
             __syncthreads();
+            
+            // Compute cell indices.
+            int I = threadIdx.x % 4;
+            int J = (threadIdx.x / 4) % 4;
+            int K = 0;
+            if (N_DIM==3)
+                K = (threadIdx.x / 4) / 4;
             
             // Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
             for (int p = 1; p < N_Q_max; p++)

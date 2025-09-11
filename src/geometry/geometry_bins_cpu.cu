@@ -34,9 +34,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
     ufloat_g_t *geom_f_face_X = geometry->geom_f_face_X;
     int n_faces = geometry->n_faces;
     int n_faces_a = geometry->n_faces_a;
-    ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_levels];
-    ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_levels];
-    ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_levels];
+    ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_bin_levels];
+    ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_bin_levels];
+    ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_bin_levels];
     ufloat_g_t eps __attribute__((unused)) = EPS<ufloat_g_t>();
     bool C2D = false; if (n_bin_approach==0) C2D = true;
     bool C3D = false; if (n_bin_approach==0) C3D = true;

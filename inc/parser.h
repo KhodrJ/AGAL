@@ -72,6 +72,7 @@ class Parser
             {"G_BIN_DENSITY",           1},
             {"G_BIN_APPROACH",          0},
             {"G_BIN_LEVELS",            1},
+            {"G_BIN_SPEC",              1},
             {"PERIODIC_X",              0},
             {"PERIODIC_Y",              0},
             {"PERIODIC_Z",              0},

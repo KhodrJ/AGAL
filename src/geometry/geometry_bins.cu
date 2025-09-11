@@ -8,7 +8,7 @@
 #include "geometry.h"
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Geometry<ufloat_t,ufloat_g_t,AP>::G_InitBins(int make_type, int draw_bins)
+int Geometry<ufloat_t,ufloat_g_t,AP>::G_InitBins(BinMake make_type, int draw_bins)
 {
     std::cout << "Initializing bins..." << std::endl;
     if (init_bins == 0)

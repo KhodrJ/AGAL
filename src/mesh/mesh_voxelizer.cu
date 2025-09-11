@@ -38,13 +38,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
         //int Nprop_i = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For filling-in the interior.
         int Nprop_d = (int)(R/(ufloat_g_t)(4.0*sqrt(2.0)*dxf_vec[L])) + 1;   // For satisfying the near-wall distance criterion.
         bool hit_max = L==MAX_LEVELS-1;
-        int Lbin = std::min(L, geometry->bins->n_levels-1);
+        int Lbin = std::min(L, geometry->bins->n_bin_levels-1);
         std::cout << "Using bin level " << Lbin << "..." << std::endl;
         
         // Voxelize the solid, filling in all solid cells.
         tic_simple("");
         //Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
-        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,float,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L],
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
             geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_X, geometry->c_geom_f_face_Xt,

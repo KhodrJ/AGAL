@@ -122,7 +122,7 @@ void Cu_Voxelize_V1_WARP
                         d = Tabs(d);
                         if (w == 0)
                         {
-                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                             {
                                 pmin = p;
                                 dmin = d;
@@ -131,7 +131,7 @@ void Cu_Voxelize_V1_WARP
                         }
                         if (w == 1)
                         {
-                            if (d < dx_L && (d < dmin2 || pmin2 == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                            if (d < dx_L && (d < dmin2 || pmin2 == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                             {
                                 pmin2 = p;
                                 dmin2 = d;
@@ -215,7 +215,7 @@ void Cu_Voxelize_V1_WARP
     }
 }
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, typename ufloat_d_t, const ArgsPack *AP>
 __global__
 void Cu_Voxelize_V1
 (
@@ -311,21 +311,26 @@ void Cu_Voxelize_V1
                 
                 
                 // Voxelize the face into the current cell-block with a triangle-bin overlap test.
-                vec3<ufloat_g_t> ray
-                (
-                    static_cast<ufloat_g_t>(1.0),
-                    static_cast<ufloat_g_t>(0.0),
-                    static_cast<ufloat_g_t>(0.0)
-                );
-                ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
-                vec3<ufloat_g_t> vi = vp + ray*d;
+//                 vec3<ufloat_g_t> ray
+//                 (
+//                     static_cast<ufloat_g_t>(1.0),
+//                     static_cast<ufloat_g_t>(0.0),
+//                     static_cast<ufloat_g_t>(0.0)
+//                 );
+//                 ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
+//                 vec3<ufloat_g_t> vi = vp + ray*d;
+                ufloat_g_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
+                vec3<ufloat_g_t> vi = vp;
+                vi.x += d;
                 {
                     d = Tabs(d);
-                    if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                    if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     {
                         pmin = p;
                         dmin = d;
                         dotmin = DotV(vi-vp,n);
+                        if (Tabs(vi.x-vp.x) < 1e-5F)
+                            printf("Too close...\n");
                     }
                 }
                 
@@ -350,7 +355,7 @@ void Cu_Voxelize_V1
                             d = Tabs(d);
                         
                             // Now only store the result of this snapped ray instead of the nearest-distance ray.
-                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                             {
                                 pmin = p;
                                 dmin = d;
@@ -536,7 +541,7 @@ void Cu_Voxelize_V2_WARP
                             d = Tabs(d);
                             if (w == 0)
                             {
-                                if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                                if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                                 {
                                     pmin = p;
                                     dmin = d;
@@ -545,7 +550,7 @@ void Cu_Voxelize_V2_WARP
                             }
                              if (w == 1)
                             {
-                                if (d < dx_L && (d < dmin2 || pmin2 == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                                if (d < dx_L && (d < dmin2 || pmin2 == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                                 {
                                     pmin2 = p;
                                     dmin2 = d;
@@ -735,7 +740,7 @@ void Cu_Voxelize_V2
                         vec3<ufloat_g_t> vi = vp + ray*d;
                         {
                             d = Tabs(d);
-                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleA(vi,v1,v2,v3,n))
+                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                             {
                                 pmin = p;
                                 dmin = d;

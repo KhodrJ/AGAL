@@ -158,7 +158,7 @@ void Cu_IdentifyFaces
                                     vp.y + V_CONN_ID[q+1*27]*tmp,
                                     vp.z + V_CONN_ID[q+2*27]*tmp
                                 );
-                                if (CheckPointInTriangleA(tmpX, v1, v2, v3, n))
+                                if (CheckPointInTriangleI(tmpX, v1, v2, v3, n))
                                 {
                                     ufloat_g_t dist_q = dQ[q];
                                     if (tmp < dist_q || dist_q < 0)
