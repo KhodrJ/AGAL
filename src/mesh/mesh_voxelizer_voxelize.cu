@@ -329,8 +329,8 @@ void Cu_Voxelize_V1
                         pmin = p;
                         dmin = d;
                         dotmin = DotV(vi-vp,n);
-                        if (Tabs(vi.x-vp.x) < 1e-5F)
-                            printf("Too close...\n");
+                        //if (Tabs(vi.x-vp.x) < 1e-5F)
+                        //    printf("Too close...\n");
                     }
                 }
                 

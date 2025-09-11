@@ -68,7 +68,7 @@ NVCCFLAGSPTX = -lineinfo -Xptxas "-v" -arch=sm_50 -Xcompiler=\"-Wno-unused-varia
 NVCCFLAGS = -lineinfo -Xcompiler=\"-Wno-unused-variable\"
 LDFLAGS = 
 #|
-INC = -I../inc/ -I$(VTK_INC) -I$(EIG_INC) -I./geometry -I./mesh -I./solver_lbm
+INC = -I../inc/ -I$(VTK_INC) -I./geometry -I./mesh -I./solver_lbm
 LIB = -L. -L$(VTK_LIB) --compiler-options=-fopenmp -Xcompiler \"-Wl,-rpath,$(VTK_LIB)\"
 VPATH = ../inc/:./geometry:./mesh:./solver_lbm
 
