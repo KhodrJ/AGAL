@@ -159,4 +159,32 @@ __host__ __device__ __forceinline__ bool TriangleBinOverlap3D(const vec3<T> &vm,
     return true;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInTriangleAABB(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3)
+{
+    vec3<T> vm = vp - EPS<T>();
+    vec3<T> vM = vp + EPS<T>();
+    
+    return TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+}
+
 #endif

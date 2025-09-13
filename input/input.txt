@@ -13,7 +13,7 @@ Nx                              64
 N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
-G_FILENAME                      bunny_ascii.stl
+G_FILENAME                      xyzrgbdragon_ascii.stl
 G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05

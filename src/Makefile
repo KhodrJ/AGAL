@@ -191,5 +191,5 @@ clean:
 #
 # make pxtas VSET=D3Q27 &> out.txt && sed -i 's/Compiling entry/\n\nCompiling entry/g' out.txt   <-] to print pxtas
 #
-# git fetch -all
+# git fetch --all
 # git reset --hard origin/develop

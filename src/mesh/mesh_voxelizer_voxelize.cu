@@ -340,13 +340,12 @@ void Cu_Voxelize_V1
                 vec3<ufloat_d_t> vi = vp;
                 vi.x += d;
                 {
-                    ufloat_d_t s = static_cast<ufloat_d_t>(d > 0 ? -1.0 : 1.0);
                     d = Tabs(d);
-                    vec3<ufloat_d_t> vm(vi.x+s*EPS<ufloat_d_t>(), vi.y+s*EPS<ufloat_d_t>(), vi.z+s*EPS<ufloat_d_t>());
-                    vec3<ufloat_d_t> vM(vi.x-s*EPS<ufloat_d_t>(), vi.y-s*EPS<ufloat_d_t>(), vi.z-s*EPS<ufloat_d_t>());
+                    //vec3<ufloat_d_t> vm(vi.x+s*EPS<ufloat_d_t>(), vi.y+s*EPS<ufloat_d_t>(), vi.z+s*EPS<ufloat_d_t>());
+                    //vec3<ufloat_d_t> vM(vi.x-s*EPS<ufloat_d_t>(), vi.y-s*EPS<ufloat_d_t>(), vi.z-s*EPS<ufloat_d_t>());
                     //if (d < static_cast<ufloat_d_t>(2.0)*dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                    if ((d < dmin || pmin == -1) && TriangleBinOverlap3D(vm,vM,v1,v2,v3))
+                    if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
                     {
                         pmin = p;
                         dmin = d;
