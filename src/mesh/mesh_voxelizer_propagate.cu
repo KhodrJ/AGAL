@@ -198,6 +198,8 @@ void Cu_Voxelize_Propagate_Left
         // First read of cell masks.
         s_ID_mask[threadIdx.x] = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
         int status = s_ID_mask[0 + 4*J + 16*K];
+        if (i_nbr_start_right == N_SPECID)
+            status = V_CELLMASK_SOLID;
         
         // Get first neighbor block in the other direction now.
         int i_nbr_left = -1;

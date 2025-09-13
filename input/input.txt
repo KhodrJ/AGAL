@@ -13,14 +13,14 @@ Nx                              64
 N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
-G_FILENAME                      xyzrgbdragon_ascii.stl
+G_FILENAME                      bunny_ascii.stl
 G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
 G_BIN_APPROACH                  1
 G_BIN_DENSITY                   16
 G_BIN_LEVELS                    5
-G_BIN_SPEC                      2
+G_BIN_SPEC                      5
 
 # SOLVER
 v0                              5e-5

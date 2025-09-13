@@ -50,6 +50,16 @@ struct is_equal_to
     int level_;
 };
 
+struct is_not_equal_to
+{
+    is_not_equal_to(int level) : level_{level} {}
+    __device__ bool operator()(const int level)
+    {
+        return level!=level_;
+    }
+    int level_;
+};
+
 struct is_equal_to_zip
 {
     int val;

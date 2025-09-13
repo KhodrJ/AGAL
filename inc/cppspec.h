@@ -55,7 +55,6 @@
 #include "vtkImageData.h"
 #include "vtkXMLImageDataWriter.h"
 #include "vtkXMLUniformGridAMRWriter.h"
-#include <vtkXMLHierarchicalBoxDataWriter.h>
 #include "vtkCellDataToPointData.h"
 #include "vtkContourFilter.h"
 #include "vtkActor.h"
@@ -242,12 +241,6 @@ void Cu_ResetToValue(int N, T *arr, T val)
         arr[kap] = val;
 }
 
-// template <class T, int M>
-// void ResetToValue(int N, T *arr, T val)
-// {
-//     Cu_ResetToValue<<<(M+N-1)/M, M>>>(N, arr, val);
-// }
-
 //! Contract array elements by a specified amount.
 /*! Retrieve elements of an array and store only a fraction of them (skipping over others) in a destination array not necessarily the same as the input.
     @param N is the length of the input array.
@@ -270,10 +263,8 @@ void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
         s_arr[threadIdx.x] = arr[kap];
         __syncthreads();
     
-        if (threadIdx.x < M_BLOCK/frac)
-        {
+        if (threadIdx.x < M_BLOCK/frac && new_start+threadIdx.x < N/frac)
             arr2[new_start + threadIdx.x] = s_arr[frac*threadIdx.x];
-        }
     }
 }
 

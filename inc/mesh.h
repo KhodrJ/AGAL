@@ -740,6 +740,8 @@ class Mesh
     int             M_ReportForces(int i_dev, int L, int i, double t, int START);
     int             M_Print_VTHB_Patch(int i_dev, int iter);
     int             M_Print_ImageData(int i_dev, int iter);
+    int             M_ResetIntermediateAMRArraysV1(int i_dev);
+    int             M_ResetIntermediateAMRArraysV2(int i_dev);
     
     //! Sets up a solver loop and advances the grid for a specified number of iterations (equal to @ref P_PRINT * @ref N_PRINT) with mesh refinement/coarsening, rendering and printing every @ref P_REFINE, @ref P_RENDER and @ref P_PRINT iterations, respectively.
     int             M_AdvanceLoop();

@@ -430,6 +430,31 @@ bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
 
 template <typename T>
 __host__ __device__ __forceinline__
+bool CheckPointInTriangleII(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    // First edge.
+    vec3<T> ven = InwardNormalUnit(v1,v2,n);
+    T s = DotV(v1-vp,ven);
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    // Second edge.
+    ven = InwardNormalUnit(v2,v3,n);
+    s = DotV(v2-vp,ven);
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    // Third edge.
+    ven = InwardNormalUnit(v3,v1,n);
+    s = DotV(v3-vp,ven);
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    return true;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
 bool CheckPointInTriangleI(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
 {
     // First edge.

@@ -78,7 +78,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
         // Constants.
         constexpr int N_DIM = AP->N_DIM;
         ufloat_g_t odenom = (ufloat_g_t)1.0 / (ufloat_g_t)N_DIM;
-        ufloat_g_t eps = static_cast<ufloat_g_t>(10.0)*EPS<ufloat_g_t>();
+        ufloat_g_t eps = EPS<ufloat_g_t>();
         
         // Update tracker variable and face count.
         G_RefineFaces_Length();

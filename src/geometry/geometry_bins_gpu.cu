@@ -211,12 +211,6 @@ void Cu_ComputeVoxelRayIndicators_V1
             constexpr int N_Q_max = 2;
             
             // Compute bounding box limits.
-//             int ixmin = static_cast<int>( Tround((Tmin(Tmin(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
-//             int iymin = static_cast<int>( Tround((Tmin(Tmin(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
-//             int izmin = static_cast<int>( Tround((Tmin(Tmin(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
-//             int ixmax = static_cast<int>( Tround((Tmax(Tmax(v1.x,v2.x),v3.x) - dx_Lo2)/dx_L) );
-//             int iymax = static_cast<int>( Tround((Tmax(Tmax(v1.y,v2.y),v3.y) - dx_Lo2)/dx_L) );
-//             int izmax = static_cast<int>( Tround((Tmax(Tmax(v1.z,v2.z),v3.z) - dx_Lo2)/dx_L) );
             int ixmin = static_cast<int>( (Tmin(Tmin(v1.x,v2.x),v3.x)) * Nx);
             int iymin = static_cast<int>( (Tmin(Tmin(v1.y,v2.y),v3.y)) * Ny);
             int izmin = static_cast<int>( (Tmin(Tmin(v1.z,v2.z),v3.z)) * Nz);
@@ -250,7 +244,8 @@ void Cu_ComputeVoxelRayIndicators_V1
                         ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
                         vec3<ufloat_g_t> vi = vp + ray*d;
                         
-                        if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleI(vi,v1,v2,v3,n))
+                        //if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleI(vi,v1,v2,v3,n))
+                        if (CheckPointInTriangleII(vi,v1,v2,v3,n))
                         {
                             found = true;
                             ixmax = ixmin-1;
@@ -803,7 +798,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_b,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
-            (ufloat_g_t)dxf_vec[L], (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
+            (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
             Lx0g_vec[L], Lx0g_vec[L + 1*n_bin_levels], Lx0g_vec[L + 2*n_bin_levels], n_bin_density[L],
             c_ray_indicators,
             use_ray, use_map, n_filtered
@@ -943,7 +938,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_v,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
-            (ufloat_g_t)dxf_vec[L], (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
+            (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
             c_ray_indicators,
             use_ray, use_map, n_filtered
         );

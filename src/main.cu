@@ -57,8 +57,8 @@ constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_B
 constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_CUBIC);
 
 // Typedefs and chosen packs.
-typedef double REAL_s;
-typedef double REAL_g;
+typedef float REAL_s;
+typedef float REAL_g;
 
 #ifdef USED2Q9
     constexpr ArgsPack APc = AP2D;

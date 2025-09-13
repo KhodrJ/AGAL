@@ -105,8 +105,12 @@ template <const ArgsPack *AP>
 __global__
 void Cu_UpdateBoundaries
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_nbr, int *cblock_ID_nbr_child, int *cblock_ID_mask, int *cblock_ID_onb
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask,
+    int *__restrict__ cblock_ID_onb
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -140,9 +144,12 @@ template <const ArgsPack *AP>
 __global__
 void Cu_UpdateConnectivity
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child,
-    int *scattered_map
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ scattered_map
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -929,8 +936,11 @@ template <const ArgsPack *AP>
 __global__
 void Cu_UpdateMasks_1
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_mask, int *cblock_ID_ref, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -961,8 +971,11 @@ template <const ArgsPack *AP>
 __global__
 void Cu_UpdateMasks_2
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_nbr, int *cblock_ID_ref, int *cells_ID_mask
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_ref,
+    int *__restrict__ cells_ID_mask
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1291,9 +1304,11 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_Prep
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr,
-    int *efficient_map
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ efficient_map
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -1310,13 +1325,40 @@ void Cu_RefineCells_Prep
     }
 }
 
+template <const ArgsPack *AP>
+__global__
+void Cu_RefineCells_Prep_Reset
+(
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ efficient_map
+)
+{
+    constexpr int N_Q_max = AP->N_Q_max;
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < id_max_curr)
+    {
+        int ref_kap = cblock_ID_ref[kap];
+        if (ref_kap == V_REF_ID_MARK_REFINE || ref_kap == V_REF_ID_MARK_COARSEN)
+        {
+            for (int p = 0; p < N_Q_max; p++)
+                efficient_map[kap + p*n_maxcblocks] = -1;
+        }
+    }
+}
+
 // NOTE: I'm trying to mark unrefined cell-blocks violating the quality criterion. After that, I'll go back to cell-blocks marked for coarsening and check the children - if they have at least one violating the criterion, unmark them.
 template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_Q1_1
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -1341,8 +1383,11 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_Q1_2
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int M_BLOCK = AP->M_BLOCK;
@@ -1383,9 +1428,7 @@ void Cu_RefineCells_Q1_2
     // Now, evaluate the quality criterion.
     if (kap < id_max_curr && ref_kap == V_REF_ID_MARK_COARSEN)
     {
-        //bool near_boundary = false; [DEPRECATED]
         bool has_violating_child = false;
-        //int nbr_id_p; [DEPRECATED]
         
         for (int xc = 0; xc < N_CHILDREN; xc++)
         {
@@ -1393,17 +1436,8 @@ void Cu_RefineCells_Q1_2
                 has_violating_child = true;
         }
         
-        // [DEPRECATED]
-//         for (int p = 1; p < N_Q_max; p++)
-//         {
-//             nbr_id_p = cblock_ID_nbr[kap + p*n_maxcblocks];
-//             if (nbr_id_p < 0)
-//                 near_boundary = true;
-//         }
-        
         // If both violating conditions are satisifed, revert to a regular refined cell.
         if (has_violating_child)
-        //if (near_boundary || has_violating_child) [DEPRECATED]
             cblock_ID_ref[kap] = V_REF_ID_REFINED;
     }
 }
@@ -1415,9 +1449,14 @@ template <typename ufloat_t, const ArgsPack *AP>
 __global__
 void Cu_AddRemoveBlocks
 (
-    int id_max_curr, int n_maxcblocks, ufloat_t dx,
-    int *cblock_ID_nbr_child, int *cblock_ID_ref, int *cblock_level, ufloat_t *cblock_f_X,
-    int *scattered_map
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const ufloat_t dx,
+    int *__restrict__ cblock_ID_nbr_child,
+    int *__restrict__ cblock_ID_ref,
+    int *__restrict__ cblock_level,
+    ufloat_t *__restrict__ cblock_f_X,
+    const int *__restrict__ scattered_map
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1425,11 +1464,11 @@ void Cu_AddRemoveBlocks
     constexpr int N_CHILDREN = AP->N_CHILDREN;
     
     // Child constructor parameters.
-    unsigned int t_id_incrementor = threadIdx.x%N_CHILDREN; //threadIdx.x&(N_CHILDREN-1);
-    unsigned int t_id_builder = threadIdx.x/N_CHILDREN; //threadIdx.x>>log2(N_CHILDREN);
-    unsigned int t_xi_builder = threadIdx.x%2; //threadIdx.x&(1);
-    unsigned int t_xj_builder = (threadIdx.x/2)%2; //(threadIdx.x>>log2(2))&(1);
-    unsigned int t_xk_builder = (threadIdx.x/4)%2; //(threadIdx.x>>log2(4))&(1);
+    unsigned int t_id_incrementor = threadIdx.x%N_CHILDREN;
+    unsigned int t_id_builder = threadIdx.x/N_CHILDREN;
+    unsigned int t_xi_builder = threadIdx.x%2;
+    unsigned int t_xj_builder = (threadIdx.x/2)%2;
+    unsigned int t_xk_builder = (threadIdx.x/4)%2;
     
     __shared__ int s_ID_child[M_BLOCK];
     __shared__ int s_ref[M_BLOCK];
@@ -1454,7 +1493,6 @@ if (N_DIM==3)
     {
         // If this particular ID on the map is a valid ID, we need to transcribe the spatial location and level corresponding to the parent.
         // I've reset s_ID_child to -1 to know which values should be skipped.
-        //if (scattered_map[kap] > -1)
         if (cblock_ID_ref[kap] == V_REF_ID_MARK_REFINE)
         {
             s_ID_child[threadIdx.x] = scattered_map[kap];
@@ -1469,8 +1507,6 @@ if (N_DIM==3)
 
             
             cblock_ID_nbr_child[kap] = s_ID_child[threadIdx.x];
-            //for (int xc = 0; xc < N_CHILDREN; xc++)
-            //    cblock_ID_child[kap + xc*n_maxcblocks] = s_ID_child[threadIdx.x]+xc;
         }
         if (cblock_ID_ref[kap] == V_REF_ID_MARK_COARSEN)
         {
@@ -1481,8 +1517,6 @@ if (N_DIM==3)
                 printf("Uh oh...(S1, ID max. violated)\n");
             
             cblock_ID_nbr_child[kap] = N_SKIPID;
-            //for (int xc = 0; xc < N_CHILDREN; xc++)
-            //    cblock_ID_child[kap + xc*n_maxcblocks] = N_SKIPID;
         }
     }
     __syncthreads();
@@ -1493,7 +1527,6 @@ if (N_DIM==3)
         int ref_q = s_ref[ t_id_builder + q*(M_BLOCK/N_CHILDREN) ];
         
         // Only write if there actually is a child.
-        //if (ID_child_q > -1)
         if (ref_q == V_REF_ID_NEW)
         {
             if (ID_child_q < 0)
@@ -1523,9 +1556,13 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_S2_1
 (
-    int id_max_curr, int n_maxcblocks, 
-    int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child,
-    int *efficient_map, int *scattered_map
+    const int id_max_curr,
+    const int n_maxcblocks, 
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ efficient_map,
+    const int *__restrict__ scattered_map
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1537,57 +1574,50 @@ void Cu_RefineCells_S2_1
         s_ID_nbr[p + threadIdx.x*9] = -1;
     __syncthreads();
     
-// #if (N_DIM==3)
     for (int k = 0; k < (N_DIM==2?1:3); k++)
     {
-// #else
-//     int k = 0;
-// #endif
-    
-    // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-    if (kap < id_max_curr && efficient_map[kap] >= 0)
-    {
-        for (int p = 0; p < 9; p++)
-            s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
-    }
-    __syncthreads();
-    
-    // Replace neighbor Ids with their respective marks.
-    for (int p = 0; p < 9; p++)
-    {
-        int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-        if (i_p > -1)
+        // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
+        if (kap < id_max_curr && efficient_map[kap] >= 0)
         {
-            s_ID_nbr[threadIdx.x + p*M_BLOCK] = cblock_ID_ref[i_p];
-            if (s_ID_nbr[threadIdx.x + p*M_BLOCK] == V_REF_ID_MARK_REFINE)
-                s_ID_nbr[threadIdx.x + p*M_BLOCK] = scattered_map[i_p];
-            else
-                s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
+            for (int p = 0; p < 9; p++)
+                s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
         }
-    }
-    __syncthreads();
-    
-    // Run again and check if any of the marks indicated refinement. If so, replace child-nbr accordingly.
-    if (kap < id_max_curr && efficient_map[kap] >= 0)
-    {
+        __syncthreads();
+        
+        // Replace neighbor Ids with their respective marks.
         for (int p = 0; p < 9; p++)
         {
-            if (s_ID_nbr[p + threadIdx.x*9] > -1)
-                cblock_ID_nbr_child[kap + (k*9+p)*n_maxcblocks] = s_ID_nbr[p + threadIdx.x*9];
+            int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
+            if (i_p > -1)
+            {
+                s_ID_nbr[threadIdx.x + p*M_BLOCK] = cblock_ID_ref[i_p];
+                if (s_ID_nbr[threadIdx.x + p*M_BLOCK] == V_REF_ID_MARK_REFINE)
+                    s_ID_nbr[threadIdx.x + p*M_BLOCK] = scattered_map[i_p];
+                else
+                    s_ID_nbr[threadIdx.x + p*M_BLOCK] = -1;
+            }
+        }
+        __syncthreads();
+        
+        // Run again and check if any of the marks indicated refinement. If so, replace child-nbr accordingly.
+        if (kap < id_max_curr && efficient_map[kap] >= 0)
+        {
+            for (int p = 0; p < 9; p++)
+            {
+                if (s_ID_nbr[p + threadIdx.x*9] > -1)
+                    cblock_ID_nbr_child[kap + (k*9+p)*n_maxcblocks] = s_ID_nbr[p + threadIdx.x*9];
+            }
+        }
+        
+        if (N_DIM==3)
+        {
+            __syncthreads();
+            
+            for (int p = 0; p < 9; p++)
+                s_ID_nbr[p + threadIdx.x*9] = -1;
+            __syncthreads();
         }
     }
-    
-// #if (N_DIM==3)
-if (N_DIM==3)
-{
-    __syncthreads();
-    
-    for (int p = 0; p < 9; p++)
-        s_ID_nbr[p + threadIdx.x*9] = -1;
-    __syncthreads();
-}
-    }
-// #endif
 }
 
 // Update due to coarsening.
@@ -1595,9 +1625,12 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_S2_2
 (
-    int id_max_curr, int n_maxcblocks, 
-    int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child,
-    int *efficient_map
+    const int id_max_curr,
+    const int n_maxcblocks, 
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ efficient_map
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -1609,58 +1642,51 @@ void Cu_RefineCells_S2_2
         s_ID_nbr[p + threadIdx.x*9] = -1;
     __syncthreads();
     
-// #if (N_DIM==3)
     for (int k = 0; k < (N_DIM==2?1:3); k++)
     {
-// #else
-//     int k = 0;
-// #endif
-    
-    // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-    if (kap < id_max_curr && efficient_map[kap] >= 0)
-    {
-        for (int p = 0; p < 9; p++)
-            s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
-    }
-    __syncthreads();
-    
-    // Replace neighbor Ids with their respective marks.
-    for (int p = 0; p < 9; p++)
-    {
-        int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
-        if (i_p > -1)
-            s_ID_nbr[threadIdx.x + p*M_BLOCK] = cblock_ID_ref[i_p];
-    }
-    __syncthreads();
-    
-    // Run again and check if any of the marks indicated refinement. If so, replace child-nbr accordingly.
-    if (kap < id_max_curr && efficient_map[kap] >= 0)
-    {
+        // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
+        if (kap < id_max_curr && efficient_map[kap] >= 0)
+        {
+            for (int p = 0; p < 9; p++)
+                s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
+        }
+        __syncthreads();
+        
+        // Replace neighbor Ids with their respective marks.
         for (int p = 0; p < 9; p++)
         {
-            if ((k*9+p) > 0 && s_ID_nbr[p + threadIdx.x*9] == V_REF_ID_MARK_COARSEN)
-                cblock_ID_nbr_child[kap + (k*9+p)*n_maxcblocks] = N_SKIPID;
+            int i_p = s_ID_nbr[threadIdx.x + p*M_BLOCK];
+            if (i_p > -1)
+                s_ID_nbr[threadIdx.x + p*M_BLOCK] = cblock_ID_ref[i_p];
+        }
+        __syncthreads();
+        
+        // Run again and check if any of the marks indicated refinement. If so, replace child-nbr accordingly.
+        if (kap < id_max_curr && efficient_map[kap] >= 0)
+        {
+            for (int p = 0; p < 9; p++)
+            {
+                if ((k*9+p) > 0 && s_ID_nbr[p + threadIdx.x*9] == V_REF_ID_MARK_COARSEN)
+                    cblock_ID_nbr_child[kap + (k*9+p)*n_maxcblocks] = N_SKIPID;
+            }
+        }
+        
+        if (N_DIM==3)
+        {
+            __syncthreads();
+            
+            for (int p = 0; p < 9; p++)
+                s_ID_nbr[p + threadIdx.x*9] = -1;
+            __syncthreads();
         }
     }
-    
-// #if (N_DIM==3)
-if (N_DIM==3)
-{
-    __syncthreads();
-    
-    for (int p = 0; p < 9; p++)
-        s_ID_nbr[p + threadIdx.x*9] = -1;
-    __syncthreads();
-}
-    }
-// #endif
 }
 
 __global__
 void Cu_RefineCells_S3
 (
-    int id_max_curr_wnew,
-    int *cblock_ID_ref
+    const int id_max_curr_wnew,
+    int *__restrict__ cblock_ID_ref
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1684,8 +1710,8 @@ void Cu_RefineCells_S3
 __global__
 void Cu_RefineCells_Cancel
 (
-    int id_max_curr_wnew,
-    int *cblock_ID_ref
+    const int id_max_curr_wnew,
+    int *__restrict__ cblock_ID_ref
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1702,20 +1728,19 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_S4
 (
-    int id_max_curr_wnew,
-    int *cblock_ID_ref, int *cblock_ID_nbr_child
+    const int id_max_curr_wnew,
+    int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int M_BLOCK = AP->M_BLOCK;
     constexpr int N_CHILDREN = AP->N_CHILDREN;
-    //__shared__ int s_ID_ref_parent[M_BLOCK];
     __shared__ int s_ID_child[M_BLOCK*N_CHILDREN];
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     int ref_kap = -1;
     int new_ref_id = -1;
     
     // Initialize shared memory array.
-    //s_ID_ref_parent[M_BLOCK] = V_REF_ID_REFINED;
     for (int xc = 0; xc < N_CHILDREN; xc++)
         s_ID_child[xc + threadIdx.x*N_CHILDREN] = -1;
     __syncthreads();
@@ -1725,8 +1750,8 @@ void Cu_RefineCells_S4
     {
         ref_kap = cblock_ID_ref[kap];
         
-        // If a cell-block is refined, loop over its children and check whether any of them have been refined too. If so, this cell-block is a branch.
-        // A refined cell-block always has children with ID >= 0, no need for conditional.
+        // If a cell-block is refined, loop over its children and check whether any of them have been refined too.
+        // If so, this cell-block is a branch. A refined cell-block always has children with ID >= 0, no need for conditional.
         if (ref_kap == V_REF_ID_REFINED || ref_kap == V_REF_ID_REFINED_WCHILD)
         {
             int i_c = cblock_ID_nbr_child[kap];
@@ -1744,13 +1769,7 @@ void Cu_RefineCells_S4
     {
         int i_q = s_ID_child[threadIdx.x + q*M_BLOCK];
         if (i_q >= 0)
-        {
             s_ID_child[threadIdx.x + q*M_BLOCK] = cblock_ID_ref[i_q];
-            
-            //int ref_q = cblock_ID_ref[i_q];
-            //if (ref_q == V_REF_ID_REFINED)
-            //    s_ID_ref_parent[(threadIdx.x + q*M_BLOCK)/N_CHILDREN] = V_REF_ID_REFINED_WCHILD;
-        }
     }
     __syncthreads();
     
@@ -1771,8 +1790,10 @@ void Cu_RefineCells_S4
 __global__
 void Cu_CoarsenCells_S1
 (
-    int n_ids_idev_L, int n_ids_marked_removal, int *ids_marked,
-    int *id_set_idev_L
+    const int n_ids_idev_L,
+    const int n_ids_marked_removal,
+    const int *__restrict__ ids_marked,
+    int *__restrict__ id_set_idev_L
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1794,8 +1815,11 @@ template <const ArgsPack *AP>
 __global__
 void Cu_CoarsenCells_S2
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -1818,8 +1842,9 @@ void Cu_CoarsenCells_S2
 __global__
 void Cu_FreezeRefined
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref
+    const int id_max_curr,
+    const int n_maxcblocks,
+    int *__restrict__ cblock_ID_ref
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1836,8 +1861,9 @@ void Cu_FreezeRefined
 __global__
 void Cu_UnfreezeRefined
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref
+    const int id_max_curr,
+    const int n_maxcblocks,
+    int *__restrict__ cblock_ID_ref
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1854,8 +1880,10 @@ void Cu_UnfreezeRefined
 __global__
 void Cu_RefinementValidator_1
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1878,8 +1906,12 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefinementValidator_2
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_ref, int *cblock_level, int *cblock_ID_nbr, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_level,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -1904,8 +1936,12 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefinementValidator_3
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cells_ID_mask, int *cblock_ID_mask, int *cblock_ID_ref, int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cells_ID_mask,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     constexpr int N_QUADS = AP->N_QUADS;
@@ -1949,8 +1985,9 @@ void Cu_RefinementValidator_3
 __global__
 void Cu_RefinementValidator_4
 (
-    int id_max_curr, int n_maxcblocks,
-    int *cblock_ID_nbr_child
+    const int id_max_curr,
+    const int n_maxcblocks,
+    const int *__restrict__ cblock_ID_nbr_child
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -1987,6 +2024,60 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_FreezeRefinedCells(int var)
             );
         }
     }
+    
+    return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_ResetIntermediateAMRArraysV1(int i_dev)
+{
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_1[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_2[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_3[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_4[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_5[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+        n_maxcblocks*N_Q_max, c_tmp_6[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+        n_maxcblocks*N_Q_max, c_tmp_7[i_dev], -1
+    );
+    Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+        n_maxcblocks, c_tmp_8[i_dev], -1
+    );
+    
+    return 0;
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_ResetIntermediateAMRArraysV2(int i_dev)
+{
+    if (thrust::count_if(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (1)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_2_dptr[i_dev], c_tmp_2_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (2)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_3_dptr[i_dev], c_tmp_3_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (3)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_4_dptr[i_dev], c_tmp_4_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (4)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_5_dptr[i_dev], c_tmp_5_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (5)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + (n_maxcblocks*N_Q_max), is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (6)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_7_dptr[i_dev], c_tmp_7_dptr[i_dev] + (n_maxcblocks*N_Q_max), is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (7)" << std::endl;
+    if (thrust::count_if(thrust::device, c_tmp_8_dptr[i_dev], c_tmp_8_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+        std::cout << "Reset NOT OK! (8)" << std::endl;
     
     return 0;
 }
@@ -2039,33 +2130,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         }
         
         // Reset temporary arrays if we are proceeding with refinement/coarsening.
-        if (proceed_refinement || proceed_coarsening)
-        {
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_1[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_2[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_3[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_4[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_5[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-                n_maxcblocks*N_Q_max, c_tmp_6[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-                n_maxcblocks*N_Q_max, c_tmp_7[i_dev], -1
-            );
-            Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
-                n_maxcblocks, c_tmp_8[i_dev], -1
-            );
-        }
+        cudaDeviceSynchronize();
+        //if (proceed_refinement || proceed_coarsening)
+        //    M_ResetIntermediateAMRArraysV1(i_dev);
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
         tmp_time = toc_simple("[Pre]",T_US);
@@ -2076,6 +2143,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         
         
 #if (P_SHOW_REFINE==1)
+        cudaDeviceSynchronize();
         tic_simple("[S1]");
 #endif        
         // Now we need to set up the scatter map for efficiently establishing connectivity. The plan is to 1) loop over cblocks and copy their neighbors down if marked for refinement/coarsening, 2) sort them and perform a unique copy in case of repitions (cblocks near each other may call on the same neighbors), 3) scatter them and use the scattered map to update connectivity only of cblocks in the vincinity of marked cblocks.
@@ -2104,23 +2172,40 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             );
             
             // Reset in preparation for unique copy.
-            Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-                n_maxcblocks*N_Q_max, c_tmp_6[i_dev], -1
+            Cu_RefineCells_Prep_Reset<AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+                id_max_curr, n_maxcblocks,
+                c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
+                c_tmp_6[i_dev]
             );
+            //Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+            //    n_maxcblocks*N_Q_max, c_tmp_6[i_dev], -1
+            //);
             
             // Perform the unique-copy. At this stage, c_tmp_6 shouldn't exceed n_maxcblocks in value so it is safe to scatter to a new c_tmp.
-            thrust::unique_copy(
+            auto result_unique_copy = thrust::unique_copy(
                 thrust::device, c_tmp_7_dptr[i_dev], c_tmp_7_dptr[i_dev] + n_nonnegative_prev, c_tmp_6_dptr[i_dev]
             );
+            int n_nonnegative = result_unique_copy - c_tmp_6_dptr[i_dev];
             
             // Re-count the number of recorded non-negative IDs.
-            n_nonnegative_prev = thrust::count_if(
-                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_nonnegative_prev, is_nonnegative()
-            );
+            //n_nonnegative_prev = thrust::count_if(
+            //    thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_nonnegative, is_nonnegative()
+            //);
             
             // Scatter the IDs.
             thrust::scatter(
-                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_nonnegative_prev, c_tmp_6_dptr[i_dev], c_tmp_8_dptr[i_dev]
+                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_nonnegative, c_tmp_6_dptr[i_dev], c_tmp_8_dptr[i_dev]
+            );
+            
+            
+            
+            // Reset c_tmp_6 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+n_nonnegative-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                n_nonnegative, c_tmp_6[i_dev], -1
+            );
+            // Reset c_tmp_7 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+n_nonnegative_prev-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                n_nonnegative_prev, c_tmp_7[i_dev], -1
             );
         }
 #if (P_SHOW_REFINE==1)
@@ -2139,10 +2224,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         if (proceed_refinement)
         {
             // Copy indices of blocks marked for refinement.
-            thrust::copy_if(
+            auto result_copy_if = thrust::copy_if(
                 //thrust::device, thrust::make_counting_iterator(0), thrust::make_counting_iterator(id_max_curr), c_cblock_ID_ref_dptr[i_dev], c_tmp_1_dptr[i_dev], is_marked_for_refinement()
                 thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max_curr, c_cblock_ID_ref_dptr[i_dev], c_tmp_1_dptr[i_dev], is_marked_for_refinement()
             );
+            int n_size_tmp_1 = result_copy_if - c_tmp_1_dptr[i_dev];
             
             // Splice the gap set starting at (n_gaps-1) - n_ids_marked_refine, reverse its order with thrust.
             thrust::reverse_copy(
@@ -2162,7 +2248,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             
             // Scatter gaps to indices of marked cells for the write process, then retrieve newly-generated blocks by level for insertion in ID sets.
             thrust::scatter(
-                thrust::device, &c_tmp_3[i_dev][N_CHILDREN*n_ids_marked_refine], &c_tmp_3[i_dev][N_CHILDREN*n_ids_marked_refine] + n_ids_marked_refine, c_tmp_1_dptr[i_dev], c_tmp_2_dptr[i_dev]
+                thrust::device, &c_tmp_3_dptr[i_dev][N_CHILDREN*n_ids_marked_refine], &c_tmp_3_dptr[i_dev][N_CHILDREN*n_ids_marked_refine] + n_ids_marked_refine, c_tmp_1_dptr[i_dev], c_tmp_2_dptr[i_dev]
             );
         
             // Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
@@ -2170,6 +2256,17 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
                 id_max_curr, n_maxcblocks,
                 c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
                 c_tmp_8[i_dev], c_tmp_2[i_dev]
+            );
+            
+            
+            
+            // Reset c_tmp_1 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+n_size_tmp_1-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                n_size_tmp_1, c_tmp_1[i_dev], -1
+            );
+            // Reset c_tmp_3 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+((N_CHILDREN+1)*n_ids_marked_refine)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                (N_CHILDREN+1)*n_ids_marked_refine, c_tmp_3[i_dev], -1
             );
         }
 #if (P_SHOW_REFINE==1)
@@ -2214,9 +2311,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             if (proceed_coarsening)
             {
                 // Retrieve indices of blocks marked for coarsening, append to c_tmp_1. Needed for Cu_RefineCells_S2.
-                thrust::copy_if(
-                    thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max_curr, c_cblock_ID_ref_dptr[i_dev],     &c_tmp_1_dptr[i_dev][n_ids_marked_refine], is_marked_for_coarsening()
-                );
+                //auto result_copy_if = thrust::copy_if(
+                //    thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max_curr, c_cblock_ID_ref_dptr[i_dev],     &c_tmp_1_dptr[i_dev][n_ids_marked_refine], is_marked_for_coarsening()
+                //);
+                //int n_size_tmp_1 = result_copy_if - c_tmp_1_dptr[i_dev];
                 
                 // Call S2 routine where new child IDs are inserted in the cblock_ID_nbr_child array.
                 Cu_RefineCells_S2_2<AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
@@ -2248,6 +2346,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
                 c_tmp_2[i_dev]
             );
             gpuErrchk( cudaPeekAtLastError() );
+            
+            
+            
+            // Reset c_tmp_2 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+id_max_curr-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                id_max_curr, c_tmp_2[i_dev], -1
+            );
         }
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -2313,13 +2418,22 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             Cu_ConcatReverse<<<(M_BLOCK+n_rem_levels_L_prev-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 n_gaps[i_dev] - N_CHILDREN*n_ids_marked_refine, c_gap_set[i_dev], n_rem_levels_L_prev, c_tmp_5[i_dev]
             );
-            //std::cout << "Ngaps updated from " << n_gaps[i_dev] << " to ";
             n_gaps[i_dev] += n_rem_levels_L_prev;
-            //std::cout << n_gaps[i_dev] << " after removals." << std::endl;
             
             gpuErrchk( cudaPeekAtLastError() );
             Cu_CoarsenCells_S2<AP> <<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 id_max_curr, n_maxcblocks, c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev]
+            );
+            
+            
+            
+            // Reset c_tmp_4 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+(N_CHILDREN*n_ids_marked_coarsen)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                (N_CHILDREN*n_ids_marked_coarsen), c_tmp_4[i_dev], -1
+            );
+            // Reset c_tmp_5 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+(N_CHILDREN*n_ids_marked_coarsen)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                (N_CHILDREN*n_ids_marked_coarsen), c_tmp_5[i_dev], -1
             );
         }
 #if (P_SHOW_REFINE==1)
@@ -2341,9 +2455,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
                 thrust::device, c_cblock_level_dptr[i_dev], c_cblock_level_dptr[i_dev] + id_max_curr_wnew, c_cblock_ID_ref_dptr[i_dev], c_tmp_4_dptr[i_dev], is_newly_generated()
             );
             
-            thrust::copy_if(
+            auto result_copy_if = thrust::copy_if(
                 thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + id_max_curr_wnew, c_cblock_ID_ref_dptr[i_dev], c_tmp_3_dptr[i_dev], is_newly_generated()
             );
+            int n_size_tmp_3 = result_copy_if - c_tmp_3_dptr[i_dev];
             
             // Sort the levels (keys, stored in c_tmp_4) and the associated gaps (values, stored in c_tmp_3). Reduce by key to get the number of gaps to insert into the ID set.
             thrust::stable_sort_by_key(
@@ -2378,6 +2493,21 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             //std::cout << "Ngaps updated from " << n_gaps[i_dev] << " to ";
             n_gaps[i_dev] -= N_CHILDREN*n_ids_marked_refine;
             //std::cout << n_gaps[i_dev] << " after insertions." << std::endl;
+            
+            
+            
+            // Reset c_tmp_3 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+(N_CHILDREN*n_ids_marked_refine)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                N_CHILDREN*n_ids_marked_refine, c_tmp_3[i_dev], -1
+            );
+            // Reset c_tmp_4 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+(N_CHILDREN*n_ids_marked_refine)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                N_CHILDREN*n_ids_marked_refine, c_tmp_4[i_dev], -1
+            );
+            
+            
+            
+            
         }
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -2456,6 +2586,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
                 c_cblock_ID_nbr[i_dev], c_cblock_ID_ref[i_dev], c_cells_ID_mask[i_dev]
             );
             gpuErrchk( cudaPeekAtLastError() );
+            
+            
+            
+            // Reset c_tmp_8 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                id_max[i_dev][MAX_LEVELS], c_tmp_8[i_dev], -1
+            );
         }
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -2485,6 +2622,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         //for (int k = 0; k < id_max_curr_wnew; k++)
         //    std::cout << tmp_1[i_dev][k] << " ";
         //std::cout << std::endl;
+        
+        //M_ResetIntermediateAMRArraysV2(i_dev);
     }
 
     return 0;

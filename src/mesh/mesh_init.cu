@@ -295,6 +295,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         Cu_FillLinear<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(n_maxcblocks, c_tmp_counting_iter[i_dev]);
             // Reset force values stored per-block to 0.
         Cu_ResetToValue<<<(M_BLOCK+6*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(6*n_maxcblocks, c_cblock_f_Ff[i_dev], (ufloat_t)0);
+            // Reset intermediate AMR arrays.
+        M_ResetIntermediateAMRArraysV1(i_dev);
         
         std::cout << "    Data arrays allocated on GPU " << i_dev << "." << std::endl << std::endl;;
     }

@@ -225,6 +225,7 @@ void Cu_MarkBlocks_UpdateSolidChildren
     constexpr int N_CHILDREN = AP->N_CHILDREN;
     constexpr int M_BLOCK = AP->M_BLOCK;
     constexpr int N_LEFT = N_DIM==2 ? 3 : 2;
+    constexpr int N_RIGHT = 1;
     __shared__ int s_ID_child[M_BLOCK*N_CHILDREN];
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
@@ -246,6 +247,8 @@ void Cu_MarkBlocks_UpdateSolidChildren
         int i_p = s_ID_child[threadIdx.x + p*M_BLOCK];
         if (i_p > -1 && cblock_ID_nbr[i_p + N_LEFT*n_maxcblocks] == N_SKIPID)
             cblock_ID_nbr[i_p + N_LEFT*n_maxcblocks] = N_SPECID;
+        if (i_p > -1 && cblock_ID_nbr[i_p + N_RIGHT*n_maxcblocks] == N_SKIPID)
+            cblock_ID_nbr[i_p + N_RIGHT*n_maxcblocks] = N_SPECID;
     }
 }
 
@@ -386,6 +389,9 @@ void Cu_MarkBlocks_Finalize
     // Note: ref Id will be corrected after this. tmp_1 is reset before Cu_MarkBlocks_GetMasks, so if that is changed then
     // make sure tmp_1 has been reset properly before calling propagation.
     if (kap < id_max_curr && (cblock_ID_ref[kap] == V_REF_ID_INDETERMINATE_E || tmp_1[kap] == V_REF_ID_INDETERMINATE_O))
+    {
         cblock_ID_ref[kap] = V_REF_ID_MARK_REFINE;
+        tmp_1[kap] = -1;
+    }
     
 }

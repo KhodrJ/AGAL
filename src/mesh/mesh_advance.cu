@@ -82,11 +82,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
                 M_Geometry_Voxelize_S1(0,L);
 
             // Invoke refinement and coarsening routine.
-            tic_simple("");
+            //tic_simple("");
             if (MAX_LEVELS > 1 && L < MAX_LEVELS_WALL-1)
                 M_RefineAndCoarsenBlocks(0);
-            cudaDeviceSynchronize();
-            std::cout << "RefAndCoarsen | L=" << L; toc_simple("",T_US,1);
+            //cudaDeviceSynchronize();
+            //std::cout << "RefAndCoarsen | L=" << L; toc_simple("",T_US,1);
             M_UpdateMasks_Vis(0,L);
             
 //             solver->S_SetIC(0,L);
