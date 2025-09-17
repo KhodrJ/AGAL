@@ -199,7 +199,7 @@ void Cu_MarkBlocks_MarkExterior
                     eligible = false;
             }
             
-            if (eligible)
+            if (eligible) // || cblock_ID_mask[kap] == V_BLOCKMASK_SOLID)
                 cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE_E;
         }
         

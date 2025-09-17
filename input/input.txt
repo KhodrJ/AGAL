@@ -14,7 +14,7 @@ N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
 G_FILENAME                      xyzrgbdragon_ascii.stl
-G_LOADTYPE                      1
+G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
 G_BIN_APPROACH                  1

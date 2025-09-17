@@ -299,26 +299,32 @@ void Cu_Voxelize_V1
                 ufloat_g_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
                 vec3<ufloat_g_t> vi = vp;
                 vi.x += d;
-                vec3<ufloat_g_t> vii = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
-                ufloat_g_t dd = NormV(vii-vp);
+                //vec3<ufloat_g_t> vii = PointFaceIntersection<ufloat_g_t,N_DIM>(vi,v1,v2,v3,n);
+                //ufloat_g_t dd = NormV(vii-vi);
+                //if (dd < EPS<ufloat_g_t>())
                 {
-                    d = Tabs(d);
+                    //d = Tabs(d);
                     
-                    bool is_smaller = d < dmin && dd < ddmin+EPS<ufloat_g_t>();
-                    if ((is_smaller || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                    //bool is_smaller = d < dmin && dd < ddmin+EPS<ufloat_g_t>();
+                    //if ((is_smaller || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
                     //if ((is_smaller || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                    
+                    ufloat_g_t shift = EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(10.0);
+                    if ((Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleShifted(d,vi,v1,v2,v3,n,shift))
                     {
                         pmin = p;
-                        dmin = d;
-                        ddmin = dd;
+                        dmin = Tabs(d);
+                        //ddmin = dd;
                         dotmin = DotV(vi-vp,n);
                     }
                 }
             }
         }
+        //if (dmin < EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(2.0))
+        //    printf("Cell %i is too close...\n", M_CBLOCK*i_kap_b + threadIdx.x);
         
         // Now, if there are an even number of intersections, the current cell is in the solid.
         // Otherwise, it is a fluid cell.
@@ -326,9 +332,14 @@ void Cu_Voxelize_V1
         int cellmask = V_CELLMASK_INTERIOR;
         if (pmin != -1)
         {
+            // Set to solid or guard based on angle.
             if (dotmin > EPS<ufloat_g_t>())
                 cellmask = V_CELLMASK_SOLID;
             else
+                cellmask = V_CELLMASK_DUMMY_I;
+            
+            // If the cell-center is too close to a face, turn it into a guard.
+            if (dmin < EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(2.0))
                 cellmask = V_CELLMASK_DUMMY_I;
             
             s_D[threadIdx.x] = 1;

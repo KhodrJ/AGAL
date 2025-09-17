@@ -248,7 +248,9 @@ void Cu_ComputeVoxelRayIndicators_V1
                         //if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleI(vi,v1,v2,v3,n))
                         //if (CheckPointInTriangleII(vi,v1,v2,v3,n))
                         //if (CheckPointInTriangleAABB(vi,v1,v2,v3))
-                        if (CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                        //if (CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                        ufloat_g_t shift = EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(100.0);
+                        if (CheckPointInTriangleShifted(d,vi,v1,v2,v3,n,shift))
                         {
                             found = true;
                             //ixmax = ixmin-1;
