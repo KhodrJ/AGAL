@@ -20,12 +20,12 @@ void Cu_Voxelize_V1_WARP
     const int *__restrict__ cblock_ID_nbr,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
     const int *__restrict__ binned_face_ids_3D,
-    const int G_BIN_DENSITY
+    const int G_BIN_DENSITY,
+    const int N_VERTEX_DATA_PADDED=16
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -84,24 +84,26 @@ void Cu_Voxelize_V1_WARP
             for (int p = 0; p < n_f; p++)
             {
                 int f_p = binned_face_ids_3D[N_f+p];
-                vec3<ufloat_g_t> v1
-                (
-                    geom_f_face_X[f_p + 0*n_faces_a],
-                    geom_f_face_X[f_p + 1*n_faces_a],
-                    geom_f_face_X[f_p + 2*n_faces_a]
-                );
-                vec3<ufloat_g_t> v2
-                (
-                    geom_f_face_X[f_p + 3*n_faces_a],
-                    geom_f_face_X[f_p + 4*n_faces_a],
-                    geom_f_face_X[f_p + 5*n_faces_a]
-                );
-                vec3<ufloat_g_t> v3
-                (
-                    geom_f_face_X[f_p + 6*n_faces_a],
-                    geom_f_face_X[f_p + 7*n_faces_a],
-                    geom_f_face_X[f_p + 8*n_faces_a]
-                );
+                vec3<ufloat_g_t> v1, v2, v3;
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+//                 vec3<ufloat_g_t> v1
+//                 (
+//                     geom_f_face_X[f_p + 0*n_faces_a],
+//                     geom_f_face_X[f_p + 1*n_faces_a],
+//                     geom_f_face_X[f_p + 2*n_faces_a]
+//                 );
+//                 vec3<ufloat_g_t> v2
+//                 (
+//                     geom_f_face_X[f_p + 3*n_faces_a],
+//                     geom_f_face_X[f_p + 4*n_faces_a],
+//                     geom_f_face_X[f_p + 5*n_faces_a]
+//                 );
+//                 vec3<ufloat_g_t> v3
+//                 (
+//                     geom_f_face_X[f_p + 6*n_faces_a],
+//                     geom_f_face_X[f_p + 7*n_faces_a],
+//                     geom_f_face_X[f_p + 8*n_faces_a]
+//                 );
                 vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                 
                 // Account for all directions within the cell-neighbor halo.
@@ -215,7 +217,7 @@ void Cu_Voxelize_V1_WARP
     }
 }
 
-template <typename ufloat_t, typename ufloat_g_t, typename ufloat_d_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_Voxelize_V1
 (
@@ -229,12 +231,12 @@ void Cu_Voxelize_V1
     const int *__restrict__ cblock_ID_nbr,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
     const int *__restrict__ binned_face_ids_3D,
-    const int G_BIN_DENSITY
+    const int G_BIN_DENSITY,
+    const int N_VERTEX_DATA_PADDED=16
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -258,11 +260,11 @@ void Cu_Voxelize_V1
             K = (threadIdx.x / 4) / 4;
         
         // Compute cell coordinates.
-        vec3<ufloat_d_t> vp
+        vec3<ufloat_g_t> vp
         (
             cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + 0.5*dx_L,
             cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + 0.5*dx_L,
-            (N_DIM==2) ? (ufloat_d_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L
+            (N_DIM==2) ? (ufloat_g_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L
         );
         
         // Compute global bin index for this thread.
@@ -275,26 +277,10 @@ void Cu_Voxelize_V1
         
         // Initialize trackers for minimal face-distance.
         int pmin = -1;
-        ufloat_d_t dmin = (ufloat_d_t)1.0;
-        ufloat_d_t dotmin = (ufloat_d_t)1.0;
-        vec3<ufloat_d_t> vimin;
+        ufloat_g_t dmin = (ufloat_g_t)1.0;
+        ufloat_g_t ddmin = (ufloat_g_t)1.0;
+        ufloat_g_t dotmin = (ufloat_g_t)1.0;
         int n_f = binned_face_ids_n_3D[global_bin_id];
-//         if ((i_kap_b == 183622 || i_kap_b == 183615 || i_kap_b == 183623 || i_kap_b == 183367) && threadIdx.x==0)
-//         {
-//             vec3<ufloat_d_t> vm
-//             (
-//                 cblock_f_X[i_kap_b + 0*n_maxcblocks],
-//                 cblock_f_X[i_kap_b + 1*n_maxcblocks],
-//                 (N_DIM==2) ? (ufloat_d_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks]
-//             );
-//             vec3<ufloat_d_t> vM
-//             (
-//                 cblock_f_X[i_kap_b + 0*n_maxcblocks] + 4*dx_L,
-//                 cblock_f_X[i_kap_b + 1*n_maxcblocks] + 4*dx_L,
-//                 (N_DIM==2) ? (ufloat_d_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + 4*dx_L
-//             );
-//             DebugDrawSquareInMATLAB_DEV(vm,vM,'k',' ');
-//         }
         
         // If bin is nonempty, traverse the faces and get the signed distance to the closest face.
         // Only consider faces within a distance of dx (these would be adjacent to the surface).
@@ -303,101 +289,34 @@ void Cu_Voxelize_V1
             int N_f = binned_face_ids_N_3D[global_bin_id];
             for (int p = 0; p < n_f; p++)
             {
+                // Load face data.
                 int f_p = binned_face_ids_3D[N_f+p];
-                vec3<ufloat_d_t> v1
-                (
-                    geom_f_face_X[f_p + 0*n_faces_a],
-                    geom_f_face_X[f_p + 1*n_faces_a],
-                    geom_f_face_X[f_p + 2*n_faces_a]
-                );
-                vec3<ufloat_d_t> v2
-                (
-                    geom_f_face_X[f_p + 3*n_faces_a],
-                    geom_f_face_X[f_p + 4*n_faces_a],
-                    geom_f_face_X[f_p + 5*n_faces_a]
-                );
-                vec3<ufloat_d_t> v3
-                (
-                    geom_f_face_X[f_p + 6*n_faces_a],
-                    geom_f_face_X[f_p + 7*n_faces_a],
-                    geom_f_face_X[f_p + 8*n_faces_a]
-                );
-                vec3<ufloat_d_t> n = FaceNormalUnit<ufloat_d_t,N_DIM>(v1,v2,v3);
-                
-                
-                
+                vec3<ufloat_g_t> v1, v2, v3;
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                 
                 // Voxelize the face into the current cell-block with a triangle-bin overlap test.
-//                 vec3<ufloat_g_t> ray
-//                 (
-//                     static_cast<ufloat_g_t>(1.0),
-//                     static_cast<ufloat_g_t>(0.0),
-//                     static_cast<ufloat_g_t>(0.0)
-//                 );
-//                 ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
-//                 vec3<ufloat_g_t> vi = vp + ray*d;
-                ufloat_d_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
-                vec3<ufloat_d_t> vi = vp;
+                ufloat_g_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
+                vec3<ufloat_g_t> vi = vp;
                 vi.x += d;
+                vec3<ufloat_g_t> vii = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
+                ufloat_g_t dd = NormV(vii-vp);
                 {
                     d = Tabs(d);
-                    //vec3<ufloat_d_t> vm(vi.x+s*EPS<ufloat_d_t>(), vi.y+s*EPS<ufloat_d_t>(), vi.z+s*EPS<ufloat_d_t>());
-                    //vec3<ufloat_d_t> vM(vi.x-s*EPS<ufloat_d_t>(), vi.y-s*EPS<ufloat_d_t>(), vi.z-s*EPS<ufloat_d_t>());
-                    //if (d < static_cast<ufloat_d_t>(2.0)*dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
+                    
+                    bool is_smaller = d < dmin && dd < ddmin+EPS<ufloat_g_t>();
+                    if ((is_smaller || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                    //if ((is_smaller || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                    if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
+                    //if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
+                    //if ((d < dmin || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
                     {
                         pmin = p;
                         dmin = d;
+                        ddmin = dd;
                         dotmin = DotV(vi-vp,n);
-                        vimin = vi;
-                        //if (Tabs(vi.x-vp.x) < 1e-5F)
-                        //    printf("Too close...\n");
-                    }
-                    
-//                     if ((i_kap_b == 183622 || i_kap_b == 183615 || i_kap_b == 183623 || i_kap_b == 183367))
-//                     {
-//                         if (threadIdx.x == 0)
-//                         {
-//                             DebugDrawFilled3DTriangleInMATLAB_DEV(v1,v2,v3,'b',' ');
-//                             vec3<ufloat_d_t> vc = (v1+v2+v3)*(1.0/3.0);
-//                             DebugDraw3DLineSegmentInMATLAB_DEV(vc,vc+n*dx_L,'m','-');
-//                         }
-//                         DebugDraw3DPointInMATLAB_DEV(vp,'k','*');
-//                     }
-                }
-                
-                // If this triangle is the closest to this point, consider the relative orientation if a snapped ray also intersects it.
-                /*
-                vec3<ufloat_g_t> vi = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
-                {
-                    vec3<ufloat_g_t> vd = vi-vp;
-                    ufloat_g_t d = NormV(vd);
-                    if (d < static_cast<ufloat_g_t>(2.0)*dx_L && (d < static_cast<ufloat_g_t>(2.0)*dmin || pmin == -1))
-                    {
-                        // Convert vd into a snapped ray.
-                        vd.Normalize();
-                        vd.Snap();
-                        
-                        // Perform ray cast with the snapped ray. Update intersection point.
-                        d = DotV(vd,n);
-                        if (Tabs(d) > EPS<ufloat_g_t>())
-                        {
-                            d = DotV(v1-vp,n) / d;
-                            vi = vp + vd*d;
-                            d = Tabs(d);
-                        
-                            // Now only store the result of this snapped ray instead of the nearest-distance ray.
-                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                            {
-                                pmin = p;
-                                dmin = d;
-                                dotmin = DotV(vi-vp,n);
-                            }
-                        }
                     }
                 }
-                */
             }
         }
         
@@ -407,14 +326,7 @@ void Cu_Voxelize_V1
         int cellmask = V_CELLMASK_INTERIOR;
         if (pmin != -1)
         {
-//             if ((i_kap_b == 183622 || i_kap_b == 183615 || i_kap_b == 183623 || i_kap_b == 183367) && dotmin > EPS<ufloat_d_t>())
-//                 DebugDraw3DPointInMATLAB_DEV(vp,'r','o');
-//             if ((i_kap_b == 183622 || i_kap_b == 183615 || i_kap_b == 183623 || i_kap_b == 183367) && dotmin <= EPS<ufloat_d_t>())
-//                 DebugDraw3DPointInMATLAB_DEV(vp,'g','o');
-//             if ((i_kap_b == 183622 || i_kap_b == 183615 || i_kap_b == 183623 || i_kap_b == 183367))
-//                 DebugDraw3DLineSegmentInMATLAB_DEV(vp,vimin,'m','-');
-            
-            if (dotmin > EPS<ufloat_d_t>())
+            if (dotmin > EPS<ufloat_g_t>())
                 cellmask = V_CELLMASK_SOLID;
             else
                 cellmask = V_CELLMASK_DUMMY_I;
@@ -425,14 +337,7 @@ void Cu_Voxelize_V1
         __syncthreads();
         
         // Block reduction for sum.
-        for (int s=blockDim.x/2; s>0; s>>=1)
-        {
-            if (threadIdx.x < s)
-            {
-                s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
-            }
-            __syncthreads();
-        }
+        BlockwiseReduction(threadIdx.x, blockDim.x, s_D);
         
         if (s_D[0]>0)
         {
@@ -483,7 +388,6 @@ void Cu_Voxelize_V2_WARP
     const int *__restrict__ cblock_ID_nbr,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -689,7 +593,6 @@ void Cu_Voxelize_V2
     const int *__restrict__ cblock_ID_nbr,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -854,3 +757,56 @@ void Cu_Voxelize_V2
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                // If this triangle is the closest to this point, consider the relative orientation if a snapped ray also intersects it.
+                /*
+                vec3<ufloat_g_t> vi = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
+                {
+                    vec3<ufloat_g_t> vd = vi-vp;
+                    ufloat_g_t d = NormV(vd);
+                    if (d < static_cast<ufloat_g_t>(2.0)*dx_L && (d < static_cast<ufloat_g_t>(2.0)*dmin || pmin == -1))
+                    {
+                        // Convert vd into a snapped ray.
+                        vd.Normalize();
+                        vd.Snap();
+                        
+                        // Perform ray cast with the snapped ray. Update intersection point.
+                        d = DotV(vd,n);
+                        if (Tabs(d) > EPS<ufloat_g_t>())
+                        {
+                            d = DotV(v1-vp,n) / d;
+                            vi = vp + vd*d;
+                            d = Tabs(d);
+                        
+                            // Now only store the result of this snapped ray instead of the nearest-distance ray.
+                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
+                            {
+                                pmin = p;
+                                dmin = d;
+                                dotmin = DotV(vi-vp,n);
+                            }
+                        }
+                    }
+                }
+                */

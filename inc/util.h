@@ -62,6 +62,19 @@ template <class T> __host__ __device__ __forceinline__ bool LTZ_E(T a) { return 
 template <class T> __host__ __device__ __forceinline__ bool LTZ_I(T a) { return a <  EPS<T>(); } // Less-than-zero inclusive.
 template <class T> __host__ __device__ __forceinline__ bool GTZ_E(T a) { return a >  EPS<T>(); } // Greater-than-zero exclusive.
 template <class T> __host__ __device__ __forceinline__ bool GTZ_I(T a) { return a > -EPS<T>(); } // Greater-than-zero inclusive.
+//
+template <class T> __host__ __device__ __forceinline__ int sign(T a)
+{
+    if (a > static_cast<T>(0)) return 1;
+    if (a < static_cast<T>(0)) return -1;
+    return 0;
+}
+template <class T> __host__ __device__ __forceinline__ int Tsign(T a, T tol=EPS<T>())
+{
+    if (a > tol) return 1;
+    if (a < -tol) return -1;
+    return 0;
+}
 
 // o====================================================================================
 // | Vec2.
@@ -170,6 +183,12 @@ template <typename T>
 __host__ __device__ __forceinline__ T NormV(const vec2<T> &a)
 {
     return Tsqrt(a.x*a.x + a.y*a.y);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__ T NormSqV(const vec2<T> &a)
+{
+    return a.x*a.x + a.y*a.y;
 }
 
 template <typename T>
@@ -327,6 +346,12 @@ __host__ __device__ __forceinline__ T NormV(const vec3<T> &a)
 }
 
 template <typename T>
+__host__ __device__ __forceinline__ T NormSqV(const vec3<T> &a)
+{
+    return a.x*a.x + a.y*a.y + a.z*a.z;
+}
+
+template <typename T>
 __host__ __device__ __forceinline__ vec3<T> UnitV(const vec3<T> &a)
 {
     T onorm = static_cast<T>(1.0)/NormV(a);
@@ -481,6 +506,31 @@ bool CheckPointInTriangleI(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &
     return true;
 }
 
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInTriangleProjected(const T &vpx, const T &vpy, const T &v1x, const T &v1y, const T &v2x, const T &v2y, const T &v3x, const T &v3y)
+{
+    // First edge.
+    vec2<T> ven = UnitV(vec2<T>(v2y-v1y, v1x-v2x));
+    T s = DotV(vec2<T>(v1x-vpx,v1y-vpy),ven);
+    if ( GTZ_I(s) )
+        return false;
+    
+    // Second edge.
+    ven = UnitV(vec2<T>(v3y-v2y, v2x-v3x));
+    s = DotV(vec2<T>(v2x-vpx,v2y-vpy),ven);
+    if ( GTZ_I(s) )
+        return false;
+    
+    // Third edge.
+    ven = UnitV(vec2<T>(v1y-v3y, v3x-v1x));
+    s = DotV(vec2<T>(v3x-vpx,v3y-vpy),ven);
+    if ( GTZ_I(s) )
+        return false;
+    
+    return true;
+}
+
 template <typename T, int N_DIM>
 __host__ __device__ __forceinline__
 bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
@@ -595,6 +645,37 @@ bool PointInIndexedBin
     return b;
 }
 
+template <typename T>
+__host__ __device__ __forceinline__
+bool PointInCircle(const vec2<T> &vi, const vec2<T> &vc, const T &R, const T eps=EPS<T>())
+{
+    return NormSqV(vi-vc) < (R+eps)*(R+eps);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool PointInCircle(const vec3<T> &vi, const vec3<T> &vc, const T &R, const T eps=EPS<T>())
+{
+    return NormSqV(vi-vc) < (R+eps)*(R+eps);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool PointInSphere(const vec3<T> &vi, const vec3<T> &vc, const T &R, const T eps=EPS<T>())
+{
+    return NormSqV(vi-vc) < (R+eps)*(R+eps);
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool PointInSphereV(const vec3<T> &vi, const vec3<T> &vc, const T &R, const T eps=EPS<T>())
+{
+    if (N_DIM==2)
+        return PointInCircle(vi,vc,R,eps);
+    else
+        return PointInSphere(vi,vc,R,eps);
+}
+
 // o====================================================================================
 // | Auxilliary.
 // o====================================================================================
@@ -616,7 +697,8 @@ int BlockwiseReduction(int t, int B, T *s_data)
 }
 
 #include "util_tribin.h"         // Triangle-AABB bin overlap.
-#include "util_tribin_old.h"     // My own triangle-AABB bin overlap test.
+#include "util_tribin_old.h"     // My own triangle-AABB bin overlap test. [REMOVE]
+#include "util_math.h"           // Useful mathematics routines.
 #include "debug_matlab.h"
 
 

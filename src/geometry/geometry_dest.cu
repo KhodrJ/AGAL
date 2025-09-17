@@ -30,11 +30,11 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Dest()
     if (init_coords_list)
     {
         // Free all the memory allocated on the CPU.
-        delete[] geom_f_face_X;
+        //delete[] geom_f_face_X;
         delete[] geom_f_face_Xt;
         
         // Free all the memory allocated on the GPU.
-        gpuErrchk( cudaFree(c_geom_f_face_X) );
+        //gpuErrchk( cudaFree(c_geom_f_face_X) );
         gpuErrchk( cudaFree(c_geom_f_face_Xt) );
         
         init_coords_list = 0;

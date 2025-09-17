@@ -22,6 +22,11 @@ enum class LoadType
     STL,
     TXT
 };
+enum FaceArrangement
+{
+    SoA,
+    AoS
+};
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 class Mesh;
@@ -47,9 +52,6 @@ class Geometry
     int G_Dest();
     
     
-    
-    
-    
     public:
     
     class Bins;
@@ -72,6 +74,8 @@ class Geometry
     const int M_LWBLOCK                     = AP->M_LWBLOCK;         ///< Number of cell-blocks processed per thread-block in uprimary-mode.
     const int M_BLOCK                       = AP->M_BLOCK;           ///< Number of threads per thread-block in secondary-mode.
     const int M_RNDOFF                      = AP->M_RNDOFF;          ///< Round-off constant for memory alignment.
+    const int N_VERTEX_DATA                 = 9;                     ///< Maximum of nine data elements for vertices (3 coordinates x 3 vertices).
+    const int N_VERTEX_DATA_PADDED          = 16;                    ///< Number of data elements after padding to ensure alignement.
     
     // o====================================================================================
     // | Geometry parameters.
@@ -196,5 +200,71 @@ class Geometry
         G_Dest();
     }
 };
+
+template <typename T, FaceArrangement arrangement=FaceArrangement::AoS>
+__host__ __device__ __forceinline__
+void LoadFaceData
+(
+    const int &f_p,
+    const T *__restrict__ geom_f_face_X,
+    const int &n_data,
+    const int &n_faces_a,
+    vec3<T> &v1,
+    vec3<T> &v2,
+    vec3<T> &v3
+)
+{
+    // arrangement is the data arrangement [SoA, AoS]
+    // f_p is the face index.
+    // geom_f_face_X is the face data array.
+    // n_data is the number of data elements stored per face.
+    // n_faces_a is the total number of faces (after adjusting for alignment).
+    // v1 is the first vertex.
+    // v2 is the second vertex.
+    // v3 is the third vertex.
+    
+    if (arrangement == FaceArrangement::AoS)
+    {
+        v1 = vec3<T>
+        (
+            geom_f_face_X[0 + f_p*n_data],
+            geom_f_face_X[1 + f_p*n_data],
+            geom_f_face_X[2 + f_p*n_data]
+        );
+        v2 = vec3<T>
+        (
+            geom_f_face_X[3 + f_p*n_data],
+            geom_f_face_X[4 + f_p*n_data],
+            geom_f_face_X[5 + f_p*n_data]
+        );
+        v3 = vec3<T>
+        (
+            geom_f_face_X[6 + f_p*n_data],
+            geom_f_face_X[7 + f_p*n_data],
+            geom_f_face_X[8 + f_p*n_data]
+        );
+    }
+    else // FaceArrangement::SoA
+    {
+        v1 = vec3<T>
+        (
+            geom_f_face_X[f_p + 0*n_faces_a],
+            geom_f_face_X[f_p + 1*n_faces_a],
+            geom_f_face_X[f_p + 2*n_faces_a]
+        );
+        v2 = vec3<T>
+        (
+            geom_f_face_X[f_p + 3*n_faces_a],
+            geom_f_face_X[f_p + 4*n_faces_a],
+            geom_f_face_X[f_p + 5*n_faces_a]
+        );
+        v3 = vec3<T>
+        (
+            geom_f_face_X[f_p + 6*n_faces_a],
+            geom_f_face_X[f_p + 7*n_faces_a],
+            geom_f_face_X[f_p + 8*n_faces_a]
+        );
+    }
+}
 
 #endif

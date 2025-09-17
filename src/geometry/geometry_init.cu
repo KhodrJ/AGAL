@@ -78,7 +78,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
         // Constants.
         constexpr int N_DIM = AP->N_DIM;
         ufloat_g_t odenom = (ufloat_g_t)1.0 / (ufloat_g_t)N_DIM;
-        ufloat_g_t eps = EPS<ufloat_g_t>();
+        ufloat_g_t eps = static_cast<ufloat_g_t>(0.0);//-EPS<ufloat_g_t>();
         
         // Update tracker variable and face count.
         G_RefineFaces_Length();
@@ -89,7 +89,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
         
         for (int j = 0; j < n_faces_a; j++)
         {
-            for (int p = 0; p < 16; p++) geom_f_face_X[j + p*n_faces_a] = 0.0;
+            //for (int p = 0; p < 16; p++) geom_f_face_X[j + p*n_faces_a] = 0.0;
             for (int p = 0; p < 16; p++) geom_f_face_Xt[p + j*16] = 0.0;
             if (j < n_faces)
             {
@@ -131,15 +131,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
                 v3 = v3 + UnitV(v3-vc)*eps;
                 
                 // Write vertices.
-                geom_f_face_X[j + 0*n_faces_a] = v1.x;
-                geom_f_face_X[j + 1*n_faces_a] = v1.y;
-                geom_f_face_X[j + 2*n_faces_a] = v1.z;
-                geom_f_face_X[j + 3*n_faces_a] = v2.x;
-                geom_f_face_X[j + 4*n_faces_a] = v2.y;
-                geom_f_face_X[j + 5*n_faces_a] = v2.z;
-                geom_f_face_X[j + 6*n_faces_a] = v3.x;
-                geom_f_face_X[j + 7*n_faces_a] = v3.y;
-                geom_f_face_X[j + 8*n_faces_a] = v3.z;
+//                 geom_f_face_X[j + 0*n_faces_a] = v1.x;
+//                 geom_f_face_X[j + 1*n_faces_a] = v1.y;
+//                 geom_f_face_X[j + 2*n_faces_a] = v1.z;
+//                 geom_f_face_X[j + 3*n_faces_a] = v2.x;
+//                 geom_f_face_X[j + 4*n_faces_a] = v2.y;
+//                 geom_f_face_X[j + 5*n_faces_a] = v2.z;
+//                 geom_f_face_X[j + 6*n_faces_a] = v3.x;
+//                 geom_f_face_X[j + 7*n_faces_a] = v3.y;
+//                 geom_f_face_X[j + 8*n_faces_a] = v3.z;
                 //
                 geom_f_face_Xt[0 + j*16] = v1.x;
                 geom_f_face_Xt[1 + j*16] = v1.y;
@@ -152,9 +152,9 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
                 geom_f_face_Xt[8 + j*16] = v3.z;
                 
                 // Write normals.
-                geom_f_face_X[j + 9*n_faces_a] = n.x;
-                geom_f_face_X[j + 10*n_faces_a] = n.y;
-                geom_f_face_X[j + 11*n_faces_a] = n.z;
+//                 geom_f_face_X[j + 9*n_faces_a] = n.x;
+//                 geom_f_face_X[j + 10*n_faces_a] = n.y;
+//                 geom_f_face_X[j + 11*n_faces_a] = n.z;
                 //
                 geom_f_face_Xt[9 + j*16] = n.x;
                 geom_f_face_Xt[10 + j*16] = n.y;
@@ -206,10 +206,10 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
         
         // Allocate memory on the GPU to store geometry data and copy the CPU data.
         std::cout << "[-] Initializing the GPU coords list array..." << std::endl;
-        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t)) );
-        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt, 16*n_faces_a*sizeof(ufloat_g_t)) );
-        gpuErrchk( cudaMemcpy(c_geom_f_face_X, geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
-        gpuErrchk( cudaMemcpy(c_geom_f_face_Xt, geom_f_face_Xt, 16*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+        //gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t)) );
+        //gpuErrchk( cudaMemcpy(c_geom_f_face_X, geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt, N_VERTEX_DATA_PADDED*n_faces_a*sizeof(ufloat_g_t)) );
+        gpuErrchk( cudaMemcpy(c_geom_f_face_Xt, geom_f_face_Xt, N_VERTEX_DATA_PADDED*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
         std::cout << "[-] Finished copying the coords list array to the GPU..." << std::endl;
         cudaDeviceSynchronize();
         

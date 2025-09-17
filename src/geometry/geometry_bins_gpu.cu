@@ -18,7 +18,6 @@ void Cu_ComputeVoxelRayIndicators_V2
     const ufloat_g_t Nz,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     int *__restrict__ ray_indicators
 )
@@ -127,9 +126,9 @@ void Cu_ComputeVoxelRayIndicators_V1
     const ufloat_g_t Nz,
     const int n_faces,
     const int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
-    int *__restrict__ ray_indicators
+    int *__restrict__ ray_indicators,
+    const int N_VERTEX_DATA_PADDED=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -137,24 +136,26 @@ void Cu_ComputeVoxelRayIndicators_V1
     if (kap < n_faces)
     {
         // Load face vertices.
-        vec3<ufloat_g_t> v1
-        (
-            geom_f_face_X[kap + 0*n_faces_a],
-            geom_f_face_X[kap + 1*n_faces_a],
-            geom_f_face_X[kap + 2*n_faces_a]
-        );
-        vec3<ufloat_g_t> v2
-        (
-            geom_f_face_X[kap + 3*n_faces_a],
-            geom_f_face_X[kap + 4*n_faces_a],
-            geom_f_face_X[kap + 5*n_faces_a]
-        );
-        vec3<ufloat_g_t> v3
-        (
-            geom_f_face_X[kap + 6*n_faces_a],
-            geom_f_face_X[kap + 7*n_faces_a],
-            geom_f_face_X[kap + 8*n_faces_a]
-        );
+        vec3<ufloat_g_t> v1, v2, v3;
+        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+//         vec3<ufloat_g_t> v1
+//         (
+//             geom_f_face_X[kap + 0*n_faces_a],
+//             geom_f_face_X[kap + 1*n_faces_a],
+//             geom_f_face_X[kap + 2*n_faces_a]
+//         );
+//         vec3<ufloat_g_t> v2
+//         (
+//             geom_f_face_X[kap + 3*n_faces_a],
+//             geom_f_face_X[kap + 4*n_faces_a],
+//             geom_f_face_X[kap + 5*n_faces_a]
+//         );
+//         vec3<ufloat_g_t> v3
+//         (
+//             geom_f_face_X[kap + 6*n_faces_a],
+//             geom_f_face_X[kap + 7*n_faces_a],
+//             geom_f_face_X[kap + 8*n_faces_a]
+//         );
         vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
         bool found = false;
         
@@ -163,9 +164,9 @@ void Cu_ComputeVoxelRayIndicators_V1
             constexpr int N_Q_max = 9;
             
             // Compute bounding box limits.
-            int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            //int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
             int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
-            int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            //int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
             int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
             
             // Loop over all possible cells in the bounding box.
@@ -175,11 +176,11 @@ void Cu_ComputeVoxelRayIndicators_V1
                 if (p==1||(p+1)%3==0)
                 {
                     for (int iy = iymin; iy <= iymax; iy++)
-                    for (int ix = ixmin; ix <= ixmax; ix++)
+                    //for (int ix = ixmin; ix <= ixmax; ix++)
                     {
                         vec3<ufloat_g_t> vp
                         (
-                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                            static_cast<ufloat_g_t>(0.0),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
                             static_cast<ufloat_g_t>(0.0)
                         );
@@ -196,7 +197,7 @@ void Cu_ComputeVoxelRayIndicators_V1
                         if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInLineA(vi,v1,v2))
                         {
                             found = true;
-                            ixmax = ixmin-1;
+                            //ixmax = ixmin-1;
                             iymax = iymin-1;
                         }
                     }
@@ -211,10 +212,10 @@ void Cu_ComputeVoxelRayIndicators_V1
             constexpr int N_Q_max = 2;
             
             // Compute bounding box limits.
-            int ixmin = static_cast<int>( (Tmin(Tmin(v1.x,v2.x),v3.x)) * Nx);
+            //int ixmin = static_cast<int>( (Tmin(Tmin(v1.x,v2.x),v3.x)) * Nx);
             int iymin = static_cast<int>( (Tmin(Tmin(v1.y,v2.y),v3.y)) * Ny);
             int izmin = static_cast<int>( (Tmin(Tmin(v1.z,v2.z),v3.z)) * Nz);
-            int ixmax = static_cast<int>( (Tmax(Tmax(v1.x,v2.x),v3.x)) * Nx);
+            //int ixmax = static_cast<int>( (Tmax(Tmax(v1.x,v2.x),v3.x)) * Nx);
             int iymax = static_cast<int>( (Tmax(Tmax(v1.y,v2.y),v3.y)) * Ny);
             int izmax = static_cast<int>( (Tmax(Tmax(v1.z,v2.z),v3.z)) * Nz);
             
@@ -226,11 +227,11 @@ void Cu_ComputeVoxelRayIndicators_V1
                 {
                     for (int iz = izmin; iz <= izmax; iz++)
                     for (int iy = iymin; iy <= iymax; iy++)
-                    for (int ix = ixmin; ix <= ixmax; ix++)
+                    //for (int ix = ixmin; ix <= ixmax; ix++)
                     {
                         vec3<ufloat_g_t> vp
                         (
-                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
+                            static_cast<ufloat_g_t>(0.0),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
                         );
@@ -246,10 +247,11 @@ void Cu_ComputeVoxelRayIndicators_V1
                         
                         //if (Tabs(d) < static_cast<ufloat_g_t>(2.0)*dx_L && CheckPointInTriangleI(vi,v1,v2,v3,n))
                         //if (CheckPointInTriangleII(vi,v1,v2,v3,n))
-                        if (CheckPointInTriangleAABB(vi,v1,v2,v3))
+                        //if (CheckPointInTriangleAABB(vi,v1,v2,v3))
+                        if (CheckPointInTriangleSphere(vi,v1,v2,v3,n))
                         {
                             found = true;
-                            ixmax = ixmin-1;
+                            //ixmax = ixmin-1;
                             iymax = iymin-1;
                             izmax = izmin-1;
                         }
@@ -289,7 +291,7 @@ void Cu_ComputeBoundingBoxLimits2D
     const int n_faces,
     const int n_faces_a,
     const int n_bin_spec,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
+    const ufloat_g_t *__restrict__ geom_f_face_Xt,
     int *__restrict__ bounding_box_limits,
     int *__restrict__ bounding_box_index_limits,
     const ufloat_g_t dx,
@@ -300,7 +302,8 @@ void Cu_ComputeBoundingBoxLimits2D
     const int *__restrict__ ray_indicators,
     const bool use_ray,
     const bool use_map,
-    const int n_filtered
+    const int n_filtered,
+    const int N_VERTEX_DATA_PADDED=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -312,17 +315,16 @@ void Cu_ComputeBoundingBoxLimits2D
     
     if (kap < n_faces && map_val > -1)
     {
+        // Load face data.
+        vec3<ufloat_g_t> v1, v2, v3;
+        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        
         if (N_DIM==2)
         {
-            ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-            ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-            ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-            ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
-            
-            ufloat_g_t vBx_m = fmin(vx1, vx2);
-            ufloat_g_t vBx_M = fmax(vx1, vx2);
-            ufloat_g_t vBy_m = fmin(vy1, vy2);
-            ufloat_g_t vBy_M = fmax(vy1, vy2);
+            ufloat_g_t vBx_m = fmin(v1.x, v2.x);
+            ufloat_g_t vBx_M = fmax(v1.x, v2.x);
+            ufloat_g_t vBy_m = fmin(v1.y, v2.y);
+            ufloat_g_t vBy_M = fmax(v1.y, v2.y);
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
@@ -357,22 +359,12 @@ void Cu_ComputeBoundingBoxLimits2D
         }
         else // N_DIM==3
         {
-            ufloat_g_t vx1 = geom_f_face_X[kap + 0*n_faces_a];
-            ufloat_g_t vy1 = geom_f_face_X[kap + 1*n_faces_a];
-            ufloat_g_t vz1 = geom_f_face_X[kap + 2*n_faces_a];
-            ufloat_g_t vx2 = geom_f_face_X[kap + 3*n_faces_a];
-            ufloat_g_t vy2 = geom_f_face_X[kap + 4*n_faces_a];
-            ufloat_g_t vz2 = geom_f_face_X[kap + 5*n_faces_a];
-            ufloat_g_t vx3 = geom_f_face_X[kap + 6*n_faces_a];
-            ufloat_g_t vy3 = geom_f_face_X[kap + 7*n_faces_a];
-            ufloat_g_t vz3 = geom_f_face_X[kap + 8*n_faces_a];
-            
-            ufloat_g_t vBx_m = fmin(fmin(vx1, vx2), vx3);
-            ufloat_g_t vBx_M = fmax(fmax(vx1, vx2), vx3);
-            ufloat_g_t vBy_m = fmin(fmin(vy1, vy2), vy3);
-            ufloat_g_t vBy_M = fmax(fmax(vy1, vy2), vy3);
-            ufloat_g_t vBz_m = fmin(fmin(vz1, vz2), vz3);
-            ufloat_g_t vBz_M = fmax(fmax(vz1, vz2), vz3);
+            ufloat_g_t vBx_m = fmin(fmin(v1.x, v2.x), v3.x);
+            ufloat_g_t vBx_M = fmax(fmax(v1.x, v2.x), v3.x);
+            ufloat_g_t vBy_m = fmin(fmin(v1.y, v2.y), v3.y);
+            ufloat_g_t vBy_M = fmax(fmax(v1.y, v2.y), v3.y);
+            ufloat_g_t vBz_m = fmin(fmin(v1.z, v2.z), v3.z);
+            ufloat_g_t vBz_M = fmax(fmax(v1.z, v2.z), v3.z);
             
             // C is used to determine if a face is completely outside of the bounding box.
             bool C = true;
@@ -438,7 +430,7 @@ void Cu_ComputeBoundingBoxLimits3D
     const int n_faces,
     const int n_faces_a,
     const int n_bin_spec,
-    const ufloat_g_t *__restrict__ geom_f_face_X,
+    const ufloat_g_t *__restrict__ geom_f_face_Xt,
     int *__restrict__ bounding_box_limits,
     int *__restrict__ bounding_box_index_limits,
     const ufloat_g_t dx,
@@ -452,7 +444,8 @@ void Cu_ComputeBoundingBoxLimits3D
     const int *__restrict__ ray_indicators,
     const bool use_ray,
     const bool use_map,
-    const int n_filtered
+    const int n_filtered,
+    const int N_VERTEX_DATA_PADDED=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -464,19 +457,12 @@ void Cu_ComputeBoundingBoxLimits3D
     
     if (kap < n_faces && map_val > -1)
     {
+        // Load face data,
+        vec3<ufloat_g_t> v1, v2, v3;
+        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        
         if (N_DIM==2)
         {
-            vec3<ufloat_g_t> v1
-            (
-                geom_f_face_X[kap + 0*n_faces_a],
-                geom_f_face_X[kap + 1*n_faces_a]
-            );
-            vec3<ufloat_g_t> v2
-            (
-                geom_f_face_X[kap + 3*n_faces_a],
-                geom_f_face_X[kap + 4*n_faces_a]
-            );
-            
             vec3<ufloat_g_t> vBm (Tmin(v1.x, v2.x), Tmin(v1.y, v2.y));
             vec3<ufloat_g_t> vBM (Tmax(v1.x, v2.x), Tmax(v1.y, v2.y));
             
@@ -525,25 +511,6 @@ void Cu_ComputeBoundingBoxLimits3D
         }
         else // N_DIM==3
         {
-            vec3<ufloat_g_t> v1
-            (
-                geom_f_face_X[kap + 0*n_faces_a],
-                geom_f_face_X[kap + 1*n_faces_a],
-                geom_f_face_X[kap + 2*n_faces_a]
-            );
-            vec3<ufloat_g_t> v2
-            (
-                geom_f_face_X[kap + 3*n_faces_a],
-                geom_f_face_X[kap + 4*n_faces_a],
-                geom_f_face_X[kap + 5*n_faces_a]
-            );
-            vec3<ufloat_g_t> v3
-            (
-                geom_f_face_X[kap + 6*n_faces_a],
-                geom_f_face_X[kap + 7*n_faces_a],
-                geom_f_face_X[kap + 8*n_faces_a]
-            );
-            
             vec3<ufloat_g_t> vBm (Tmin(Tmin(v1.x, v2.x), v3.x), Tmin(Tmin(v1.y, v2.y), v3.y), Tmin(Tmin(v1.z, v2.z), v3.z));
             vec3<ufloat_g_t> vBM (Tmax(Tmax(v1.x, v2.x), v3.x), Tmax(Tmax(v1.y, v2.y), v3.y), Tmax(Tmax(v1.z, v2.z), v3.z));
             
@@ -626,7 +593,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
     std::cout << "CONSTRUCTION OF BINS ON LEVEL " << L << std::endl;
     
     // Some constants.
-    ufloat_g_t *c_geom_f_face_X = geometry->c_geom_f_face_X;
     ufloat_g_t *c_geom_f_face_Xt = geometry->c_geom_f_face_Xt;
     int n_faces = geometry->n_faces;
     int n_faces_a = geometry->n_faces_a;
@@ -739,7 +705,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 dxf_vec[L], static_cast<ufloat_g_t>(0.5)*dxf_vec[L],
                 static_cast<ufloat_g_t>(Nxi_L[L]), static_cast<ufloat_g_t>(Nxi_L[L + 1*n_bin_levels]), static_cast<ufloat_g_t>(Nxi_L[L + 2*n_bin_levels]),
                 n_faces, n_faces_a,
-                c_geom_f_face_X, c_geom_f_face_Xt, c_ray_indicators
+                c_geom_f_face_Xt, c_ray_indicators
             );
             //constexpr int M = 128;
             //Cu_ComputeVoxelRayIndicators_V2<ufloat_g_t,AP->N_DIM><<<(M+(32*n_faces)-1)/M,M>>>(
@@ -798,7 +764,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         cudaDeviceSynchronize();
         Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_b,
-            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
+            c_geom_f_face_Xt, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
             Lx0g_vec[L], Lx0g_vec[L + 1*n_bin_levels], Lx0g_vec[L + 2*n_bin_levels], n_bin_density[L],
             c_ray_indicators,
@@ -938,7 +904,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         cudaDeviceSynchronize();
         Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_v,
-            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
+            c_geom_f_face_Xt, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
             c_ray_indicators,
             use_ray, use_map, n_filtered

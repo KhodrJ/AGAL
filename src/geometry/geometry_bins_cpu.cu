@@ -31,7 +31,7 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
 {
     // Some constants.
-    ufloat_g_t *geom_f_face_X = geometry->geom_f_face_X;
+    ufloat_g_t *geom_f_face_Xt = geometry->geom_f_face_Xt;
     int n_faces = geometry->n_faces;
     int n_faces_a = geometry->n_faces_a;
     ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_bin_levels];
@@ -59,24 +59,26 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
             if (j < n_faces)
             {
                 // Load face vertices from coordinate list.
-                vec3<ufloat_g_t> v1
-                (
-                    geom_f_face_X[j + 0*n_faces_a],
-                    geom_f_face_X[j + 1*n_faces_a],
-                    geom_f_face_X[j + 2*n_faces_a]
-                );
-                vec3<ufloat_g_t> v2
-                (
-                    geom_f_face_X[j + 3*n_faces_a],
-                    geom_f_face_X[j + 4*n_faces_a],
-                    geom_f_face_X[j + 5*n_faces_a]
-                );
-                vec3<ufloat_g_t> v3
-                (
-                    geom_f_face_X[j + 6*n_faces_a],
-                    geom_f_face_X[j + 7*n_faces_a],
-                    geom_f_face_X[j + 8*n_faces_a]
-                );
+                vec3<ufloat_g_t> v1, v2, v3;
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(j, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+//                 vec3<ufloat_g_t> v1
+//                 (
+//                     geom_f_face_X[j + 0*n_faces_a],
+//                     geom_f_face_X[j + 1*n_faces_a],
+//                     geom_f_face_X[j + 2*n_faces_a]
+//                 );
+//                 vec3<ufloat_g_t> v2
+//                 (
+//                     geom_f_face_X[j + 3*n_faces_a],
+//                     geom_f_face_X[j + 4*n_faces_a],
+//                     geom_f_face_X[j + 5*n_faces_a]
+//                 );
+//                 vec3<ufloat_g_t> v3
+//                 (
+//                     geom_f_face_X[j + 6*n_faces_a],
+//                     geom_f_face_X[j + 7*n_faces_a],
+//                     geom_f_face_X[j + 8*n_faces_a]
+//                 );
                 
                 if (N_DIM==2)
                 {

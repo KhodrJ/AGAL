@@ -44,10 +44,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
         // Voxelize the solid, filling in all solid cells.
         tic_simple("");
         //Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
-        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,float,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L],
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
-            geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_X, geometry->c_geom_f_face_Xt,
+            geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_Xt,
             geometry->bins->c_binned_face_ids_n_3D[Lbin], geometry->bins->c_binned_face_ids_N_3D[Lbin], geometry->bins->c_binned_face_ids_3D[Lbin], geometry->bins->n_bin_density[Lbin]
         );
         cudaDeviceSynchronize();

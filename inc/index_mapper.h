@@ -38,7 +38,7 @@ struct Coords : public vec3<int>
 
 template <int N_DIM>
 __host__ __device__ __forceinline__
-int Cu_NbrMap(int I, int J, int K)
+int Cu_NbrMap(const int &I, const int &J, const int &K)
 {
     // Default case (I==-1 [==0] or J==-1 [+=3*0] or K==-1 [+=9*0])
     int S = 0;
@@ -77,7 +77,7 @@ int Cu_NbrCellId(int Ip, int Jp, int Kp)
 
 template <int N_DIM, int incr=1, int wid=1>
 __device__ __forceinline__
-int Cu_HaloCellId(int p, int I, int J, int K)
+int Cu_HaloCellId(const int &p, const int &I, const int &J, const int &K)
 {
     // First, increment indices along pth direction.
     int Ip = I;
@@ -103,14 +103,14 @@ template <int N_DIM, int get_halo=0, int incr=1, int wid=1>
 __device__ __forceinline__
 int Cu_GetNbrIndices
 (
-    const int p,
+    const int &p,
     int *nbr_kap_b,
     int *nbr_kap_c,
     int *nbr_kap_h,
     bool *halo_change,
-    const int I,
-    const int J,
-    const int K,
+    const int &I,
+    const int &J,
+    const int &K,
     int *__restrict__ s_ID_nbr
 )
 {

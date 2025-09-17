@@ -18,8 +18,8 @@ EIG_VER = 3.4.0
 #EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
 #|
 # I used this for my personal laptop build.
-#VTK_INC ?= ../lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
-#VTK_LIB ?= ../lib/vtk-$(VTK_VER)/lib/
+#VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk/vtk-$(VTK_VER)/lib64/
 VTK_INC ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)/
 VTK_LIB ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/lib/
 EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
@@ -77,16 +77,16 @@ all: a.out
 
 # Building the geometry object.
 SRC_GEOMETRY = geometry_init.cu\
-      geometry_dest.cu\
-      geometry_add.cu\
-      geometry_import.cu\
-      geometry_convert.cu\
-      geometry_bins.cu\
-      geometry_bins_cpu.cu\
-      geometry_bins_gpu.cu\
-      geometry_bins_draw.cu\
-      geometry_print.cu\
-      geometry_refine.cu
+	geometry_dest.cu\
+	geometry_add.cu\
+	geometry_import.cu\
+	geometry_convert.cu\
+	geometry_bins.cu\
+	geometry_bins_cpu.cu\
+	geometry_bins_gpu.cu\
+	geometry_bins_draw.cu\
+	geometry_print.cu\
+	geometry_refine.cu
 OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 # geometry_%.o: geometry_%.cu geometry.h cppspec.h
 # 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
@@ -97,22 +97,22 @@ OBJ_GEOMETRY = $(SRC_GEOMETRY:.cu=.o)
 
 # Building the mesh object.
 SRC_MESH = mesh_init.cu\
-      mesh_dest.cu\
-      mesh_comm.cu\
-      mesh_criterion.cu\
-      mesh_voxelizer.cu\
-      mesh_voxelizer_voxelize.cu\
-      mesh_voxelizer_propagate.cu\
-      mesh_voxelizer_refine.cu\
-      mesh_voxelizer_masks.cu\
-      mesh_amr.cu\
-      mesh_advance.cu\
-      mesh_restart.cu\
-      mesh_output.cu\
-      mesh_print_uniform.cu\
-      mesh_print_vthb.cu\
-      mesh_print_vthb_patch.cu\
-      mesh_print_image.cu
+	mesh_dest.cu\
+	mesh_comm.cu\
+	mesh_criterion.cu\
+	mesh_voxelizer.cu\
+	mesh_voxelizer_voxelize.cu\
+	mesh_voxelizer_propagate.cu\
+	mesh_voxelizer_refine.cu\
+	mesh_voxelizer_masks.cu\
+	mesh_amr.cu\
+	mesh_advance.cu\
+	mesh_restart.cu\
+	mesh_output.cu\
+	mesh_print_uniform.cu\
+	mesh_print_vthb.cu\
+	mesh_print_vthb_patch.cu\
+	mesh_print_image.cu
 OBJ_MESH = $(SRC_MESH:.cu=.o)
 # mesh_%.o: mesh_%.cu mesh.h solver.h cppspec.h
 # 	$(NVCC) $(NVCCFLAGS) $(INC) $(OPTS) -c $<
@@ -146,6 +146,7 @@ INC_MAIN = cppspec.h\
 	util.h\
 	util_tribin.h\
 	util_tribin_old.h\
+	util_math.h\
 	util_interp.h\
 	index_mapper.h\
 	custom.h\

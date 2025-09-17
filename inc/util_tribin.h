@@ -181,10 +181,19 @@ template <typename T>
 __host__ __device__ __forceinline__
 bool CheckPointInTriangleAABB(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3)
 {
-    vec3<T> vm = vp - EPS<T>();
-    vec3<T> vM = vp + EPS<T>();
+    vec3<T> vm = vp - EPS<T>()*static_cast<T>(2.0);
+    vec3<T> vM = vp + EPS<T>()*static_cast<T>(2.0);
     
     return TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInTriangleSphere(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    vec3<T> vi = PointTriangleIntersection(vp,v1,v2,v3,n);
+    
+    return PointInSphere(vi,vp,EPS<T>()*static_cast<T>(2.0),static_cast<T>(0.0));
 }
 
 #endif
