@@ -254,14 +254,7 @@ void Cu_Voxelize_UpdateMasks
         __syncthreads();
         
         // Block reduction for sum.
-        for (int s=blockDim.x/2; s>0; s>>=1)
-        {
-            if (threadIdx.x < s)
-            {
-                s_D[threadIdx.x] = s_D[threadIdx.x] + s_D[threadIdx.x + s];
-            }
-            __syncthreads();
-        }
+        BlockwiseReduction(threadIdx.x,blockDim.x,s_D);
         
         // If at least one cell is solid, mark this block.
         if (threadIdx.x==0 && s_D[0]>0)
@@ -366,7 +359,7 @@ void Cu_MarkBlocks_MarkInterior
                 int nbr_kap_c = N_SKIPID;
                 int nbr_kap_h = N_SKIPID;
                 bool halo_changed = false;
-                Cu_GetNbrIndices<N_DIM,1,2,2>(p,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
+                Cu_GetNbrIndicesH<N_DIM,2,2>(p,&nbr_kap_b,&nbr_kap_c,&nbr_kap_h,&halo_changed,I,J,K,s_ID_nbr);
                 
                 // Write cell mask to the halo.
                 if (halo_changed && nbr_kap_b > -1)

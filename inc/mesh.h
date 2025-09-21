@@ -30,19 +30,19 @@ enum class RefIds
     IndeterminateEven,
     IndeterminateOdd
 };
-constexpr int V_REF_ID_UNREFINED             = 0;    ///< Indicates cell-block is unrefined.
-constexpr int V_REF_ID_UNREFINED_VIO         = 9;    ///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
-constexpr int V_REF_ID_REFINED               = 1;    ///< Indicates cell-block is refined.
-constexpr int V_REF_ID_REFINED_WCHILD        = 2;    ///< Indicates cell-block is refined and has at least one refined child.
-constexpr int V_REF_ID_REFINED_PERM          = 3;    ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-constexpr int V_REF_ID_REFINED_WCHILD_PERM   = 10;   ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
-constexpr int V_REF_ID_MARK_REFINE           = 4;    ///< Indicates cell-block is marked for refinement.
-constexpr int V_REF_ID_MARK_COARSEN          = 5;    ///< Indicates cell-block is marked for coarsening.
-constexpr int V_REF_ID_NEW                   = 6;    ///< Indicates cell-block was newly inserted (as a child).
-constexpr int V_REF_ID_REMOVE                = 7;    ///< Indicates cell-block will be removed (as a child).
-constexpr int V_REF_ID_INACTIVE              = 8;    ///< Indicates cell-block is inactive in the simulation.
-constexpr int V_REF_ID_INDETERMINATE_E       = 11;   ///< Indicates cell-block is an indeterminate state (even).
-constexpr int V_REF_ID_INDETERMINATE_O       = 12;   ///< Indicates cell-block is an indeterminate state (odd).
+constexpr int V_REF_ID_UNREFINED             = 0;     ///< Indicates cell-block is unrefined.
+constexpr int V_REF_ID_UNREFINED_VIO         = 9;     ///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
+constexpr int V_REF_ID_REFINED               = 1;     ///< Indicates cell-block is refined.
+constexpr int V_REF_ID_REFINED_WCHILD        = 2;     ///< Indicates cell-block is refined and has at least one refined child.
+constexpr int V_REF_ID_REFINED_PERM          = 3;     ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+constexpr int V_REF_ID_REFINED_WCHILD_PERM   = 10;    ///< Indicates cell-block is refined permanently (mainly for near-wall stability).
+constexpr int V_REF_ID_MARK_REFINE           = 4;     ///< Indicates cell-block is marked for refinement.
+constexpr int V_REF_ID_MARK_COARSEN          = 5;     ///< Indicates cell-block is marked for coarsening.
+constexpr int V_REF_ID_NEW                   = 6;     ///< Indicates cell-block was newly inserted (as a child).
+constexpr int V_REF_ID_REMOVE                = 7;     ///< Indicates cell-block will be removed (as a child).
+constexpr int V_REF_ID_INACTIVE              = 8;     ///< Indicates cell-block is inactive in the simulation.
+constexpr int V_REF_ID_INDETERMINATE_E       = 11;    ///< Indicates cell-block is an indeterminate state (even).
+constexpr int V_REF_ID_INDETERMINATE_O       = 12;    ///< Indicates cell-block is an indeterminate state (odd).
 
 // Mesh communication.
 enum class MaskComm
@@ -53,11 +53,11 @@ enum class MaskComm
     AverageBlock,
     AverageGrid
 };
-constexpr int V_INTERP_INTERFACE             = 0;    ///< Interpolate to interface cells only.
-constexpr int V_INTERP_ADDED                 = 1;    ///< Interpolate to newly-added cells.
-constexpr int V_AVERAGE_INTERFACE            = 0;    ///< Average involves interface cells only.
-constexpr int V_AVERAGE_BLOCK                = 1;    ///< Average involves whole masked block.
-constexpr int V_AVERAGE_GRID                 = 2;    ///< Average involves whole grid.
+constexpr int V_INTERP_INTERFACE             = 0;     ///< Interpolate to interface cells only.
+constexpr int V_INTERP_ADDED                 = 1;     ///< Interpolate to newly-added cells.
+constexpr int V_AVERAGE_INTERFACE            = 0;     ///< Average involves interface cells only.
+constexpr int V_AVERAGE_BLOCK                = 1;     ///< Average involves whole masked block.
+constexpr int V_AVERAGE_GRID                 = 2;     ///< Average involves whole grid.
 
 // Mesh-geometry interaction.
 enum class MaskCell
@@ -76,32 +76,40 @@ enum class MaskBlock
     SolidAdjacent,
     Dummy
 };
-constexpr int V_CELLMASK_INTERIOR            = 0;    ///< Indicates that the cell doesn't participate in fine-coarse data transfers.
-constexpr int V_CELLMASK_INTERFACE           = 1;    ///< Indicates that the cell participates in fine-to-coarse data transfers.
-constexpr int V_CELLMASK_GHOST               = 2;    ///< Indicates that the cell participates in coarse-to-fine data transfers.
-constexpr int V_CELLMASK_SOLID               = -1;   ///< Indicates cell-center lies within the solid.
-constexpr int V_CELLMASK_SOLID_VIS           = -8;   ///< Indicates cell-center lies within the solid separately for visualization.
-constexpr int V_CELLMASK_SOLID_DIFF          = -9;   ///< Indicates cell-center lies within the solid separately for visualization (2).
-constexpr int V_CELLMASK_DUMMY_I             = -2;   ///< Indicates a dummy mask value.
-constexpr int V_CELLMASK_SOLIDS              = -5;   ///< Indicates cell-center lies outside the solid (guard during propagation).
-constexpr int V_CELLMASK_BOUNDARY            = -6;   ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
-constexpr int V_BLOCKMASK_REGULAR            = 0;    ///< Default state of a cell-block.
-constexpr int V_BLOCKMASK_INTERFACE          = 1;    ///< This cell-block participates in the grid communication routines.
-constexpr int V_BLOCKMASK_SOLID              = -3;   ///< This cell-block lies entirely within a solid object.
-constexpr int V_BLOCKMASK_SOLIDB             = -1;   ///< This cell-block lies on the boundary of a solid object.
-constexpr int V_BLOCKMASK_SOLIDA             = -2;   ///< This cell-block is adjacent to the boundary of a solid object.
-constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;   ///< This cell-block is in an indeterminate state (odd).
-constexpr int V_BLOCKMASK_INDETERMINATE_E    = -5;   ///< This cell-block is in an indeterminate state (even).
+constexpr int V_CELLMASK_INTERIOR            = 0;     ///< Indicates that the cell doesn't participate in fine-coarse data transfers.
+constexpr int V_CELLMASK_INTERFACE           = 1;     ///< Indicates that the cell participates in fine-to-coarse data transfers.
+constexpr int V_CELLMASK_GHOST               = 2;     ///< Indicates that the cell participates in coarse-to-fine data transfers.
+constexpr int V_CELLMASK_SOLID               = -1;    ///< Indicates cell-center lies within the solid.
+constexpr int V_CELLMASK_SOLID_VIS           = -8;    ///< Indicates cell-center lies within the solid separately for visualization.
+constexpr int V_CELLMASK_SOLID_DIFF          = -9;    ///< Indicates cell-center lies within the solid separately for visualization (2).
+constexpr int V_CELLMASK_GUARD               = -2;    ///< Indicates a dummy mask value.
+constexpr int V_CELLMASK_LL                  = -10;   
+constexpr int V_CELLMASK_LR                  = -11;   
+constexpr int V_CELLMASK_RL                  = -12;   
+constexpr int V_CELLMASK_RR                  = -13;
+constexpr int V_CELLMASK_LLRR                = -14;
+constexpr int V_CELLMASK_PL                  = -15;
+constexpr int V_CELLMASK_PR                  = -16;
+constexpr int V_CELLMASK_PGUARD              = -17;
+constexpr int V_CELLMASK_SOLIDS              = -5;    ///< Indicates cell-center lies outside the solid (guard during propagation).
+constexpr int V_CELLMASK_BOUNDARY            = -6;    ///< Indicates cell is adjacent to solid cell, boundary conditions are imposed therein.
+constexpr int V_BLOCKMASK_REGULAR            = 0;     ///< Default state of a cell-block.
+constexpr int V_BLOCKMASK_INTERFACE          = 1;     ///< This cell-block participates in the grid communication routines.
+constexpr int V_BLOCKMASK_SOLID              = -3;    ///< This cell-block lies entirely within a solid object.
+constexpr int V_BLOCKMASK_SOLIDB             = -1;    ///< This cell-block lies on the boundary of a solid object.
+constexpr int V_BLOCKMASK_SOLIDA             = -2;    ///< This cell-block is adjacent to the boundary of a solid object.
+constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;    ///< This cell-block is in an indeterminate state (odd).
+constexpr int V_BLOCKMASK_INDETERMINATE_E    = -5;    ///< This cell-block is in an indeterminate state (even).
 
 // Mesh refinements types.
-constexpr int V_MESH_REF_NW_CASES            = 0;    ///< Near-wall refinement for the benchmark cases.
-constexpr int V_MESH_REF_NW_GEOMETRY         = 1;    ///< Near-wall refinement for a general geometry.
-constexpr int V_MESH_REF_UNIFORM             = 2;    ///< Uniform refinement of the mesh at a specified level.
-constexpr int V_MESH_REF_SOLUTION            = 3;    ///< Refinement based on the numerical solution (depends on solver).
+constexpr int V_MESH_REF_NW_CASES            = 0;     ///< Near-wall refinement for the benchmark cases.
+constexpr int V_MESH_REF_NW_GEOMETRY         = 1;     ///< Near-wall refinement for a general geometry.
+constexpr int V_MESH_REF_UNIFORM             = 2;     ///< Uniform refinement of the mesh at a specified level.
+constexpr int V_MESH_REF_SOLUTION            = 3;     ///< Refinement based on the numerical solution (depends on solver).
 
 // Mesh restart.
-constexpr int V_MESH_RESTART_SAVE            = 0;    ///< Save the mesh to restart later.
-constexpr int V_MESH_RESTART_LOAD            = 1;    ///< Load mesh data from previous save.
+constexpr int V_MESH_RESTART_SAVE            = 0;     ///< Save the mesh to restart later.
+constexpr int V_MESH_RESTART_LOAD            = 1;     ///< Load mesh data from previous save.
 
 // Mesh solvers.
 constexpr int V_SOLVER_LBM_BGK               = 0;

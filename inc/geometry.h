@@ -201,19 +201,21 @@ class Geometry
     }
 };
 
-template <typename T, FaceArrangement arrangement=FaceArrangement::AoS>
+template <typename T1, FaceArrangement arrangement=FaceArrangement::AoS, typename T2=T1>
 __host__ __device__ __forceinline__
 void LoadFaceData
 (
     const int &f_p,
-    const T *__restrict__ geom_f_face_X,
+    const T1 *__restrict__ geom_f_face_X,
     const int &n_data,
     const int &n_faces_a,
-    vec3<T> &v1,
-    vec3<T> &v2,
-    vec3<T> &v3
+    vec3<T2> &v1,
+    vec3<T2> &v2,
+    vec3<T2> &v3
 )
 {
+    // T1 is the original type of the data.
+    // T2 is the target type (for possible promoting for better accuracy in intermediate calculations).
     // arrangement is the data arrangement [SoA, AoS]
     // f_p is the face index.
     // geom_f_face_X is the face data array.
@@ -225,44 +227,44 @@ void LoadFaceData
     
     if (arrangement == FaceArrangement::AoS)
     {
-        v1 = vec3<T>
+        v1 = vec3<T2>
         (
-            geom_f_face_X[0 + f_p*n_data],
-            geom_f_face_X[1 + f_p*n_data],
-            geom_f_face_X[2 + f_p*n_data]
+            static_cast<T2>( geom_f_face_X[0 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[1 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[2 + f_p*n_data] )
         );
-        v2 = vec3<T>
+        v2 = vec3<T2>
         (
-            geom_f_face_X[3 + f_p*n_data],
-            geom_f_face_X[4 + f_p*n_data],
-            geom_f_face_X[5 + f_p*n_data]
+            static_cast<T2>( geom_f_face_X[3 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[4 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[5 + f_p*n_data] )
         );
-        v3 = vec3<T>
+        v3 = vec3<T2>
         (
-            geom_f_face_X[6 + f_p*n_data],
-            geom_f_face_X[7 + f_p*n_data],
-            geom_f_face_X[8 + f_p*n_data]
+            static_cast<T2>( geom_f_face_X[6 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[7 + f_p*n_data] ),
+            static_cast<T2>( geom_f_face_X[8 + f_p*n_data] )
         );
     }
     else // FaceArrangement::SoA
     {
-        v1 = vec3<T>
+        v1 = vec3<T2>
         (
-            geom_f_face_X[f_p + 0*n_faces_a],
-            geom_f_face_X[f_p + 1*n_faces_a],
-            geom_f_face_X[f_p + 2*n_faces_a]
+            static_cast<T2>( geom_f_face_X[f_p + 0*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 1*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 2*n_faces_a] )
         );
-        v2 = vec3<T>
+        v2 = vec3<T2>
         (
-            geom_f_face_X[f_p + 3*n_faces_a],
-            geom_f_face_X[f_p + 4*n_faces_a],
-            geom_f_face_X[f_p + 5*n_faces_a]
+            static_cast<T2>( geom_f_face_X[f_p + 3*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 4*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 5*n_faces_a] )
         );
-        v3 = vec3<T>
+        v3 = vec3<T2>
         (
-            geom_f_face_X[f_p + 6*n_faces_a],
-            geom_f_face_X[f_p + 7*n_faces_a],
-            geom_f_face_X[f_p + 8*n_faces_a]
+            static_cast<T2>( geom_f_face_X[f_p + 6*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 7*n_faces_a] ),
+            static_cast<T2>( geom_f_face_X[f_p + 8*n_faces_a] )
         );
     }
 }

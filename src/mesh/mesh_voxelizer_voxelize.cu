@@ -158,7 +158,7 @@ void Cu_Voxelize_V1_WARP
             if (dotmin >= 0)
                 cellmask = V_CELLMASK_SOLID;
             else
-                cellmask = V_CELLMASK_DUMMY_I;
+                cellmask = V_CELLMASK_GUARD;
             
             s_D = 1;
         }
@@ -167,7 +167,7 @@ void Cu_Voxelize_V1_WARP
             if (dotmin2 >= 0)
                 cellmask2 = V_CELLMASK_SOLID;
             else
-                cellmask2 = V_CELLMASK_DUMMY_I;
+                cellmask2 = V_CELLMASK_GUARD;
             
             s_D = 1;
         }
@@ -194,17 +194,17 @@ void Cu_Voxelize_V1_WARP
                     int nbr_mask = __shfl_up_sync(0xFFFFFFFF, s_ID_mask, 1);
                     if (I > 0)
                     {
-                        if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                            cellmask = V_CELLMASK_DUMMY_I;
-                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                        if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                            cellmask = V_CELLMASK_GUARD;
+                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                             cellmask = V_CELLMASK_SOLID;
                     }
                     nbr_mask = __shfl_down_sync(0xFFFFFFFF, s_ID_mask, 1);
                     if (I < 3)
                     {
-                        if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                            cellmask = V_CELLMASK_DUMMY_I;
-                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                        if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                            cellmask = V_CELLMASK_GUARD;
+                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                             cellmask = V_CELLMASK_SOLID;
                     }
                     s_ID_mask = cellmask;
@@ -236,6 +236,7 @@ void Cu_Voxelize_V1
     const int *__restrict__ binned_face_ids_N_3D,
     const int *__restrict__ binned_face_ids_3D,
     const int G_BIN_DENSITY,
+    const bool hit_max,
     const int N_VERTEX_DATA_PADDED=16
 )
 {
@@ -276,11 +277,19 @@ void Cu_Voxelize_V1
         int global_bin_id = Ibx + G_BIN_DENSITY*Iby + G_BIN_DENSITY*G_BIN_DENSITY*Ibz;
         
         // Initialize trackers for minimal face-distance.
-        int pmin = -1;
-        ufloat_g_t dmin = (ufloat_g_t)1.0;
-        ufloat_g_t ddmin = (ufloat_g_t)1.0;
-        ufloat_g_t dotmin = (ufloat_g_t)1.0;
+        int pminR = -1;
+        ufloat_g_t dminR = (ufloat_g_t)1.0;
+        ufloat_g_t dotminR = (ufloat_g_t)1.0;
+        int pminL = -1;
+        ufloat_g_t dminL = (ufloat_g_t)1.0;
+        ufloat_g_t dotminL = (ufloat_g_t)1.0;
         int n_f = binned_face_ids_n_3D[global_bin_id];
+        int cellmask = V_CELLMASK_INTERIOR;
+        
+        // Pseudo-guard data.
+        int pseudoguard = 0;
+        vec3<ufloat_g_t> vm = vp - (0.5*static_cast<ufloat_g_t>(dx_L) + EPS<ufloat_g_t>());
+        vec3<ufloat_g_t> vM = vp + (0.5*static_cast<ufloat_g_t>(dx_L) + EPS<ufloat_g_t>());
         
         // If bin is nonempty, traverse the faces and get the signed distance to the closest face.
         // Only consider faces within a distance of dx (these would be adjacent to the surface).
@@ -294,6 +303,16 @@ void Cu_Voxelize_V1
                 vec3<ufloat_g_t> v1, v2, v3;
                 LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
                 vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
+                
+                // Pseudo-guard.
+                if (hit_max)
+                {
+                    if (TriangleBinOverlap3D(vm,vM,v1,v2,v3))
+                    {
+                        if (n.x < -EPS<ufloat_g_t>()) pseudoguard = -1;
+                        if (n.x > EPS<ufloat_g_t>()) pseudoguard = 1;
+                    }
+                }
                 
                 // Voxelize the face into the current cell-block with a triangle-bin overlap test.
                 ufloat_g_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
@@ -310,37 +329,68 @@ void Cu_Voxelize_V1
                     //if ((is_smaller || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     //if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
-                    //if ((d < dmin || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
+                    //if (Tabs(d) < dx_L && (Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
                     
-                    ufloat_g_t shift = EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(10.0);
-                    if ((Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleShifted(d,vi,v1,v2,v3,n,shift))
+                    //ufloat_g_t shift = EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(1.0);
+                    //if (Tabs(d) < dx_L && (Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleShifted(d,vi,v1,v2,v3,n,shift))
+                    //if ((Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
                     {
-                        pmin = p;
-                        dmin = Tabs(d);
+                        //if (d > 0 && n.x < 0) { dminR = Tabs(d); pminR = p; }
+                        //if (d < 0 && n.x > 0) { dminL = Tabs(d); pminL = p; }
+                        //if (d > 0 && n.x < 0) cellmask = V_CELLMASK_LL;
+                        //if (d < 0 && n.x < 0) cellmask = V_CELLMASK_LR;
+                        //if (d > 0 && n.x > 0) cellmask = V_CELLMASK_RL;
+                        //if (d < 0 && n.x > 0) cellmask = V_CELLMASK_RR;
+                        
+                        //pmin = p;
+                        //dmin = Tabs(d);
                         //ddmin = dd;
-                        dotmin = DotV(vi-vp,n);
+                        //dotmin = DotV(vi-vp,n);
+                        
                     }
+                }
+                
+                if (d > 0 && (Tabs(d) < dx_L) && (Tabs(d) < dminR || pminR == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
+                {
+                    if (n.x < -EPS<ufloat_g_t>()) { dminR = Tabs(d); pminR = p; }
+                }
+                if (d < 0 && (Tabs(d) < dx_L) && (Tabs(d) < dminL || pminL == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
+                {
+                    if (n.x > EPS<ufloat_g_t>()) { dminL = Tabs(d); pminL = p; }
                 }
             }
         }
-        //if (dmin < EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(2.0))
-        //    printf("Cell %i is too close...\n", M_CBLOCK*i_kap_b + threadIdx.x);
+        
+        // Classify.
+        if (pminR != -1 && pminL == -1)
+            cellmask = V_CELLMASK_LL;
+        if (pminR == -1 && pminL != -1)
+            cellmask = V_CELLMASK_RR;
+        if (pminR != -1 && pminL != -1)
+            cellmask = V_CELLMASK_LLRR;
+        
+//         if (cellmask==V_CELLMASK_INTERIOR && pseudoguard==-1)
+//             cellmask = V_CELLMASK_PGUARD;
+//         if (cellmask==V_CELLMASK_INTERIOR && pseudoguard==1)
+//             cellmask = V_CELLMASK_PGUARD;
         
         // Now, if there are an even number of intersections, the current cell is in the solid.
         // Otherwise, it is a fluid cell.
         s_D[threadIdx.x] = 0;
-        int cellmask = V_CELLMASK_INTERIOR;
-        if (pmin != -1)
+        //int cellmask = V_CELLMASK_INTERIOR;
+        if (pminR != -1 || pminL != -1)
         {
+            /*
             // Set to solid or guard based on angle.
             if (dotmin > EPS<ufloat_g_t>())
                 cellmask = V_CELLMASK_SOLID;
             else
-                cellmask = V_CELLMASK_DUMMY_I;
+                cellmask = V_CELLMASK_GUARD;
             
             // If the cell-center is too close to a face, turn it into a guard.
             if (dmin < EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(2.0))
-                cellmask = V_CELLMASK_DUMMY_I;
+                cellmask = V_CELLMASK_GUARD;
+            */
             
             s_D[threadIdx.x] = 1;
         }
@@ -352,33 +402,33 @@ void Cu_Voxelize_V1
         
         if (s_D[0]>0)
         {
-            // If at least one cell is solid, update the block mask.
+            // If at least one cell is solid, update the block mask. [REMOVE]
             //if (threadIdx.x == 0)
             //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
             
             // Internally propagate the cell mask values to the x-edges of the cell-block.
-            for (int l = 0; l < 9; l++)
-            {
-                if (I > 0)
-                {
-                    int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
-                    if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                        cellmask = V_CELLMASK_DUMMY_I;
-                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
-                        cellmask = V_CELLMASK_SOLID;
-                }
-                if (I < 3)
-                {
-                    int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
-                    if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                        cellmask = V_CELLMASK_DUMMY_I;
-                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
-                        cellmask = V_CELLMASK_SOLID;
-                }
-                s_ID_mask[threadIdx.x] = cellmask;
-                __syncthreads();
-            }
-            
+//             for (int l = 0; l < 9; l++)
+//             {
+//                 if (I > 0)
+//                 {
+//                     int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
+//                     if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+//                         cellmask = V_CELLMASK_GUARD;
+//                     if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
+//                         cellmask = V_CELLMASK_SOLID;
+//                 }
+//                 if (I < 3)
+//                 {
+//                     int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
+//                     if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+//                         cellmask = V_CELLMASK_GUARD;
+//                     if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
+//                         cellmask = V_CELLMASK_SOLID;
+//                 }
+//                 s_ID_mask[threadIdx.x] = cellmask;
+//                 __syncthreads();
+//             }
+//             
             // If there are solid masks in this block, place guard in the masks for the propagation.
             cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
         }
@@ -531,7 +581,7 @@ void Cu_Voxelize_V2_WARP
             if (dotmin >= 0)
                 cellmask = V_CELLMASK_SOLID;
             else
-                cellmask = V_CELLMASK_DUMMY_I;
+                cellmask = V_CELLMASK_GUARD;
             
             s_D = 1;
         }
@@ -540,7 +590,7 @@ void Cu_Voxelize_V2_WARP
             if (dotmin2 >= 0)
                 cellmask2 = V_CELLMASK_SOLID;
             else
-                cellmask2 = V_CELLMASK_DUMMY_I;
+                cellmask2 = V_CELLMASK_GUARD;
             
             s_D = 1;
         }
@@ -567,17 +617,17 @@ void Cu_Voxelize_V2_WARP
                     int nbr_mask = __shfl_up_sync(0xFFFFFFFF, s_ID_mask, 1);
                     if (I > 0)
                     {
-                        if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                            cellmask = V_CELLMASK_DUMMY_I;
-                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                        if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                            cellmask = V_CELLMASK_GUARD;
+                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                             cellmask = V_CELLMASK_SOLID;
                     }
                     nbr_mask = __shfl_down_sync(0xFFFFFFFF, s_ID_mask, 1);
                     if (I < 3)
                     {
-                        if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                            cellmask = V_CELLMASK_DUMMY_I;
-                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                        if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                            cellmask = V_CELLMASK_GUARD;
+                        if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                             cellmask = V_CELLMASK_SOLID;
                     }
                     s_ID_mask = cellmask;
@@ -717,7 +767,7 @@ void Cu_Voxelize_V2
             if (dotmin >= 0)
                 cellmask = V_CELLMASK_SOLID;
             else
-                cellmask = V_CELLMASK_DUMMY_I;
+                cellmask = V_CELLMASK_GUARD;
             
             s_D[threadIdx.x] = 1;
         }
@@ -746,17 +796,17 @@ void Cu_Voxelize_V2
                 if (I > 0)
                 {
                     int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
-                    if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                        cellmask = V_CELLMASK_DUMMY_I;
-                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                    if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                        cellmask = V_CELLMASK_GUARD;
+                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                         cellmask = V_CELLMASK_SOLID;
                 }
                 if (I < 3)
                 {
                     int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
-                    if (nbr_mask == V_CELLMASK_DUMMY_I && cellmask == V_CELLMASK_INTERIOR)
-                        cellmask = V_CELLMASK_DUMMY_I;
-                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_DUMMY_I)
+                    if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                        cellmask = V_CELLMASK_GUARD;
+                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
                         cellmask = V_CELLMASK_SOLID;
                 }
                 s_ID_mask[threadIdx.x] = cellmask;
