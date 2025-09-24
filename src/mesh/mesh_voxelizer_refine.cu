@@ -199,7 +199,7 @@ void Cu_MarkBlocks_MarkExterior
                     eligible = false;
             }
             
-            if (eligible) // || cblock_ID_mask[kap] == V_BLOCKMASK_SOLID)
+            if (eligible)
                 cblock_ID_ref[kap] = V_REF_ID_INDETERMINATE_E;
         }
         
@@ -309,10 +309,16 @@ void Cu_MarkBlocks_Propagate
     for (int k = 0; k < (N_DIM==2?1:3); k++)
     {
         // First, read neighbor Ids and place in shared memory. Arrange for contiguity.
-        if (kap < id_max_curr && cblock_ID_mask[kap] > -1 && cblock_level[kap] == L)
+        //if (kap < id_max_curr && cblock_ID_mask[kap] > -1 && cblock_level[kap] == L)
+        if (kap < id_max_curr && cblock_level[kap] == L)
         {
-            for (int p = 0; p < 9; p++)
-                s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
+            // If this block is a regular block or this is the first propagation and the block is solid, consider it.
+            bool C = cblock_ID_mask[kap] > -1 || (jprop==0 && cblock_ID_mask[kap]==V_BLOCKMASK_SOLID);
+            if (C)
+            {
+                for (int p = 0; p < 9; p++)
+                    s_ID_nbr[p + threadIdx.x*9] = cblock_ID_nbr[kap + (k*9+p)*n_maxcblocks];
+            }
         }
         __syncthreads();
         
@@ -359,7 +365,8 @@ void Cu_MarkBlocks_Propagate
     
     // If at least one neighbor was a boundary-interface block, then mark intermediate.
     // Make sure to refine only eligible blocks (should be currently unrefined, 2:1 balanced afterwards).
-    if (kap < id_max_curr && mark_for_refinement && cblock_ID_ref[kap] == V_REF_ID_UNREFINED)
+    bool C = (check_even && cblock_ID_ref[kap] == V_REF_ID_UNREFINED) || (!check_even && tmp_1[kap] == -1);
+    if (kap < id_max_curr && mark_for_refinement && C) // || cblock_ID_mask[kap]==V_BLOCKMASK_SOLID))
     {
         for (int p = 0; p < N_Q_max; p++)
         {

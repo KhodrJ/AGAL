@@ -28,18 +28,20 @@
 /**************************************************************************************/
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <bool make_2D>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
 {
     // Some constants.
     ufloat_g_t *geom_f_face_Xt = geometry->geom_f_face_Xt;
-    int n_faces = geometry->n_faces;
-    int n_faces_a = geometry->n_faces_a;
+    long int n_faces = geometry->n_faces;
+    long int n_faces_a = geometry->n_faces_a;
     ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_bin_levels];
     ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_bin_levels];
     ufloat_g_t Lz0g __attribute__((unused)) = Lx0g_vec[L + 2*n_bin_levels];
     ufloat_g_t eps __attribute__((unused)) = EPS<ufloat_g_t>();
     bool C2D = false; if (n_bin_approach==0) C2D = true;
     bool C3D = false; if (n_bin_approach==0) C3D = true;
+    bool use_debug = false;   // Indicates to print out binned Ids for debugging.
     
     // Proceed only if there are actual faces loaded in the current object.
     tic_simple("");
@@ -61,24 +63,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
                 // Load face vertices from coordinate list.
                 vec3<ufloat_g_t> v1, v2, v3;
                 LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(j, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
-//                 vec3<ufloat_g_t> v1
-//                 (
-//                     geom_f_face_X[j + 0*n_faces_a],
-//                     geom_f_face_X[j + 1*n_faces_a],
-//                     geom_f_face_X[j + 2*n_faces_a]
-//                 );
-//                 vec3<ufloat_g_t> v2
-//                 (
-//                     geom_f_face_X[j + 3*n_faces_a],
-//                     geom_f_face_X[j + 4*n_faces_a],
-//                     geom_f_face_X[j + 5*n_faces_a]
-//                 );
-//                 vec3<ufloat_g_t> v3
-//                 (
-//                     geom_f_face_X[j + 6*n_faces_a],
-//                     geom_f_face_X[j + 7*n_faces_a],
-//                     geom_f_face_X[j + 8*n_faces_a]
-//                 );
                 
                 if (N_DIM==2)
                 {
@@ -136,7 +120,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
                 }
                 else // N_DIM==3
                 {
-                    // Get bounding box (safe version)
+                    // Get bounding box (safe version).
                     bool C = true;
                     vec3<ufloat_g_t> vBm
                     (
@@ -294,63 +278,67 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
         gpuErrchk( cudaMemcpy(c_binned_face_ids_3D[L], binned_face_ids_3D[L], bins_f_3D.size()*sizeof(int), cudaMemcpyHostToDevice) );
         
         
-        // DEBUG (2D)
-//         std::cout << "Finished CPU binning, starting debugging..." << std::endl;
-//         std::cout << "APPROACH: ALT 2D" << std::endl;
-//         for (int p = 0; p < n_bins_2D; p++)
-//         {
-//             int Nbpv = binned_face_ids_N_2D[p];
-//             int npbv = binned_face_ids_n_2D[p];
-//             int npb = bins_a_2D[p].size();
-//             if (npb > 0)
-//             {
-//                 std::cout << "Bin #" << p << ": ";
-//                 bool same = true;
-//                 
-//                 if (npb != npbv)
-//                     same = false;
-//                 else
-//                 {
-//                     for (int K = 0; K < npb; K++)
-//                     {
-//                         if (bins_a_2D[p][K] != binned_face_ids_2D[Nbpv + K])
-//                             same = false;
-//                     }
-//                 }
-//                 if (same)
-//                     std::cout << "SAME" << std::endl;
-//                 else
-//                     std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
-//             }
-//         }
-        // DEBUG (3D)
-//         std::cout << "APPROACH: ALT 3D" << std::endl;
-//         for (int p = 0; p < n_bins_3D; p++)
-//         {
-//             int Nbpv = binned_face_ids_N_3D[p];
-//             int npbv = binned_face_ids_n_3D[p];
-//             int npb = bins_a_3D[p].size();
-//             if (npb > 0)
-//             {
-//                 std::cout << "Bin #" << p << ": ";
-//                 bool same = true;
-//                 
-//                 if (npb != npbv)
-//                     same = false;
-//                 else
-//                 {
-//                     for (int K = 0; K < npb; K++)
-//                     {
-//                         if (bins_a_3D[p][K] != binned_face_ids_3D[Nbpv + K])
-//                             same = false;
-//                     }
-//                 }
-//                 if (same)
-//                     std::cout << "SAME" << std::endl;
-//                 else
-//                     std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
-//             }
-//         }
+        if (use_debug)
+        {
+            // DEBUG (2D)
+            std::cout << "Finished CPU binning, starting debugging..." << std::endl;
+            std::cout << "APPROACH: ALT 2D" << std::endl;
+            for (int p = 0; p < n_bins_2D[L]; p++)
+            {
+                int Nbpv = binned_face_ids_N_2D[L][p];
+                int npbv = binned_face_ids_n_2D[L][p];
+                int npb = bins_a_2D[p].size();
+                if (npb > 0)
+                {
+                    std::cout << "Bin #" << p << ": ";
+                    bool same = true;
+                    
+                    if (npb != npbv)
+                        same = false;
+                    else
+                    {
+                        for (int K = 0; K < npb; K++)
+                        {
+                            if (bins_a_2D[p][K] != binned_face_ids_2D[L][Nbpv + K])
+                                same = false;
+                        }
+                    }
+                    if (same)
+                        std::cout << "SAME" << std::endl;
+                    else
+                        std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
+                }
+            }
+            
+            // DEBUG (3D)
+            std::cout << "APPROACH: ALT 3D" << std::endl;
+            for (int p = 0; p < n_bins_3D[L]; p++)
+            {
+                int Nbpv = binned_face_ids_N_3D[L][p];
+                int npbv = binned_face_ids_n_3D[L][p];
+                int npb = bins_a_3D[p].size();
+                if (npb > 0)
+                {
+                    std::cout << "Bin #" << p << ": ";
+                    bool same = true;
+                    
+                    if (npb != npbv)
+                        same = false;
+                    else
+                    {
+                        for (int K = 0; K < npb; K++)
+                        {
+                            if (bins_a_3D[p][K] != binned_face_ids_3D[L][Nbpv + K])
+                                same = false;
+                        }
+                    }
+                    if (same)
+                        std::cout << "SAME" << std::endl;
+                    else
+                        std::cout << "NOT THE SAME (" << npb-npbv << ")" << std::endl;
+                }
+            }
+        }
         
         
         // Free memory used for CPU-side bin arrays.

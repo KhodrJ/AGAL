@@ -36,7 +36,6 @@
 #include "solver_lbm_compute.cu"
 #include "solver_lbm_criterion.cu"
 #include "solver_lbm_init.cu"
-#include "solver_lbm_identify_faces.cu"
 #include "solver_lbm_kernels.cu"
 #include "solver_lbm_kernels_comm.cu"
 #include "solver_lbm_kernels_forces.cu"

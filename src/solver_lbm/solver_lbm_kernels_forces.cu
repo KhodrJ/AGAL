@@ -38,194 +38,183 @@ void Cu_ComputeForcesCV
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ ufloat_t s_Fp[M_TBLOCK*N_DIM];
     __shared__ ufloat_t s_Fm[M_TBLOCK*N_DIM];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
+        // Compute cell coordinates and retrieve macroscopic properties.
+        int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
         
-        // Latter condition is added only if n>0.
-        if (i_kap_b>-1)
+        // Initialize the shared memory arrays if this block has boundary cells.
+        for (int d = 0; d < N_DIM; d++)
         {
-            // Compute cell coordinates and retrieve macroscopic properties.
-            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-            int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+            s_Fp[threadIdx.x + d*M_TBLOCK] = 0;
+            s_Fm[threadIdx.x + d*M_TBLOCK] = 0;
+        }
+        __syncthreads();
+        
+        
+        // Load the cell coordinates. Check if the current cell participates.
+        int I = threadIdx.x % 4;
+        int J = (threadIdx.x / 4) % 4;
+        ufloat_t x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
+        ufloat_t y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
+        ufloat_t z = (ufloat_t)0.0;
+        if (N_DIM==3)
+        {
+            int K = (threadIdx.x / 4) / 4;
+            z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
+        }
+        bool participatesV;
+        if (N_DIM==2) participatesV = CheckPointInRegion2D(x,y,cv_xm,cv_xM,cv_ym,cv_yM) && valid_mask != V_CELLMASK_SOLID;
+        if (N_DIM==3) participatesV = CheckPointInRegion3D(x,y,z,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM) && valid_mask != V_CELLMASK_SOLID;
+        
+        // Initialize macroscopic properties.
+        ufloat_t rho = (ufloat_t)(0.0);
+        ufloat_t rhoup = (ufloat_t)(0.0);
+        ufloat_t rhoum = (ufloat_t)(0.0);
+        ufloat_t rhovp = (ufloat_t)(0.0);
+        ufloat_t rhovm = (ufloat_t)(0.0);
+        ufloat_t rhowp = (ufloat_t)(0.0);
+        ufloat_t rhowm = (ufloat_t)(0.0);
+        ufloat_t f_p[N_Q];
+        
+        
+        // Load the DDFs. Compute the momentum in all cells.
+        #pragma unroll
+        for (int p = 0; p < N_Q; p++)
+        {
+            ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
+            rho += f_pi;
+            if (V_CONN_ID[p+0*27] == 1)  rhoup += f_pi;
+            if (V_CONN_ID[p+0*27] == -1) rhoum += f_pi;
+            if (V_CONN_ID[p+1*27] == 1)  rhovp += f_pi;
+            if (V_CONN_ID[p+1*27] == -1) rhovm += f_pi;
+            if (V_CONN_ID[p+2*27] == 1)  rhowp += f_pi;
+            if (V_CONN_ID[p+2*27] == -1) rhowm += f_pi;
+            f_p[p] = f_pi;
+        }
+        rhoup = rhoup - rhoum;
+        rhovp = rhovp - rhovm;
+        rhowp = rhowp - rhowm;
+        
+        
+        
+        // Add this cells momentum density if it is inside the control volume.
+        if (participatesV && post_step==0 && i_kap_bc<0)
+        {
+            if (rhoup > 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
+            if (rhoup < 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
+            if (rhoup > 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhoup < 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhoup > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            if (rhowp < 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+        }
+        if (participatesV && post_step==1 && i_kap_bc<0)
+        {
+            if (rhoup > 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
+            if (rhoup < 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
+            if (rhoup > 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhoup < 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhoup > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            if (rhowp < 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+        }
+        
+        
+        // Add this DDF's contribution if it leaves/enters the control surface. Perform collision if leaving.
+        ufloat_t omeg = otau_0;
+        ufloat_t omegp = (ufloat_t)(1.0) - omeg;
+        if (post_step==0)
+        {
+            rhoup = rhoup / rho;
+            rhovp = rhovp / rho;
+            rhowp = rhowp / rho;
+        }
+        //#pragma unroll
+        for (int p = 0; p < N_Q; p++)
+        {
+            // Load it first.
+            ufloat_t f_pi = f_p[p];
             
-            // Initialize the shared memory arrays if this block has boundary cells.
-            for (int d = 0; d < N_DIM; d++)
-            {
-                s_Fp[threadIdx.x + d*M_TBLOCK] = 0;
-                s_Fm[threadIdx.x + d*M_TBLOCK] = 0;
-            }
-            __syncthreads();
-            
-            
-            // Load the cell coordinates. Check if the current cell participates.
-            int I = threadIdx.x % 4;
-            int J = (threadIdx.x / 4) % 4;
-            ufloat_t x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + I);
-            ufloat_t y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + J);
-            ufloat_t z = (ufloat_t)0.0;
-            if (N_DIM==3)
-            {
-                int K = (threadIdx.x / 4) / 4;
-                z = cblock_f_X[i_kap_b + 2*n_maxcblocks] + dx_L*((ufloat_t)(0.5) + K);
-            }
-            bool participatesV;
-            if (N_DIM==2) participatesV = CheckPointInRegion2D(x,y,cv_xm,cv_xM,cv_ym,cv_yM) && valid_mask != V_CELLMASK_SOLID;
-            if (N_DIM==3) participatesV = CheckPointInRegion3D(x,y,z,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM) && valid_mask != V_CELLMASK_SOLID;
-            
-            // Initialize macroscopic properties.
-            ufloat_t rho = (ufloat_t)(0.0);
-            ufloat_t rhoup = (ufloat_t)(0.0);
-            ufloat_t rhoum = (ufloat_t)(0.0);
-            ufloat_t rhovp = (ufloat_t)(0.0);
-            ufloat_t rhovm = (ufloat_t)(0.0);
-            ufloat_t rhowp = (ufloat_t)(0.0);
-            ufloat_t rhowm = (ufloat_t)(0.0);
-            ufloat_t f_p[N_Q];
-            
-            
-            // Load the DDFs. Compute the momentum in all cells.
-            #pragma unroll
-            for (int p = 0; p < N_Q; p++)
-            {
-                ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
-                rho += f_pi;
-                if (V_CONN_ID[p+0*27] == 1)  rhoup += f_pi;
-                if (V_CONN_ID[p+0*27] == -1) rhoum += f_pi;
-                if (V_CONN_ID[p+1*27] == 1)  rhovp += f_pi;
-                if (V_CONN_ID[p+1*27] == -1) rhovm += f_pi;
-                if (V_CONN_ID[p+2*27] == 1)  rhowp += f_pi;
-                if (V_CONN_ID[p+2*27] == -1) rhowm += f_pi;
-                f_p[p] = f_pi;
-            }
-            rhoup = rhoup - rhoum;
-            rhovp = rhovp - rhovm;
-            rhowp = rhowp - rhowm;
-            
-            
-            
-            // Add this cells momentum density if it is inside the control volume.
-            if (participatesV && post_step==0 && i_kap_bc<0)
-            {
-                if (rhoup > 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
-                if (rhoup < 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
-                if (rhoup > 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
-                if (rhoup < 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
-                if (rhoup > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
-                if (rhowp < 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
-            }
-            if (participatesV && post_step==1 && i_kap_bc<0)
-            {
-                if (rhoup > 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
-                if (rhoup < 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
-                if (rhoup > 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
-                if (rhoup < 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
-                if (rhoup > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
-                if (rhowp < 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
-            }
-            
-            
-            // Add this DDF's contribution if it leaves/enters the control surface. Perform collision if leaving.
-            ufloat_t omeg = otau_0;
-            ufloat_t omegp = (ufloat_t)(1.0) - omeg;
+            // Perform collision, if leaving.
             if (post_step==0)
             {
-                rhoup = rhoup / rho;
-                rhovp = rhovp / rho;
-                rhowp = rhowp / rho;
+                ufloat_t udotu = rhoup*rhoup + rhovp*rhovp + rhowp*rhowp;
+                ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*rhoup + (ufloat_t)V_CONN_ID[p+1*27]*rhovp + (ufloat_t)V_CONN_ID[p+2*27]*rhowp;
+                f_pi = f_pi*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
             }
-            //#pragma unroll
-            for (int p = 0; p < N_Q; p++)
+            
+            // Now add contributions.
+            if (post_step==0 && is_root)
             {
-                // Load it first.
-                ufloat_t f_pi = f_p[p];
-                
-                // Perform collision, if leaving.
-                if (post_step==0)
+                bool participatesS;
+                if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
+                if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,z+V_CONN_ID[p+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
+                if (participatesS && participatesV)
                 {
-                    ufloat_t udotu = rhoup*rhoup + rhovp*rhovp + rhowp*rhowp;
-                    ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*rhoup + (ufloat_t)V_CONN_ID[p+1*27]*rhovp + (ufloat_t)V_CONN_ID[p+2*27]*rhowp;
-                    f_pi = f_pi*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
-                }
-                
-                // Now add contributions.
-                if (post_step==0 && is_root)
-                {
-                    bool participatesS;
-                    if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
-                    if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[p+0*27]*dx_L,y+V_CONN_ID[p+1*27]*dx_L,z+V_CONN_ID[p+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                    if (participatesS && participatesV)
+                    for (int d = 0; d < N_DIM; d++)
                     {
-                        for (int d = 0; d < N_DIM; d++)
-                        {
-                            if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
-                            if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
-                        }
-                    }
-                }
-                if (post_step==1 && is_root)
-                {
-                    bool participatesS;
-                    if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
-                    if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,z+V_CONN_ID[LBMpb[p]+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
-                    if (participatesS && participatesV)
-                    {
-                        for (int d = 0; d < N_DIM; d++)
-                        {
-                            if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
-                            if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
-                        }
+                        if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
+                        if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
                     }
                 }
             }
-            
-            
-            // Reductions for the sums of force contributions in this cell-block.
+            if (post_step==1 && is_root)
+            {
+                bool participatesS;
+                if (N_DIM==2) participatesS = !CheckPointInRegion2D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM);
+                if (N_DIM==3) participatesS = !CheckPointInRegion3D(x+V_CONN_ID[LBMpb[p]+0*27]*dx_L,y+V_CONN_ID[LBMpb[p]+1*27]*dx_L,z+V_CONN_ID[LBMpb[p]+2*27]*dx_L,cv_xm,cv_xM,cv_ym,cv_yM,cv_zm,cv_zM);
+                if (participatesS && participatesV)
+                {
+                    for (int d = 0; d < N_DIM; d++)
+                    {
+                        if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
+                        if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
+                    }
+                }
+            }
+        }
+        
+        
+        // Reductions for the sums of force contributions in this cell-block.
+        __syncthreads();
+        for (int s=blockDim.x/2; s>0; s>>=1)
+        {
+            if (threadIdx.x < s)
+            {
+                for (int d = 0; d < N_DIM; d++)
+                {
+                    s_Fp[threadIdx.x+d*M_TBLOCK] = s_Fp[threadIdx.x+d*M_TBLOCK] + s_Fp[threadIdx.x+s+d*M_TBLOCK];
+                    s_Fm[threadIdx.x+d*M_TBLOCK] = s_Fm[threadIdx.x+d*M_TBLOCK] + s_Fm[threadIdx.x+s+d*M_TBLOCK];
+                }
+            }
             __syncthreads();
-            for (int s=blockDim.x/2; s>0; s>>=1)
+        }
+        // Store the sums of contributions in global memory; this will be reduced further later.
+        if (threadIdx.x == 0)
+        {
+            if (post_step == 0)
             {
-                if (threadIdx.x < s)
+                for (int d = 0; d < N_DIM; d++)
                 {
-                    for (int d = 0; d < N_DIM; d++)
-                    {
-                        s_Fp[threadIdx.x+d*M_TBLOCK] = s_Fp[threadIdx.x+d*M_TBLOCK] + s_Fp[threadIdx.x+s+d*M_TBLOCK];
-                        s_Fm[threadIdx.x+d*M_TBLOCK] = s_Fm[threadIdx.x+d*M_TBLOCK] + s_Fm[threadIdx.x+s+d*M_TBLOCK];
-                    }
+                    cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] = s_Fp[0+d*M_TBLOCK]*dv_L;
+                    cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] = s_Fm[0+d*M_TBLOCK]*dv_L;
                 }
-                __syncthreads();
             }
-            // Store the sums of contributions in global memory; this will be reduced further later.
-            if (threadIdx.x == 0)
+            else
             {
-                if (post_step == 0)
+                for (int d = 0; d < N_DIM; d++)
                 {
-                    for (int d = 0; d < N_DIM; d++)
-                    {
-                        cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] = s_Fp[0+d*M_TBLOCK]*dv_L;
-                        cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] = s_Fm[0+d*M_TBLOCK]*dv_L;
-                    }
-                }
-                else
-                {
-                    for (int d = 0; d < N_DIM; d++)
-                    {
-                        cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] += s_Fp[0+d*M_TBLOCK]*dv_L;
-                        cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] += s_Fm[0+d*M_TBLOCK]*dv_L;
-                    }
+                    cblock_f_Ff[i_kap_b + (2*d+0)*n_maxcblocks] += s_Fp[0+d*M_TBLOCK]*dv_L;
+                    cblock_f_Ff[i_kap_b + (2*d+1)*n_maxcblocks] += s_Fm[0+d*M_TBLOCK]*dv_L;
                 }
             }
         }
@@ -237,7 +226,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesCV(int i_dev, int L, i
 {
     if (mesh->n_ids[i_dev][L]>0 && var==0)
     {
-        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,0><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             L==N_LEVEL_START,
             mesh->n_ids[i_dev][L],
@@ -262,7 +251,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesCV(int i_dev, int L, i
     }
     if (mesh->n_ids[i_dev][L]>0 && var==1)
     {
-        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ComputeForcesCV<ufloat_t,ufloat_g_t,AP,LP,1><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             L==N_LEVEL_START,
             mesh->n_ids[i_dev][L],
@@ -334,41 +323,31 @@ void Cu_ComputeForcesMEA
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
     __shared__ ufloat_t s_Fp[M_TBLOCK*N_DIM];
     __shared__ ufloat_t s_Fm[M_TBLOCK*N_DIM];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    int I = threadIdx.x % 4;
-    int J = (threadIdx.x / 4) % 4;
-    int K = 0;
-    if (N_DIM==3)
-        K = (threadIdx.x / 4) / 4;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
-        int valid_block = -1;
-        
-        // Load data for conditions on cell-blocks.
-        if (i_kap_b>-1)
-        {
-            valid_block=cblock_ID_onb[i_kap_b];
-        }
+        int valid_block = cblock_ID_onb[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_b>-1)&&((valid_block==1)))
+        if (valid_block==1)
         {
+            // Compute cell indices.
+            int I = threadIdx.x % 4;
+            int J = (threadIdx.x / 4) % 4;
+            int K = 0;
+            if (N_DIM==3)
+                K = (threadIdx.x / 4) / 4;
+            
             // Compute cell coordinates and retrieve macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             int block_mask = -1;
@@ -532,7 +511,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
 {
     if (mesh->n_ids[i_dev][L]>0 && var==0)
     {
-        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,0><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,
@@ -557,7 +536,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
     }
     if (mesh->n_ids[i_dev][L]>0 && var==1)
     {
-        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,1><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,1><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,
@@ -640,41 +619,31 @@ void Cu_ComputePressureOnWall
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int M_LBLOCK = AP->M_LBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
     constexpr int N_Q = LP->N_Q;
-    __shared__ int s_ID_cblock[M_TBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
     __shared__ ufloat_t s_F_p[M_HBLOCK];
-    int kap = blockIdx.x*M_LBLOCK + threadIdx.x;
-    int I = threadIdx.x % 4;
-    int J = (threadIdx.x / 4) % 4;
-    int K = 0;
-    if (N_DIM==3)
-        K = (threadIdx.x / 4) / 4;
-    s_ID_cblock[threadIdx.x] = -1;
-    if ((threadIdx.x<M_LBLOCK)and(kap<n_ids_idev_L))
-    {
-        s_ID_cblock[threadIdx.x] = id_set_idev_L[kap];
-    }
-    __syncthreads();
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
     
     // Loop over block Ids.
-    for (int k = 0; k < M_LBLOCK; k += 1)
+    if (i_kap_b > -1)
     {
-        int i_kap_b = s_ID_cblock[k];
-        int valid_block = -1;
-        
-        // Load data for conditions on cell-blocks.
-        if (i_kap_b>-1)
-        {
-            valid_block=cblock_ID_onb[i_kap_b];
-        }
+        int valid_block = cblock_ID_onb[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_b>-1)&&((valid_block==1)))
+        if (valid_block==1)
         {
+            // Compute cell indices.
+            int I = threadIdx.x % 4;
+            int J = (threadIdx.x / 4) % 4;
+            int K = 0;
+            if (N_DIM==3)
+                K = (threadIdx.x / 4) / 4;
+            
             // Compute cell coordinates and retrieve macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             int block_mask = -1;
@@ -795,7 +764,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputePressureOnWall(int i_dev, in
 {
     if (mesh->n_ids[i_dev][L]>0)
     {
-        Cu_ComputePressureOnWall<ufloat_t,ufloat_g_t,AP,LP,0><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_ComputePressureOnWall<ufloat_t,ufloat_g_t,AP,LP,0><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L],
             n_maxcells,

@@ -20,7 +20,7 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_DrawBinsAndFaces(int L)
 {
     // Initial parameters. Open the output file.
-    int n_faces_a = geometry->n_faces_a;
+    long int n_faces_a = geometry->n_faces_a;
     ufloat_g_t *geom_f_face_X = geometry->geom_f_face_X;
     ufloat_g_t Lx0g __attribute__((unused)) = Lx0g_vec[L + 0*n_bin_levels];
     ufloat_g_t Ly0g __attribute__((unused)) = Lx0g_vec[L + 1*n_bin_levels];

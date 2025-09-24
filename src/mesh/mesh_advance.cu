@@ -105,7 +105,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         if (geometry_init)
         {
 //             for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-//                 M_IdentifyFaces(0,L);
+//                 M_LinkLengthComputation(0,L);
         }
         
         // Freeze mesh: these new near-wall cells are not eligible for coarsening.

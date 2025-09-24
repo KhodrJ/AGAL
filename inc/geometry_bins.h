@@ -38,6 +38,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     // Bin-related constants.
     int init_bins_2D = 0;
     int init_bins_3D = 0;
+    int init_bins_MD = 0;
     int n_bin_density_root = 1;
     int n_bin_approach = 0;
     int n_bin_levels = 1;
@@ -61,32 +62,38 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     
     // 2D bins.
     int *n_bins_2D;
-    int **bin_indicators_2D;
     int **binned_face_ids_2D;
     int **binned_face_ids_n_2D;
     int **binned_face_ids_N_2D;
-    int **c_bin_indicators_2D;
     int **c_binned_face_ids_2D;
     int **c_binned_face_ids_n_2D;
     int **c_binned_face_ids_N_2D;
     
     // 3D bins.
     int *n_bins_3D;
-    int **bin_indicators_3D;
     int **binned_face_ids_3D;
     int **binned_face_ids_n_3D;
     int **binned_face_ids_N_3D;
-    int **c_bin_indicators_3D;
     int **c_binned_face_ids_3D;
     int **c_binned_face_ids_n_3D;
     int **c_binned_face_ids_N_3D;
+    
+    // Multi-directional 3D bins (single level for now).
+    int n_bins_MD;
+    int *binned_face_ids_MD;
+    int *binned_face_ids_n_MD;
+    int *binned_face_ids_N_MD;
+    int *c_binned_face_ids_MD;
+    int *c_binned_face_ids_n_MD;
+    int *c_binned_face_ids_N_MD;    
     
     // o====================================================================================
     // | Routines.
     // o====================================================================================
     
-    int G_MakeBinsCPU(int L);
-    int G_MakeBinsGPU(int L);
+    template <bool make_2D=true> int G_MakeBinsCPU(int L);
+    template <bool make_2D=true> int G_MakeBinsGPU(int L);
+    int G_MakeBinsGPU_MD(int L);
     int G_DrawBinsAndFaces(int L);
     
     // o====================================================================================
@@ -121,7 +128,17 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         Lx0g_vec = new ufloat_g_t[3*n_bin_levels];
         
         // Cap n_bin_levels using n_max_levels_wall.
-        n_bin_levels = std::min(n_bin_levels, n_max_levels_wall);
+        if (n_bin_levels > n_max_levels_wall)
+        {
+            std::cout << "Capping number of bin levels to " << n_max_levels_wall << "..." << std::endl;
+            n_bin_levels = n_max_levels_wall;
+        }
+        if (n_max_levels_wall > n_bin_levels)
+        {
+            std::cout << "Capping specified near-wall bin level to n_bin_levels=" << n_bin_levels << "..." << std::endl;
+            n_max_levels_wall = n_bin_levels;
+        }
+        
         
         // Fill vectors based on n_bin_levels.
         n_bin_density[0] = n_bin_density_root;
@@ -147,22 +164,18 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         
         // Initialize 2D bins.
         n_bins_2D = new int[n_bin_levels];
-        bin_indicators_2D = new int*[n_bin_levels];
         binned_face_ids_2D = new int*[n_bin_levels];
         binned_face_ids_n_2D = new int*[n_bin_levels];
         binned_face_ids_N_2D = new int*[n_bin_levels];
-        c_bin_indicators_2D = new int*[n_bin_levels];
         c_binned_face_ids_2D = new int*[n_bin_levels];
         c_binned_face_ids_n_2D = new int*[n_bin_levels];
         c_binned_face_ids_N_2D = new int*[n_bin_levels];
         
         // Initialize 3D bins.
         n_bins_3D = new int[n_bin_levels];
-        bin_indicators_3D = new int*[n_bin_levels];
         binned_face_ids_3D = new int*[n_bin_levels];
         binned_face_ids_n_3D = new int*[n_bin_levels];
         binned_face_ids_N_3D = new int*[n_bin_levels];
-        c_bin_indicators_3D = new int*[n_bin_levels];
         c_binned_face_ids_3D = new int*[n_bin_levels];
         c_binned_face_ids_n_3D = new int*[n_bin_levels];
         c_binned_face_ids_N_3D = new int*[n_bin_levels];
@@ -178,6 +191,9 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
             if (draw_bins == 1) G_DrawBinsAndFaces(k);
         }
         
+        // Also, make the MD bins at the specified wall level.
+        G_MakeBinsGPU_MD(n_max_levels_wall-1);
+        
         std::cout << "[-] Finished making bins object." << std::endl << std::endl;
     }
     
@@ -186,51 +202,61 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         delete[] n_bin_density;
         delete[] dxf_vec;
         
+        // 2D bins.
+        std::cout << "Deleting 2D bins..." << std::endl;
         if (init_bins_2D)
         {
             for (int j = 0; j < n_bin_levels; j++)
             {
-                delete[] bin_indicators_2D[j];
                 delete[] binned_face_ids_2D[j];
                 delete[] binned_face_ids_n_2D[j];
                 delete[] binned_face_ids_N_2D[j];
-                gpuErrchk( cudaFree(c_bin_indicators_2D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_2D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_n_2D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_N_2D[j]) )
             }
         }
-        delete[] bin_indicators_2D;
+        delete[] n_bins_2D;
         delete[] binned_face_ids_2D;
         delete[] binned_face_ids_n_2D;
         delete[] binned_face_ids_N_2D;
-        delete[] c_bin_indicators_2D;
         delete[] c_binned_face_ids_2D;
         delete[] c_binned_face_ids_n_2D;
         delete[] c_binned_face_ids_N_2D;
         
+        // 3D bins.
+        std::cout << "Deleting 3D bins..." << std::endl;
         if (init_bins_3D)
         {
             for (int j = 0; j < n_bin_levels; j++)
             {
-                delete[] bin_indicators_3D[j];
                 delete[] binned_face_ids_3D[j];
                 delete[] binned_face_ids_n_3D[j];
                 delete[] binned_face_ids_N_3D[j];
-                gpuErrchk( cudaFree(c_bin_indicators_3D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_3D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_n_3D[j]) )
                 gpuErrchk( cudaFree(c_binned_face_ids_N_3D[j]) )
             }
         }
-        delete[] bin_indicators_3D;
+        delete[] n_bins_3D;
         delete[] binned_face_ids_3D;
         delete[] binned_face_ids_n_3D;
         delete[] binned_face_ids_N_3D;
-        delete[] c_bin_indicators_3D;
         delete[] c_binned_face_ids_3D;
         delete[] c_binned_face_ids_n_3D;
         delete[] c_binned_face_ids_N_3D;
+        
+        // MD bins.
+        std::cout << "Deleting MD bins..." << std::endl;
+        if (init_bins_MD)
+        {
+            delete[] binned_face_ids_MD;
+            delete[] binned_face_ids_n_MD;
+            delete[] binned_face_ids_N_MD;
+            gpuErrchk( cudaFree(c_binned_face_ids_MD) )
+            gpuErrchk( cudaFree(c_binned_face_ids_n_MD) )
+            gpuErrchk( cudaFree(c_binned_face_ids_N_MD) )
+        }
     }
 };
 

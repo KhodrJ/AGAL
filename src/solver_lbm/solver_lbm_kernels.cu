@@ -228,7 +228,8 @@ void Cu_Collide
         int valid_block = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_bc<0) || (valid_block>-3))
+        //if ((i_kap_bc<0) || (valid_block>-3))
+        if (i_kap_bc < 0 || BlockNotSolid(valid_block))
         {
             // Get cell mask. Initialize variables for macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
@@ -361,7 +362,8 @@ void Cu_Stream
         int valid_block = cblock_ID_mask[i_kap_b];
         
         // Latter condition is added only if n>0.
-        if ((i_kap_bc<0) || (valid_block>-3))
+        //if ((i_kap_bc<0) || (valid_block>-3))
+        if (i_kap_bc < 0 || BlockNotSolid(valid_block))
         {
             // Get masks for possible boundary nodes.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];

@@ -75,8 +75,10 @@ __host__ __device__ __forceinline__
 int Cu_CellId(const int &I, const int &J, const int &K)
 {
     // I,J,K are the indices of cells in a 4x4(x4) grid (so 0 <= I,J,K < 4).
-    if (N_DIM==2) return I + 4*J;
-    return I + 4*J + 16*K;
+    if (N_DIM==2)
+        return I + 4*J;
+    else
+        return I + 4*J + 16*K;
 }
 
 template <int N_DIM>

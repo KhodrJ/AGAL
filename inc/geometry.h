@@ -22,7 +22,7 @@ enum class LoadType
     STL,
     TXT
 };
-enum FaceArrangement
+enum class FaceArrangement
 {
     SoA,
     AoS
@@ -107,10 +107,10 @@ class Geometry
     // o====================================================================================
     
     // Geometry mesh data.
-    int             n_nodes;                                         ///< Number of nodes.
-    int             n_nodes_a;                                       ///< Number of vertices rounded to 32 for alignment.
-    int             n_faces;                                         ///< Number of faces.
-    int             n_faces_a;                                       ///< Number of faces rounded to 32 for alignment.
+    long int        n_nodes;                                         ///< Number of nodes.
+    long int        n_nodes_a;                                       ///< Number of vertices rounded to 32 for alignment.
+    long int        n_faces;                                         ///< Number of faces.
+    long int        n_faces_a;                                       ///< Number of faces rounded to 32 for alignment.
     int             *geom_ID_face;                                   ///< Array of face indices.
     ufloat_g_t      *geom_f_node_X;                                  ///< Array of geometry node locations.
     ufloat_g_t      *geom_f_face_X;                                  ///< Array of face data.

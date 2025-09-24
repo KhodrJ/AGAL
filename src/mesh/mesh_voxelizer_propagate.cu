@@ -120,7 +120,6 @@ void Cu_Voxelize_Propagate_Right
     if (i_kap_b > -1 && i_nbr_start_left < 0)
     {
         // Compute cell coordinates.
-        //int I = threadIdx.x % 4;
         int J = (threadIdx.x / 4) % 4;
         int K = 0;
         if (N_DIM==3)
@@ -244,6 +243,13 @@ void Cu_Voxelize_Propagate_Left
     }
 }
 
+
+
+
+
+
+
+/*
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_Voxelize_Propagate_Internal
@@ -310,38 +316,6 @@ void Cu_Voxelize_Propagate_Internal
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_Voxelize_PatchGaps
@@ -355,11 +329,11 @@ void Cu_Voxelize_PatchGaps
 )
 {
     constexpr int N_DIM = AP->N_DIM;
-    constexpr int M_TBLOCK = AP->M_TBLOCK;
+    //constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_LEFT = (N_DIM==2 ? 3 : 2);
+    //constexpr int N_LEFT = (N_DIM==2 ? 3 : 2);
     constexpr int N_RIGHT = 1;
-    __shared__ int s_ID_mask[M_TBLOCK];
+    //__shared__ int s_ID_mask[M_TBLOCK];
     __shared__ int s_ID_nbr[27];
     
     int i_kap_b = -1;
@@ -384,7 +358,7 @@ void Cu_Voxelize_PatchGaps
         }
         __syncthreads();
         
-        int t0, b0, t1, b1, t2, b2, t3, b3;
+        int t0, b0, t1, b1;
         Cu_GetNbrIndices<N_DIM,0>(N_RIGHT,&b0,&t0,I,J,K,s_ID_nbr);
         Cu_GetNbrIndices<N_DIM,1>(N_RIGHT,&b1,&t1,I,J,K,s_ID_nbr);
         
@@ -412,3 +386,4 @@ void Cu_Voxelize_PatchGaps
         }
     }
 }
+*/

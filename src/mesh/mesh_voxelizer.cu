@@ -10,12 +10,14 @@
 #include "mesh_voxelizer_propagate.cu"
 #include "mesh_voxelizer_refine.cu"
 #include "mesh_voxelizer_masks.cu"
+#include "mesh_voxelizer_links.cu"
 
 // Since there are many kernels involved, I've divided them into four files:
 // - voxelize: Various versions of ray cast surface voxelization.
 // - propagate: Various versions of external mask propagation.
 // - refine: Kernels dealing with refinement mark setting and propagation.
 // - masks: Kernels dealing with checks on and updates to cell/block masks.
+// - links: The kernel for link-length computation.
 
 /*
         888     888                            888 d8b                                  
@@ -55,27 +57,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
         std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);
         thrust::device_ptr<int> mask_ptr = thrust::device_pointer_cast(c_cells_ID_mask[i_dev]);
         int ns1 = thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID));
-
-        // Patch any gaps that show up due to round-off errors during computations.
-        tic_simple("");
-        Cu_Voxelize_PatchGaps<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-            c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
-        );
-        cudaDeviceSynchronize();
-        std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePatchGaps (1)"; toc_simple("",T_US,1);
         
         //if (L < MAX_LEVELS-1)
-        {
-            // Perform an internal propagation of cell flags prior to external propagation.
-            tic_simple("");
-            Cu_Voxelize_Propagate_Internal<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-                n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-                c_cells_ID_mask[i_dev]
-            );
-            cudaDeviceSynchronize();
-            std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagateInternal"; toc_simple("",T_US,1);
-            
+        {            
             // Propagate preliminary solid masks within the interior from both sides.
             tic_simple("");
             Cu_Voxelize_Propagate_Right<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
@@ -125,22 +109,14 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
             cudaDeviceSynchronize();
             std::cout << "MESH_VOXELIZE | L=" << L << ", MarkExterior"; toc_simple("",T_US,1);
             
-            // Also, mark appropriate solid blocks adjacent to these solid-boundary cell-blocks for refinement, if eligible.
-    //         tic_simple("");
-    //         Cu_MarkBlocks_MarkInterior<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-    //             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
-    //             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_ref[i_dev], hit_max
-    //         );
-    //         cudaDeviceSynchronize();
-    //         std::cout << "MESH_VOXELIZE | L=" << L << ", MarkInterior"; toc_simple("",T_US,1);
-            
             // Propagate these latter marks until the specified near-wall refinement criterion is approximately reached.
             for (int j = 0; j < Nprop_d; j++)
             {
                 tic_simple("");
                 Cu_MarkBlocks_Propagate<AP> <<<(M_BLOCK+id_max[i_dev][L]-1)/M_BLOCK,M_BLOCK>>>(
                     id_max[i_dev][L], n_maxcblocks, L,
-                    c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev], c_tmp_1[i_dev], j
+                    c_cblock_ID_ref[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_level[i_dev], c_tmp_1[i_dev],
+                    j
                 );
                 cudaDeviceSynchronize();
                 std::cout << "MESH_VOXELIZE | L=" << L << ", Propagate (" << j << ")"; toc_simple("",T_US,1);
@@ -157,8 +133,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
             
             std::cout << "Counted (pre) " << ns1 << " solid cells..." << std::endl;
             std::cout << "Counted (post) " << ns2 << " solid cells..." << std::endl;
-            cudaDeviceSynchronize();
-            gpuErrchk( cudaPeekAtLastError() );
         }
     }
     
@@ -188,8 +162,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S2(int i_dev, int L)
         );
         cudaDeviceSynchronize();
         std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks"; toc_simple("",T_US,1);
-        cudaDeviceSynchronize();
-        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;
@@ -242,8 +214,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S3(int i_dev)
         cudaMemGetInfo(&free_t, &total_t);
         std::cout << "[-] After allocations:\n";
         std::cout << "    Free: " << free_t*CONV_B2GB << "GB, " << "Total: " << total_t*CONV_B2GB << " GB" << std::endl;
-        cudaDeviceSynchronize();
-        gpuErrchk( cudaPeekAtLastError() );;
     }
     
     return 0;
@@ -262,26 +232,30 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", UpdateSolidChildren"; toc_simple("",T_US,1);
         
-        Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
-            c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
-        );
-        cudaDeviceSynchronize();
-        gpuErrchk( cudaPeekAtLastError() );
+//         Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+//             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
+//             c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
+//         );
+//         cudaDeviceSynchronize();
     }
     
     return 0;
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Mesh<ufloat_t,ufloat_g_t,AP>::M_IdentifyFaces(int i_dev, int L)
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_LinkLengthComputation(int i_dev, int L)
 {
-    // Use the solver-defined face-cell link calculation procedure (might move this back to the Mesh since it doesn't seem to depend on the solver).
-    if (n_solidb > 0)
+    if (n_solidb > 0 && n_ids[i_dev][L] > 0)
     {
         cudaDeviceSynchronize();
         tic_simple("");
-        solver->S_IdentifyFaces(0,L);
+        Cu_LinkLengthComputation<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+            n_ids[i_dev][L], n_maxcblocks, n_maxcells_b, dxf_vec[L],
+            &c_id_set[i_dev][L*n_maxcblocks], c_cells_ID_mask_b[i_dev], c_cells_f_X_b[i_dev],
+            c_cblock_f_X[i_dev], c_cblock_ID_onb_solid[i_dev],
+            geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_Xt,
+            geometry->bins->c_binned_face_ids_n_3D[0], geometry->bins->c_binned_face_ids_N_3D[0], geometry->bins->c_binned_face_ids_3D[0], geometry->bins->n_bin_density[0]
+        );
         cudaDeviceSynchronize();
         std::cout << "MESH_IDENTIFYFACES | L=" << L << ", IdentifyFaces"; toc_simple("",T_US,1);
     }

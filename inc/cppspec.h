@@ -23,6 +23,7 @@
 #include <vector>
 #include <math.h>
 #include <type_traits>
+#include <random>
 
 // Thrust.
 #include <thrust/host_vector.h>

@@ -156,7 +156,6 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     int S_ComputeForcesCV(int i_dev, int L, int var);
     int S_ReportForces(int i_dev, int L, int i, double t, int START);
     int S_ComputeMacroProperties(int i_dev, int i_kap, int i_Q, int kap_i, ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w);
-    int S_IdentifyFaces(int i_dev, int L);
     int S_ComputePressureOnWall(int i_dev, int L, int var);
     
     int S_Average(int i_dev, int L, int var);

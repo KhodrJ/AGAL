@@ -6,11 +6,22 @@
 /**************************************************************************************/
 
 #include "mesh.h"
-#include "solver_lbm.h"
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, int VS>
+/**************************************************************************************/
+/*                                                                                    */
+/*  ===[ Cu_LinkLengthComputation ]=========================================================  */
+/*                                                                                    */
+/*  This kernel computes the lengths of links that cross through the geometry via     */
+/*  ray cast and point-in-triangle testing of intersection points. The number of      */
+/*  directions considered can be restricted to the six canonical directions if a      */
+/*  smaller stencil is being used in the vicinity of the geometry to reduce memory    */
+/*  consumption and total execution time.                                             */
+/*                                                                                    */
+/**************************************************************************************/
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
-void Cu_IdentifyFaces
+void Cu_LinkLengthComputation
 (
     const int n_ids_idev_L,
     const int n_maxcblocks,
@@ -21,8 +32,8 @@ void Cu_IdentifyFaces
     ufloat_g_t *__restrict__ cells_f_X_b,
     const ufloat_t *__restrict__ cblock_f_X,
     int *__restrict__ cblock_ID_onb_solid,
-    const int n_faces,
-    const int n_faces_a,
+    const long int n_faces,
+    const long int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n,
     const int *__restrict__ binned_face_ids_N,
@@ -87,24 +98,6 @@ void Cu_IdentifyFaces
                     int f_p = binned_face_ids[N_f+p];
                     vec3<ufloat_g_t> v1, v2, v3;
                     LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
-//                     vec3<ufloat_g_t> v1
-//                     (
-//                         geom_f_face_X[0 + f_p*n_faces_a],
-//                         geom_f_face_X[1 + f_p*n_faces_a],
-//                         geom_f_face_X[2 + f_p*n_faces_a]
-//                     );
-//                     vec3<ufloat_g_t> v2
-//                     (
-//                         geom_f_face_X[3 + f_p*n_faces_a],
-//                         geom_f_face_X[4 + f_p*n_faces_a],
-//                         geom_f_face_X[5 + f_p*n_faces_a]
-//                     );
-//                     vec3<ufloat_g_t> v3
-//                     (
-//                         geom_f_face_X[6 + f_p*n_faces_a],
-//                         geom_f_face_X[7 + f_p*n_faces_a],
-//                         geom_f_face_X[8 + f_p*n_faces_a]
-//                     );
                     vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                     
                     if (N_DIM==2)
@@ -141,7 +134,7 @@ void Cu_IdentifyFaces
                                     vp.y + V_CONN_ID[q+1*27]*tmp,
                                     vp.z + V_CONN_ID[q+2*27]*tmp
                                 );
-                                if (CheckPointInTriangleI(tmpX, v1, v2, v3, n))
+                                if (CheckPointInTriangle(tmpX, v1, v2, v3, n))
                                 {
                                     ufloat_g_t dist_q = dQ[q];
                                     if (tmp < dist_q || dist_q < 0)
@@ -163,21 +156,4 @@ void Cu_IdentifyFaces
             }
         }
     }
-}
-
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
-int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_IdentifyFaces(int i_dev, int L)
-{
-    if (mesh->n_ids[i_dev][L] > 0)
-    {
-        Cu_IdentifyFaces<ufloat_t,ufloat_g_t,AP,LP->VS> <<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(
-            mesh->n_ids[i_dev][L], n_maxcblocks, mesh->n_maxcells_b, dxf_vec[L],
-            &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask_b[i_dev], mesh->c_cells_f_X_b[i_dev],
-            mesh->c_cblock_f_X[i_dev], mesh->c_cblock_ID_onb_solid[i_dev],
-            mesh->geometry->n_faces, mesh->geometry->n_faces_a, mesh->geometry->c_geom_f_face_Xt,
-            mesh->geometry->bins->c_binned_face_ids_n_3D[0], mesh->geometry->bins->c_binned_face_ids_N_3D[0], mesh->geometry->bins->c_binned_face_ids_3D[0], mesh->geometry->bins->n_bin_density[0]
-        );
-    }
-    
-    return 0;
 }

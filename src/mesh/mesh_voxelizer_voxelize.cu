@@ -18,8 +18,8 @@ void Cu_Voxelize_V1_WARP
     int *__restrict__ cblock_ID_mask,
     const ufloat_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
-    const int n_faces,
-    const int n_faces_a,
+    const long int n_faces,
+    const long int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -86,24 +86,6 @@ void Cu_Voxelize_V1_WARP
                 int f_p = binned_face_ids_3D[N_f+p];
                 vec3<ufloat_g_t> v1, v2, v3;
                 LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
-//                 vec3<ufloat_g_t> v1
-//                 (
-//                     geom_f_face_X[f_p + 0*n_faces_a],
-//                     geom_f_face_X[f_p + 1*n_faces_a],
-//                     geom_f_face_X[f_p + 2*n_faces_a]
-//                 );
-//                 vec3<ufloat_g_t> v2
-//                 (
-//                     geom_f_face_X[f_p + 3*n_faces_a],
-//                     geom_f_face_X[f_p + 4*n_faces_a],
-//                     geom_f_face_X[f_p + 5*n_faces_a]
-//                 );
-//                 vec3<ufloat_g_t> v3
-//                 (
-//                     geom_f_face_X[f_p + 6*n_faces_a],
-//                     geom_f_face_X[f_p + 7*n_faces_a],
-//                     geom_f_face_X[f_p + 8*n_faces_a]
-//                 );
                 vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                 
                 // Account for all directions within the cell-neighbor halo.
@@ -217,7 +199,7 @@ void Cu_Voxelize_V1_WARP
     }
 }
 
-template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, typename ufloat_d_t=ufloat_g_t>
 __global__
 void Cu_Voxelize_V1
 (
@@ -229,8 +211,8 @@ void Cu_Voxelize_V1
     int *__restrict__ cblock_ID_mask,
     const ufloat_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
-    const int n_faces,
-    const int n_faces_a,
+    const long int n_faces,
+    const long int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -261,11 +243,11 @@ void Cu_Voxelize_V1
             K = (threadIdx.x / 4) / 4;
         
         // Compute cell coordinates.
-        vec3<ufloat_g_t> vp
+        vec3<ufloat_d_t> vp
         (
             cblock_f_X[i_kap_b + 0*n_maxcblocks] + I*dx_L + 0.5*dx_L,
             cblock_f_X[i_kap_b + 1*n_maxcblocks] + J*dx_L + 0.5*dx_L,
-            (N_DIM==2) ? (ufloat_g_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L
+            (N_DIM==2) ? (ufloat_d_t)0.0 : cblock_f_X[i_kap_b + 2*n_maxcblocks] + K*dx_L + 0.5*dx_L
         );
         
         // Compute global bin index for this thread.
@@ -277,19 +259,10 @@ void Cu_Voxelize_V1
         int global_bin_id = Ibx + G_BIN_DENSITY*Iby + G_BIN_DENSITY*G_BIN_DENSITY*Ibz;
         
         // Initialize trackers for minimal face-distance.
-        int pminR = -1;
-        ufloat_g_t dminR = (ufloat_g_t)1.0;
-        ufloat_g_t dotminR = (ufloat_g_t)1.0;
-        int pminL = -1;
-        ufloat_g_t dminL = (ufloat_g_t)1.0;
-        ufloat_g_t dotminL = (ufloat_g_t)1.0;
+        int pmin = -1;
+        ufloat_d_t dmin = (ufloat_d_t)1.0;
         int n_f = binned_face_ids_n_3D[global_bin_id];
         int cellmask = V_CELLMASK_INTERIOR;
-        
-        // Pseudo-guard data.
-        int pseudoguard = 0;
-        vec3<ufloat_g_t> vm = vp - (0.5*static_cast<ufloat_g_t>(dx_L) + EPS<ufloat_g_t>());
-        vec3<ufloat_g_t> vM = vp + (0.5*static_cast<ufloat_g_t>(dx_L) + EPS<ufloat_g_t>());
         
         // If bin is nonempty, traverse the faces and get the signed distance to the closest face.
         // Only consider faces within a distance of dx (these would be adjacent to the surface).
@@ -300,101 +273,34 @@ void Cu_Voxelize_V1
             {
                 // Load face data.
                 int f_p = binned_face_ids_3D[N_f+p];
-                vec3<ufloat_g_t> v1, v2, v3;
-                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
-                vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
-                
-                // Pseudo-guard.
-                if (hit_max)
-                {
-                    if (TriangleBinOverlap3D(vm,vM,v1,v2,v3))
-                    {
-                        if (n.x < -EPS<ufloat_g_t>()) pseudoguard = -1;
-                        if (n.x > EPS<ufloat_g_t>()) pseudoguard = 1;
-                    }
-                }
+                vec3<ufloat_d_t> v1, v2, v3;
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS, ufloat_d_t>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                vec3<ufloat_d_t> n = FaceNormalUnit<ufloat_d_t,N_DIM>(v1,v2,v3);
                 
                 // Voxelize the face into the current cell-block with a triangle-bin overlap test.
-                ufloat_g_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
-                vec3<ufloat_g_t> vi = vp;
+                ufloat_d_t d = (v1.x-vp.x) + (v1.y-vp.y)*(n.y/n.x) + (v1.z-vp.z)*(n.z/n.x);
+                vec3<ufloat_d_t> vi = vp;
                 vi.x += d;
-                //vec3<ufloat_g_t> vii = PointFaceIntersection<ufloat_g_t,N_DIM>(vi,v1,v2,v3,n);
-                //ufloat_g_t dd = NormV(vii-vi);
-                //if (dd < EPS<ufloat_g_t>())
-                {
-                    //d = Tabs(d);
-                    
-                    //bool is_smaller = d < dmin && dd < ddmin+EPS<ufloat_g_t>();
-                    //if ((is_smaller || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
-                    //if ((is_smaller || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                    //if ((d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                    //if ((d < dmin || pmin == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
-                    //if (Tabs(d) < dx_L && (Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleSphere(vi,v1,v2,v3,n))
-                    
-                    //ufloat_g_t shift = EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(1.0);
-                    //if (Tabs(d) < dx_L && (Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleShifted(d,vi,v1,v2,v3,n,shift))
-                    //if ((Tabs(d) < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                    {
-                        //if (d > 0 && n.x < 0) { dminR = Tabs(d); pminR = p; }
-                        //if (d < 0 && n.x > 0) { dminL = Tabs(d); pminL = p; }
-                        //if (d > 0 && n.x < 0) cellmask = V_CELLMASK_LL;
-                        //if (d < 0 && n.x < 0) cellmask = V_CELLMASK_LR;
-                        //if (d > 0 && n.x > 0) cellmask = V_CELLMASK_RL;
-                        //if (d < 0 && n.x > 0) cellmask = V_CELLMASK_RR;
-                        
-                        //pmin = p;
-                        //dmin = Tabs(d);
-                        //ddmin = dd;
-                        //dotmin = DotV(vi-vp,n);
-                        
-                    }
-                }
                 
-                if (d > 0 && (Tabs(d) < dx_L) && (Tabs(d) < dminR || pminR == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
+                if ((Tabs(d) < dmin || pmin == -1) && CheckPointInFaceAABB<ufloat_d_t,N_DIM>(vi,v1,v2,v3))
                 {
-                    if (n.x < -EPS<ufloat_g_t>()) { dminR = Tabs(d); pminR = p; }
-                }
-                if (d < 0 && (Tabs(d) < dx_L) && (Tabs(d) < dminL || pminL == -1) && CheckPointInTriangleAABB(vi,v1,v2,v3))
-                {
-                    if (n.x > EPS<ufloat_g_t>()) { dminL = Tabs(d); pminL = p; }
+                    dmin = Tabs(d);
+                    pmin = p;
+                    
+                    // Classify.
+                    if (d > 0 && n.x < 0) cellmask = V_CELLMASK_LL;
+                    if (d < 0 && n.x < 0) cellmask = V_CELLMASK_LR;
+                    if (d > 0 && n.x > 0) cellmask = V_CELLMASK_RL;
+                    if (d < 0 && n.x > 0) cellmask = V_CELLMASK_RR;
                 }
             }
         }
         
-        // Classify.
-        if (pminR != -1 && pminL == -1)
-            cellmask = V_CELLMASK_LL;
-        if (pminR == -1 && pminL != -1)
-            cellmask = V_CELLMASK_RR;
-        if (pminR != -1 && pminL != -1)
-            cellmask = V_CELLMASK_LLRR;
-        
-//         if (cellmask==V_CELLMASK_INTERIOR && pseudoguard==-1)
-//             cellmask = V_CELLMASK_PGUARD;
-//         if (cellmask==V_CELLMASK_INTERIOR && pseudoguard==1)
-//             cellmask = V_CELLMASK_PGUARD;
-        
         // Now, if there are an even number of intersections, the current cell is in the solid.
         // Otherwise, it is a fluid cell.
         s_D[threadIdx.x] = 0;
-        //int cellmask = V_CELLMASK_INTERIOR;
-        if (pminR != -1 || pminL != -1)
-        {
-            /*
-            // Set to solid or guard based on angle.
-            if (dotmin > EPS<ufloat_g_t>())
-                cellmask = V_CELLMASK_SOLID;
-            else
-                cellmask = V_CELLMASK_GUARD;
-            
-            // If the cell-center is too close to a face, turn it into a guard.
-            if (dmin < EPS<ufloat_g_t>()*static_cast<ufloat_g_t>(2.0))
-                cellmask = V_CELLMASK_GUARD;
-            */
-            
+        if (pmin != -1)
             s_D[threadIdx.x] = 1;
-        }
-        s_ID_mask[threadIdx.x] = cellmask;
         __syncthreads();
         
         // Block reduction for sum.
@@ -402,33 +308,37 @@ void Cu_Voxelize_V1
         
         if (s_D[0]>0)
         {
-            // If at least one cell is solid, update the block mask. [REMOVE]
-            //if (threadIdx.x == 0)
-            //    cblock_ID_mask[i_kap_b] = V_BLOCKMASK_SOLID;
+            // First update the cell masks.
+            if (cellmask==V_CELLMASK_LL || cellmask==V_CELLMASK_RR)
+                cellmask = V_CELLMASK_GUARD;
+            if (cellmask==V_CELLMASK_LR || cellmask==V_CELLMASK_RL)
+                cellmask = V_CELLMASK_SOLID;
             
             // Internally propagate the cell mask values to the x-edges of the cell-block.
-//             for (int l = 0; l < 9; l++)
-//             {
-//                 if (I > 0)
-//                 {
-//                     int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
-//                     if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
-//                         cellmask = V_CELLMASK_GUARD;
-//                     if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
-//                         cellmask = V_CELLMASK_SOLID;
-//                 }
-//                 if (I < 3)
-//                 {
-//                     int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
-//                     if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
-//                         cellmask = V_CELLMASK_GUARD;
-//                     if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
-//                         cellmask = V_CELLMASK_SOLID;
-//                 }
-//                 s_ID_mask[threadIdx.x] = cellmask;
-//                 __syncthreads();
-//             }
-//             
+            s_ID_mask[threadIdx.x] = cellmask;
+            __syncthreads();
+            for (int l = 0; l < 3; l++)
+            {
+                if (I > 0)
+                {
+                    int nbr_mask = s_ID_mask[(I-1) + 4*J + 16*K];
+                    if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                        cellmask = V_CELLMASK_GUARD;
+                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
+                        cellmask = V_CELLMASK_SOLID;
+                }
+                if (I < 3)
+                {
+                    int nbr_mask = s_ID_mask[(I+1) + 4*J + 16*K];
+                    if (nbr_mask == V_CELLMASK_GUARD && cellmask == V_CELLMASK_INTERIOR)
+                        cellmask = V_CELLMASK_GUARD;
+                    if (nbr_mask == V_CELLMASK_SOLID && cellmask != V_CELLMASK_GUARD)
+                        cellmask = V_CELLMASK_SOLID;
+                }
+                s_ID_mask[threadIdx.x] = cellmask;
+                __syncthreads();
+            }
+            
             // If there are solid masks in this block, place guard in the masks for the propagation.
             cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
         }
@@ -447,8 +357,8 @@ void Cu_Voxelize_V2_WARP
     int *__restrict__ cblock_ID_mask,
     const ufloat_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
-    const int n_faces,
-    const int n_faces_a,
+    const long int n_faces,
+    const long int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -652,8 +562,8 @@ void Cu_Voxelize_V2
     int *__restrict__ cblock_ID_mask,
     const ufloat_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
-    const int n_faces,
-    const int n_faces_a,
+    const long int n_faces,
+    const long int n_faces_a,
     const ufloat_g_t *__restrict__ geom_f_face_Xt,
     const int *__restrict__ binned_face_ids_n_3D,
     const int *__restrict__ binned_face_ids_N_3D,
@@ -818,56 +728,3 @@ void Cu_Voxelize_V2
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // If this triangle is the closest to this point, consider the relative orientation if a snapped ray also intersects it.
-                /*
-                vec3<ufloat_g_t> vi = PointFaceIntersection<ufloat_g_t,N_DIM>(vp,v1,v2,v3,n);
-                {
-                    vec3<ufloat_g_t> vd = vi-vp;
-                    ufloat_g_t d = NormV(vd);
-                    if (d < static_cast<ufloat_g_t>(2.0)*dx_L && (d < static_cast<ufloat_g_t>(2.0)*dmin || pmin == -1))
-                    {
-                        // Convert vd into a snapped ray.
-                        vd.Normalize();
-                        vd.Snap();
-                        
-                        // Perform ray cast with the snapped ray. Update intersection point.
-                        d = DotV(vd,n);
-                        if (Tabs(d) > EPS<ufloat_g_t>())
-                        {
-                            d = DotV(v1-vp,n) / d;
-                            vi = vp + vd*d;
-                            d = Tabs(d);
-                        
-                            // Now only store the result of this snapped ray instead of the nearest-distance ray.
-                            if (d < dx_L && (d < dmin || pmin == -1) && CheckPointInTriangleI(vi,v1,v2,v3,n))
-                            {
-                                pmin = p;
-                                dmin = d;
-                                dotmin = DotV(vi-vp,n);
-                            }
-                        }
-                    }
-                }
-                */

@@ -24,7 +24,7 @@
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
 {
-    const int M_PATCH = 32;
+    const int M_PATCH = Nxi[0];
     int M_PATCH_VOL = 1;
     for (int d = 0; d < N_DIM; d++)
         M_PATCH_VOL *= M_PATCH;

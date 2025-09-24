@@ -373,7 +373,8 @@ __host__ __device__ __forceinline__ vec3<T> FaceNormal(const vec3<T> &v1, const 
 {
     if (N_DIM==2)
         return vec3<T>(v2.y-v1.y,v1.x-v2.x);
-    return CrossV(v2-v1,v3-v1);
+    else
+        return CrossV(v2-v1,v3-v1);
 }
 
 template <typename T, int N_DIM>
@@ -421,7 +422,7 @@ vec3<T> PointLineIntersectionClamped(const vec3<T> &vp, const vec3<T> &v1, const
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInLineA(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2)
+bool CheckPointInLine(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2)
 {
     // Assumes that the point is on an infinite line defined by the segment.
     
@@ -438,7 +439,7 @@ bool CheckPointInLineA(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2)
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+bool CheckPointInLine(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
 {
     // Assumes that the point is on an infinite line defined by the segment.
     
@@ -453,57 +454,91 @@ bool CheckPointInLineA(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
     return true;
 }
 
-// template <typename T>
-// __host__ __device__ __forceinline__
-// bool CheckPointInTriangleII(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
-// {
-//     First edge.
-//     vec3<T> ven = InwardNormalUnit(v1,v2,n);
-//     T s = DotV(v1-vp,ven);
-//     if (s <= -EPS<T>()*static_cast<T>(100))
-//         return false;
-//     
-//     Second edge.
-//     ven = InwardNormalUnit(v2,v3,n);
-//     s = DotV(v2-vp,ven);
-//     if (s <= -EPS<T>()*static_cast<T>(100))
-//         return false;
-//     
-//     Third edge.
-//     ven = InwardNormalUnit(v3,v1,n);
-//     s = DotV(v3-vp,ven);
-//     if (s <= -EPS<T>()*static_cast<T>(100))
-//         return false;
-//     
-//     return true;
-// }
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInLineExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+{
+    // Assumes that the point is on an infinite line defined by the segment.
+    
+    // First vertex.
+    if (DotV2D(vp-v1,v2-v1) <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    // Second vertex.
+    if (-DotV2D(vp-v2,v2-v1) <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    return true;
+}
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInTriangleI(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+bool CheckPointInTriangleExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
 {
     // First edge.
     vec3<T> ven = InwardNormalUnit(v1,v2,n);
     T s = DotV(v1-vp,ven);
-    //if (s <= -EPS<T>())
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    // Second edge.
+    ven = InwardNormalUnit(v2,v3,n);
+    s = DotV(v2-vp,ven);
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    // Third edge.
+    ven = InwardNormalUnit(v3,v1,n);
+    s = DotV(v3-vp,ven);
+    if (s <= -EPS<T>()*static_cast<T>(100))
+        return false;
+    
+    return true;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInTriangle(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    // First edge.
+    vec3<T> ven = InwardNormalUnit(v1,v2,n);
+    T s = DotV(v1-vp,ven);
     if ( LTZ_I(s) )
         return false;
     
     // Second edge.
     ven = InwardNormalUnit(v2,v3,n);
     s = DotV(v2-vp,ven);
-    //if (s <= -EPS<T>())
     if ( LTZ_I(s) )
         return false;
     
     // Third edge.
     ven = InwardNormalUnit(v3,v1,n);
     s = DotV(v3-vp,ven);
-    //if (s <= -EPS<T>())
     if ( LTZ_I(s) )
         return false;
     
     return true;
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    if (N_DIM==2)
+        return CheckPointInLine(vp,v1,v2);
+    else
+        return CheckPointInTriangle(vp,v1,v2,v3,n);
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool CheckPointInFaceExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+{
+    if (N_DIM==2)
+        return CheckPointInLineExtended(vp,v1,v2);
+    else
+        return CheckPointInTriangleExtended(vp,v1,v2,v3,n);
 }
 
 template <typename T>
@@ -542,15 +577,6 @@ bool CheckPointInTriangleProjected(const T &vpx, const T &vpy, const T &v1x, con
         return false;
     
     return true;
-}
-
-template <typename T, int N_DIM>
-__host__ __device__ __forceinline__
-bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
-{
-    if (N_DIM==2)
-        return CheckPointInLineA(vp,v1,v2);
-    return CheckPointInTriangleI(vp,v1,v2,v3,n);
 }
 
 template <typename T>

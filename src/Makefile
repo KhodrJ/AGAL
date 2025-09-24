@@ -105,6 +105,7 @@ SRC_MESH = mesh_init.cu\
 	mesh_voxelizer_propagate.cu\
 	mesh_voxelizer_refine.cu\
 	mesh_voxelizer_masks.cu\
+	mesh_voxelizer_links.cu\
 	mesh_amr.cu\
 	mesh_advance.cu\
 	mesh_restart.cu\
@@ -124,7 +125,6 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_compute.cu\
 	solver_lbm_compute_macro.cu\
 	solver_lbm_criterion.cu\
-	solver_lbm_identify_faces.cu\
 	solver_lbm_kernels.cu\
 	solver_lbm_kernels_comm.cu\
 	solver_lbm_kernels_forces.cu\

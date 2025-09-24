@@ -9,18 +9,18 @@ N_RESTART                       0
 PERIODIC_X                      0
 PERIODIC_Y                      0
 PERIODIC_Z                      0
-Nx                              64
+Nx                              128
 N_ITER_TOTAL                    10*Nx
 
 # GEOMETRY
 G_FILENAME                      xyzrgbdragon_ascii.stl
-G_LOADTYPE                      0
-G_PRINT                         0
+G_LOADTYPE                      1
+G_PRINT                         1
 G_NEAR_WALL_DISTANCE            0.05
 G_BIN_APPROACH                  1
-G_BIN_DENSITY                   16
+G_BIN_DENSITY                   32
 G_BIN_LEVELS                    5
-G_BIN_SPEC                      5
+G_BIN_SPEC                      2
 
 # SOLVER
 v0                              5e-5
@@ -67,7 +67,7 @@ N_PROBE_AVE_START               2
 I_DIR_NAME                      ../input/
 P_DIR_NAME                      ../out/COMPCHECK/
 N_PRINT_LEVELS                  0
-N_PRINT_LEVELS_LEGACY           5
+N_PRINT_LEVELS_LEGACY           10
 N_PRINT_LEVELS_IMAGE            0
 N_OUTPUT_START                  0*Nx
 P_OUTPUT                        10*Nx

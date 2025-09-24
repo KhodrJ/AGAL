@@ -179,13 +179,41 @@ __host__ __device__ __forceinline__ bool TriangleBinOverlap3D(const vec3<T> &vm,
 
 template <typename T>
 __host__ __device__ __forceinline__
+bool CheckPointInLineAABB(const vec2<T> &vp, const vec2<T> &v1, const vec2<T> &v2, T eps=static_cast<T>(EPS<float>()*2.0F))
+{
+    vec2<T> vm = vp - eps;
+    vec2<T> vM = vp + eps;
+    
+    return LineBinOverlap2D(vm,vM,v1,v2);
+}
+template <typename T>
+__host__ __device__ __forceinline__
+bool CheckPointInLineAABB(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, T eps=static_cast<T>(EPS<float>()*2.0F))
+{
+    vec3<T> vm = vp - eps;
+    vec3<T> vM = vp + eps;
+    
+    return LineBinOverlap2D(vm,vM,v1,v2);
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
 bool CheckPointInTriangleAABB(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, T eps=static_cast<T>(EPS<float>()*2.0F))
 {
-//     EPS<float>()*static_cast<T>(2.0)
     vec3<T> vm = vp - eps;
     vec3<T> vM = vp + eps;
     
     return TriangleBinOverlap3D(vm,vM,v1,v2,v3);
+}
+
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+bool CheckPointInFaceAABB(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, T eps=static_cast<T>(EPS<float>()*2.0F))
+{
+    if (N_DIM==2)
+        return CheckPointInLineAABB(vp,v1,v2,eps);
+    else
+        return CheckPointInTriangleAABB(vp,v1,v2,v3,eps);
 }
 
 template <typename T>

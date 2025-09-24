@@ -14,22 +14,23 @@
 #include "solver.h"
 
 // Mesh refinement/coarsening.
-enum class RefIds
-{
-    Unrefined,
-    UnrefinedViolating,
-    Refined,
-    RefinedWChild,
-    RefinedPermanent,
-    RefinedWChildPermanent,
-    MarkRefine,
-    MarkCoarsen,
-    MarkNew,
-    MarkRemove,
-    Inactve,
-    IndeterminateEven,
-    IndeterminateOdd
-};
+// TODO
+// enum class RefIds
+// {
+//     Unrefined,
+//     UnrefinedViolating,
+//     Refined,
+//     RefinedWChild,
+//     RefinedPermanent,
+//     RefinedWChildPermanent,
+//     MarkRefine,
+//     MarkCoarsen,
+//     MarkNew,
+//     MarkRemove,
+//     Inactve,
+//     IndeterminateEven,
+//     IndeterminateOdd
+// };
 constexpr int V_REF_ID_UNREFINED             = 0;     ///< Indicates cell-block is unrefined.
 constexpr int V_REF_ID_UNREFINED_VIO         = 9;     ///< Indicates cell-block is unrefined by possibly violating a quality-control criterion.
 constexpr int V_REF_ID_REFINED               = 1;     ///< Indicates cell-block is refined.
@@ -45,14 +46,15 @@ constexpr int V_REF_ID_INDETERMINATE_E       = 11;    ///< Indicates cell-block 
 constexpr int V_REF_ID_INDETERMINATE_O       = 12;    ///< Indicates cell-block is an indeterminate state (odd).
 
 // Mesh communication.
-enum class MaskComm
-{
-    InterpolateInterface,
-    InterpolateAdded,
-    AverageInterface,
-    AverageBlock,
-    AverageGrid
-};
+// TODO
+// enum class MaskComm
+// {
+//     InterpolateInterface,
+//     InterpolateAdded,
+//     AverageInterface,
+//     AverageBlock,
+//     AverageGrid
+// };
 constexpr int V_INTERP_INTERFACE             = 0;     ///< Interpolate to interface cells only.
 constexpr int V_INTERP_ADDED                 = 1;     ///< Interpolate to newly-added cells.
 constexpr int V_AVERAGE_INTERFACE            = 0;     ///< Average involves interface cells only.
@@ -60,22 +62,23 @@ constexpr int V_AVERAGE_BLOCK                = 1;     ///< Average involves whol
 constexpr int V_AVERAGE_GRID                 = 2;     ///< Average involves whole grid.
 
 // Mesh-geometry interaction.
-enum class MaskCell
-{
-    Interior,
-    Interface,
-    Ghost,
-    Solid,
-    Dummy
-};
-enum class MaskBlock
-{
-    Regular,
-    Interface,
-    Solid,
-    SolidAdjacent,
-    Dummy
-};
+// TODO
+// enum class MaskCell
+// {
+//     Interior,
+//     Interface,
+//     Ghost,
+//     Solid,
+//     Dummy
+// };
+// enum class MaskBlock
+// {
+//     Regular,
+//     Interface,
+//     Solid,
+//     SolidAdjacent,
+//     Dummy
+// };
 constexpr int V_CELLMASK_INTERIOR            = 0;     ///< Indicates that the cell doesn't participate in fine-coarse data transfers.
 constexpr int V_CELLMASK_INTERFACE           = 1;     ///< Indicates that the cell participates in fine-to-coarse data transfers.
 constexpr int V_CELLMASK_GHOST               = 2;     ///< Indicates that the cell participates in coarse-to-fine data transfers.
@@ -100,6 +103,11 @@ constexpr int V_BLOCKMASK_SOLIDB             = -1;    ///< This cell-block lies 
 constexpr int V_BLOCKMASK_SOLIDA             = -2;    ///< This cell-block is adjacent to the boundary of a solid object.
 constexpr int V_BLOCKMASK_INDETERMINATE_O    = -4;    ///< This cell-block is in an indeterminate state (odd).
 constexpr int V_BLOCKMASK_INDETERMINATE_E    = -5;    ///< This cell-block is in an indeterminate state (even).
+__host__ __device__ __forceinline__
+bool BlockNotSolid(int block_mask)
+{
+    return block_mask != V_BLOCKMASK_SOLID;
+}
 
 // Mesh refinements types.
 constexpr int V_MESH_REF_NW_CASES            = 0;     ///< Near-wall refinement for the benchmark cases.
@@ -110,11 +118,6 @@ constexpr int V_MESH_REF_SOLUTION            = 3;     ///< Refinement based on t
 // Mesh restart.
 constexpr int V_MESH_RESTART_SAVE            = 0;     ///< Save the mesh to restart later.
 constexpr int V_MESH_RESTART_LOAD            = 1;     ///< Load mesh data from previous save.
-
-// Mesh solvers.
-constexpr int V_SOLVER_LBM_BGK               = 0;
-constexpr int V_SOLVER_LBM_TRT               = 1;
-constexpr int V_SOLVER_LBM_MRT               = 2;
 
 bool init_conn = false;
 __constant__ int V_CONN_ID[81];
@@ -734,7 +737,7 @@ class Mesh
     int             M_Geometry_Voxelize_S3(int i_dev);
     int             M_UpdateMasks_Vis(int i_dev, int L);
     int             M_Geometry_FillBinned3D(int i_dev);
-    int             M_IdentifyFaces(int i_dev, int L);
+    int             M_LinkLengthComputation(int i_dev, int L);
     int             M_Advance_InitTextOutput();
     int             M_Advance_RefineNearWall();
     int             M_Advance_LoadRestartFile(int &iter_s);

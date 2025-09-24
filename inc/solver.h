@@ -65,11 +65,9 @@ class Solver
     virtual int S_Advance(int i_dev, int L, double *tmp) = 0;
     virtual int S_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u) = 0;
     virtual int S_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u) = 0;
-    //virtual int S_ComputeForces(int i_dev, int L, int var) = 0;
     virtual int S_ReportForces(int i_dev, int L, int i, double t, int START) = 0;
     virtual int S_ComputeRefCriteria(int i_dev, int L, int var) = 0;
     virtual int S_RefreshVariables(int i_dev, int L, int var=0) = 0;
-    virtual int S_IdentifyFaces(int i_dev, int L) = 0;
     virtual int S_Debug(int i_dev, int L, int var) = 0;
     
     Solver(

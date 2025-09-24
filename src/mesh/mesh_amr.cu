@@ -2062,22 +2062,53 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ResetIntermediateAMRArraysV1(int i_dev)
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_ResetIntermediateAMRArraysV2(int i_dev)
 {
+    bool its_all_good = true;
+    
     if (thrust::count_if(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (1)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_2_dptr[i_dev], c_tmp_2_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (2)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_3_dptr[i_dev], c_tmp_3_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (3)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_4_dptr[i_dev], c_tmp_4_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (4)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_5_dptr[i_dev], c_tmp_5_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (5)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + (n_maxcblocks*N_Q_max), is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (6)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_7_dptr[i_dev], c_tmp_7_dptr[i_dev] + (n_maxcblocks*N_Q_max), is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (7)" << std::endl;
+        its_all_good = false;
+    }
     if (thrust::count_if(thrust::device, c_tmp_8_dptr[i_dev], c_tmp_8_dptr[i_dev] + n_maxcblocks, is_not_equal_to(-1)) > 0)
+    {
         std::cout << "Reset NOT OK! (8)" << std::endl;
+        its_all_good = false;
+    }
+    
+    if (!its_all_good)
+        std::cout << "Error detected during validation of memory reset during refinement and coarsening..." << std::endl;
+    else
+        std::cout << "Memory reset successful in refinement and coarsening..." << std::endl;
     
     return 0;
 }
@@ -2623,7 +2654,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         //    std::cout << tmp_1[i_dev][k] << " ";
         //std::cout << std::endl;
         
-        //M_ResetIntermediateAMRArraysV2(i_dev);
+#if (P_SHOW_REFINE==1)
+        tic_simple("[Valid.]");
+        M_ResetIntermediateAMRArraysV2(i_dev);
+        cudaDeviceSynchronize();
+        toc_simple("[Valid.]",T_US);
+#endif
     }
 
     return 0;

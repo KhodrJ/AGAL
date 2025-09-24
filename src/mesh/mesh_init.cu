@@ -156,7 +156,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         sizeof(ufloat_t)*(N_Q) +                    // Solution field.
     (
         sizeof(float)*(N_DIM) +                     // Spatial coordinates
-        sizeof(int)*(3*N_Q_max + 1+1+1) +           // Connectivity, ref Id., level
+        sizeof(ufloat_t)*(6) +                      // Force components
+        sizeof(int)*(3*N_Q_max + 5) +               // Connectivity, ref Id., level, mask x2
         sizeof(int)*(2*N_Q_max + 10)                // Intermediate arrays for mesh adaptation
     )/(double)(M_CBLOCK));
     n_maxcells = (long int)free_t*M_FRAC / N_bytes_pc;
@@ -332,6 +333,20 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         int *init_grid_cblock_ID_onb = new int[n_coarsecblocks];
         ufloat_t *init_grid_cblock_f_X = new ufloat_t[N_DIM*n_coarsecblocks];
 
+        // Prepare shuffled indices, if selected for presentation/testing purposes (activate manually).
+        bool shuffle_root_grid = true;
+        int *shuffled_indices;
+        if (shuffle_root_grid)
+        {
+            shuffled_indices = new int[n_coarsecblocks];
+            for (int l = 0; l < n_coarsecblocks; l++)
+                shuffled_indices[l] = l;
+            
+            std::random_device rand;
+            std::mt19937 mt(rand());
+            std::shuffle(shuffled_indices, shuffled_indices + n_coarsecblocks, mt);
+        }
+        
         // Loop over the grid_ID structure and set IDs of blocks.
         int ID_counter = 0;
         for (int k = 1*grid_height_multiplier; k < grid_height*grid_height_multiplier+2 - 1; k++)
@@ -341,15 +356,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
                 for (int i = 1; i < block_length_x+2 - 1; i++)
                 {
                     bool in_interior = true;
-                    
-                    // Check against faces.
-                    //for (int p = 0; p < n_faces[i_dev]; p++)
-                    //{
-                        // If face interects block, add it to list.
-                        
-                        
-                        // cblock_ID_face_count[i_dev]
-                    //}
                     
 #if (N_CASE==1)
                     double xl = 0.3125; // Was 0.3125 before.
@@ -372,6 +378,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
                     {
                         // Structured grid.
                         grid_IDs[i][j][k] = ID_counter;
+                        if (shuffle_root_grid)
+                            grid_IDs[i][j][k] = shuffled_indices[ID_counter];
                         
                         // Check probe density and add to list if so.
                         if ( (i-1)%N_PROBE_DENSITY==0 && (j-1)%N_PROBE_DENSITY==0 && ((k-1)%N_PROBE_DENSITY==0 || k-1 == -1) )
@@ -392,8 +400,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         coarse_K[i_dev] = new int[n_coarsecblocks];
         
         // Fix boundary conditions on the edges of this padded grid.
-if (N_DIM==3)
-{
+        if (N_DIM==3)
+        {
                 // Z=0, Z=L
             for (int j = 0; j < block_length_y+2; j++)
             {
@@ -411,7 +419,7 @@ if (N_DIM==3)
                     }
                 }
             }
-}
+        }
             // Y=0, Y=L
         for (int k = 0; k < grid_height+2*grid_height_multiplier; k++)
         {
@@ -547,6 +555,8 @@ if (N_DIM==3)
         delete[] init_grid_cblock_ID_nbr_child;
         delete[] init_grid_cblock_ID_onb;
         delete[] init_grid_cblock_f_X;
+        if (shuffle_root_grid)
+            delete[] shuffled_indices;
     }
     
     return 0;
