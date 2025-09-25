@@ -595,7 +595,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
     int use_zip = true;      // Indicates to perform compaction before sorting by key.
     
     // Correct optimizations, if necessary.
-    if (n_bin_levels != n_max_levels_wall)
+    if (L == n_bin_levels-1 && n_bin_levels != n_max_levels_wall)
     {
         use_ray = false;
         use_map = false;
@@ -1043,7 +1043,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
     int use_zip = true;      // Indicates to perform compaction before sorting by key.
     
     // Correct optimizations, if necessary.
-    if (n_bin_levels != n_max_levels_wall)
+    if (n_bin_levels < n_max_levels_wall)
     {
         use_ray = false;
         use_map = false;

@@ -144,7 +144,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S2(int i_dev, int L)
 {
     if (n_ids[i_dev][L] > 0)
     {
-        // Reset one of the intermediate arrays in preparation for copying.
+        // Reset two of the intermediate arrays in preparation for copying.
         // Note: I can use id_max instead of n_maxcblocks since refinement and coarsening is finished.
         if (L == 0)
         {
@@ -209,6 +209,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S3(int i_dev)
         // in the new arrays.
         thrust::scatter(thrust::device, c_tmp_counting_iter_dptr[i_dev], c_tmp_counting_iter_dptr[i_dev] + n_solidb_old, c_tmp_2_dptr[i_dev], c_cblock_ID_onb_solid_dptr[i_dev] );
         cudaDeviceSynchronize();
+        
+        // Reset both of the intermediate arrays again for safety.
+        Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(id_max[i_dev][MAX_LEVELS], c_tmp_1[i_dev], -1);
+        Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(id_max[i_dev][MAX_LEVELS], c_tmp_2[i_dev], -1);
         
         // Report available memory after these new allocations.
         cudaMemGetInfo(&free_t, &total_t);

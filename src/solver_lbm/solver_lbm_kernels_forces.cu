@@ -591,7 +591,9 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
 
 
 
-
+//
+// TODO
+//
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP, int post_step>
 __global__
 void Cu_ComputePressureOnWall

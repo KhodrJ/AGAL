@@ -140,13 +140,15 @@ void Cu_Interpolate_Linear
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Interpolate_Linear(int i_dev, int L, int var)
 {
+    S_RefreshVariables(i_dev, L);
+    
     if (mesh->n_ids[i_dev][L]>0 && var==V_INTERP_INTERFACE)
     {
-        Cu_Interpolate_Linear<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_INTERFACE><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
+        Cu_Interpolate_Linear<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_INTERFACE><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
     }
     if (mesh->n_ids[i_dev][L]>0 && var==V_INTERP_ADDED)
     {
-        Cu_Interpolate_Linear<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_ADDED><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cblock_ID_ref[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
+        Cu_Interpolate_Linear<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_ADDED><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cblock_ID_ref[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
     }
 
     return 0;
@@ -187,7 +189,7 @@ void Cu_Average
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = 27;
+    constexpr int N_Q = LP->N_Q;
     __shared__ ufloat_t s_Fc[M_TBLOCK];
     __shared__ int s_ID_mask_child[M_TBLOCK];
 
@@ -209,7 +211,7 @@ void Cu_Average
         {
             bool b1 = i_kap_bc>-1;
             bool b2 = (ave_type==V_AVERAGE_GRID || block_on_boundary==V_BLOCKMASK_INTERFACE);
-            b = b1 || b2;
+            b = b1 && b2;
         }
         
         if (b)
@@ -349,6 +351,8 @@ void Cu_Average
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Average(int i_dev, int L, int var)
 {
+    S_RefreshVariables(i_dev, L+1);
+    
     if (mesh->n_ids[i_dev][L]>0 && var==V_AVERAGE_INTERFACE)
     {
         Cu_Average<ufloat_t,ufloat_g_t,AP,LP,V_AVERAGE_INTERFACE><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, tau_vec[L]/tau_vec[L+1], &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
@@ -639,15 +643,17 @@ void Cu_Interpolate_Cubic
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Interpolate_Cubic(int i_dev, int L, int var)
 {
+    S_RefreshVariables(i_dev, L);
+    
     if (mesh->n_ids[i_dev][L]>0 && var==V_INTERP_INTERFACE)
     {
-        Cu_Interpolate_Cubic<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_INTERFACE><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
+        Cu_Interpolate_Cubic<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_INTERFACE><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cells_ID_mask[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
     }
     if (mesh->n_ids[i_dev][L]>0 && var==V_INTERP_ADDED)
     {
-        Cu_Interpolate_Cubic<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_ADDED><<<(M_LBLOCK+mesh->n_ids[i_dev][L]-1)/M_LBLOCK,M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cblock_ID_ref[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
+        Cu_Interpolate_Cubic<ufloat_t,ufloat_g_t,AP,LP,V_INTERP_ADDED><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>(mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, (tau_vec[L+1]/tau_vec[L]), &mesh->c_id_set[i_dev][L*n_maxcblocks], mesh->c_cblock_ID_ref[i_dev], mesh->c_cells_f_F[i_dev], mesh->c_cblock_ID_nbr_child[i_dev], mesh->c_cblock_ID_mask[i_dev]);
     }
-
+    
     return 0;
 }
 

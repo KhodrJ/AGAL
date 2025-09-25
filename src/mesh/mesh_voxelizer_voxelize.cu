@@ -262,6 +262,8 @@ void Cu_Voxelize_V1
         int pmin = -1;
         ufloat_d_t dmin = (ufloat_d_t)1.0;
         int n_f = binned_face_ids_n_3D[global_bin_id];
+        //int cellmask = V_CELLMASK_INTERIOR;
+        int cellmask_orig = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
         int cellmask = V_CELLMASK_INTERIOR;
         
         // If bin is nonempty, traverse the faces and get the signed distance to the closest face.
@@ -340,7 +342,9 @@ void Cu_Voxelize_V1
             }
             
             // If there are solid masks in this block, place guard in the masks for the propagation.
-            cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
+            if (cellmask==V_CELLMASK_SOLID || (cellmask_orig != V_CELLMASK_GHOST && cellmask_orig != V_CELLMASK_INTERFACE))
+                //cellmask = cellmask_orig;
+                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = cellmask;
         }
     }
 }

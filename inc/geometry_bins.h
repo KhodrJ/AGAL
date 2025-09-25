@@ -133,11 +133,11 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
             std::cout << "Capping number of bin levels to " << n_max_levels_wall << "..." << std::endl;
             n_bin_levels = n_max_levels_wall;
         }
-        if (n_max_levels_wall > n_bin_levels)
-        {
-            std::cout << "Capping specified near-wall bin level to n_bin_levels=" << n_bin_levels << "..." << std::endl;
-            n_max_levels_wall = n_bin_levels;
-        }
+//         if (n_max_levels_wall > n_bin_levels)
+//         {
+//             std::cout << "Capping specified near-wall bin level to n_bin_levels=" << n_bin_levels << "..." << std::endl;
+//             n_max_levels_wall = n_bin_levels;
+//         }
         
         
         // Fill vectors based on n_bin_levels.
@@ -192,7 +192,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         }
         
         // Also, make the MD bins at the specified wall level.
-        G_MakeBinsGPU_MD(n_max_levels_wall-1);
+        G_MakeBinsGPU_MD(std::min(n_max_levels_wall,n_bin_levels)-1);
         
         std::cout << "[-] Finished making bins object." << std::endl << std::endl;
     }

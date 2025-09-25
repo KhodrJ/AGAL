@@ -82,14 +82,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
                 M_Geometry_Voxelize_S1(0,L);
 
             // Invoke refinement and coarsening routine.
-            //tic_simple("");
             if (MAX_LEVELS > 1 && L < MAX_LEVELS_WALL-1)
                 M_RefineAndCoarsenBlocks(0);
-            //cudaDeviceSynchronize();
-            //std::cout << "RefAndCoarsen | L=" << L; toc_simple("",T_US,1);
             M_UpdateMasks_Vis(0,L);
             
-//             solver->S_SetIC(0,L);
+            solver->S_SetIC(0,L);
             cudaDeviceSynchronize();
         }
         
@@ -104,8 +101,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         // Cell-blocks near the wall construct their list of faces.
         if (geometry_init)
         {
-//             for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-//                 M_LinkLengthComputation(0,L);
+            for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+                M_LinkLengthComputation(0,L);
         }
         
         // Freeze mesh: these new near-wall cells are not eligible for coarsening.
@@ -211,10 +208,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineWithSolution(int i, int iter_s
         // |
 #endif
         for (int L = N_LEVEL_START; L < MAX_LEVELS-1; L++)
-        {    
-            if (L < MAX_LEVELS-1)
-                solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
-        }
+            solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+        for (int L = N_LEVEL_START; L < MAX_LEVELS; L++)
+            solver->S_RefreshVariables(0,L);
         // |
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -304,12 +300,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     // Ensure data is valid on all cells. Global average, then interpolate to ghost cells.
     if (MAX_LEVELS > 1)
     {
-        //for (int L = MAX_LEVELS-2; L >= 0; L--)
-        //    solver->S_Average(0,L,V_AVERAGE_GRID);
-        //for (int L = 0; L < MAX_LEVELS-1; L++)
-        //    solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
-        //for (int L = 0; L < MAX_LEVELS; L++)
-        //    solver->S_RefreshVariables(0,L);
+        for (int L = MAX_LEVELS-2; L >= 0; L--)
+           solver->S_Average(0,L,V_AVERAGE_GRID);
+        for (int L = 0; L < MAX_LEVELS-1; L++)
+           solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
+        for (int L = 0; L < MAX_LEVELS; L++)
+           solver->S_RefreshVariables(0,L);
     }
     
     // Retrieve data from the GPU.
@@ -334,7 +330,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     {
         std::cout << "Writing legacy output..." << std::endl;
         // Print to .vthb file.
-        M_Print_VTHB_Patch(0, i);
+        M_Print_VTHB(0, i);
         std::cout << "Finished legacy printing..." << std::endl;
     }
     if (N_PRINT_LEVELS_IMAGE > 0)

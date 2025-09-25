@@ -163,7 +163,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_RefreshVariables(int i_dev, int L, 
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_RefreshVariables<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L]-1,M_TBLOCK,0,mesh->streams[i_dev]>>>
+        Cu_RefreshVariables<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
             mesh->n_ids[i_dev][L], n_maxcells,
             &mesh->c_id_set[i_dev][L*n_maxcblocks],

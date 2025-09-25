@@ -97,7 +97,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
     // Parameters.
     int n_dim_lattice[3] = {M_PATCH+1, M_PATCH+1, (N_DIM==2) ? 1:(M_PATCH+1)};
     double origin_kap[3] = {0,0,0};
-    double u_kap[M_TBLOCK*(7+1)]; for (int i = 0; i < M_TBLOCK*(7+1); i++) u_kap[i] = 0.0;
+    double u_kap[M_TBLOCK*(7+1)];
+    for (int i = 0; i < M_TBLOCK*(7+1); i++)
+        u_kap[i] = 0.0;
     
     
     // For each level, insert all existing blocks.
@@ -207,8 +209,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB_Patch(int i_dev, int iter)
                     z = cblock_f_X[i_dev][i_kap_b + 2*n_maxcblocks] + static_cast<ufloat_t>(0.5)*dxf_vec[L];
                 
                 // Reset intermediate computation array.
-                for (int i = 0; i < M_TBLOCK*(7+1); i++) u_kap[i] = 0.0;
-                //M_ComputeOutputProperties(i_dev, 0, i_kap_b, dxf_vec[L], u_kap);
+                for (int i = 0; i < M_TBLOCK*(7+1); i++)
+                    u_kap[i] = 0.0;
+                M_ComputeOutputProperties(i_dev, 0, i_kap_b, dxf_vec[L], u_kap);
                 
                 // Insert quantities in arrays.
                 for (int t = 0; t < M_TBLOCK; t++)
