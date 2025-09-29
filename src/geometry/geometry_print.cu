@@ -17,15 +17,24 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_PrintSTL()
     // Compute facet normals and print.
     for (int i = 0; i < n_faces; i++)
     {
-        ufloat_g_t v1x = geom_f_face_X[i + 0*n_faces_a];
-        ufloat_g_t v1y = geom_f_face_X[i + 1*n_faces_a];
-        ufloat_g_t v1z = geom_f_face_X[i + 2*n_faces_a];
-        ufloat_g_t v2x = geom_f_face_X[i + 3*n_faces_a];
-        ufloat_g_t v2y = geom_f_face_X[i + 4*n_faces_a];
-        ufloat_g_t v2z = geom_f_face_X[i + 5*n_faces_a];
-        ufloat_g_t v3x = geom_f_face_X[i + 6*n_faces_a];
-        ufloat_g_t v3y = geom_f_face_X[i + 7*n_faces_a];
-        ufloat_g_t v3z = geom_f_face_X[i + 8*n_faces_a];
+//         ufloat_g_t v1x = geom_f_face_X[i + 0*n_faces_a];
+//         ufloat_g_t v1y = geom_f_face_X[i + 1*n_faces_a];
+//         ufloat_g_t v1z = geom_f_face_X[i + 2*n_faces_a];
+//         ufloat_g_t v2x = geom_f_face_X[i + 3*n_faces_a];
+//         ufloat_g_t v2y = geom_f_face_X[i + 4*n_faces_a];
+//         ufloat_g_t v2z = geom_f_face_X[i + 5*n_faces_a];
+//         ufloat_g_t v3x = geom_f_face_X[i + 6*n_faces_a];
+//         ufloat_g_t v3y = geom_f_face_X[i + 7*n_faces_a];
+//         ufloat_g_t v3z = geom_f_face_X[i + 8*n_faces_a];
+        ufloat_g_t v1x = geom_f_face_Xt[0 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v1y = geom_f_face_Xt[1 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v1z = geom_f_face_Xt[2 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v2x = geom_f_face_Xt[3 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v2y = geom_f_face_Xt[4 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v2z = geom_f_face_Xt[5 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v3x = geom_f_face_Xt[6 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v3y = geom_f_face_Xt[7 + i*N_VERTEX_DATA_PADDED];
+        ufloat_g_t v3z = geom_f_face_Xt[8 + i*N_VERTEX_DATA_PADDED];
         ufloat_t n1;
         ufloat_t n2;
         ufloat_t n3;

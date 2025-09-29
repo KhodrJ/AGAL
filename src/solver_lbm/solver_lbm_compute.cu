@@ -241,7 +241,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ReportForces(int i_dev, int L, int 
         double Fx = factor*(Fpx - Fmx);
         double Fy = factor*(Fpy - Fmy);
         double Fz __attribute__((unused)) = factor*(Fpz - Fmz);
-        double Dp = 1.0/32.0;
+        double Dp = 1.0/64.0;
         double uin = 0.05;
         std::cout << "Report:" << std::endl;
         std::cout << "CD: " << 2.0*Fx / (uin*uin*(Dp)) << "   " << 8.0*Fx / (uin*uin*(M_PI*Dp*Dp)) << std::endl;

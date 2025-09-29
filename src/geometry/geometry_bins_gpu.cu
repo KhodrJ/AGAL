@@ -51,10 +51,14 @@ void Cu_ComputeVoxelRayIndicators_MD
             constexpr int N_Q_max = 9;
             
             // Compute bounding box limits.
-            int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
-            int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
-            int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
-            int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            //int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            //int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            //int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
+            //int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            int ixmin = static_cast<int>( Tmin(v1.x,v2.x) * Nx);
+            int iymin = static_cast<int>( Tmin(v1.y,v2.y) * Ny);
+            int ixmax = static_cast<int>( Tmax(v1.x,v2.x) * Nx);
+            int iymax = static_cast<int>( Tmax(v1.y,v2.y) * Ny);
             
             // Loop over all possible cells in the bounding box.
             for (int p = 1; p < N_Q_max; p++)
@@ -67,7 +71,7 @@ void Cu_ComputeVoxelRayIndicators_MD
                     {
                         vec3<ufloat_g_t> vp
                         (
-                            static_cast<ufloat_g_t>(0.0),
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
                             static_cast<ufloat_g_t>(0.0)
                         );
@@ -78,14 +82,18 @@ void Cu_ComputeVoxelRayIndicators_MD
                             static_cast<ufloat_g_t>(V_CONN_ID[p+1*27]),
                             static_cast<ufloat_g_t>(0.0)
                         );
-                        ufloat_g_t d = DotV2D(v1-vp,n) / DotV2D(ray,n);
-                        vec3<ufloat_g_t> vi = vp + ray*d;
-                        
-                        if (CheckPointInFaceExtended<ufloat_g_t,2>(vi,v1,v2,v3,n))
+                        ufloat_g_t d = DotV(ray,n);
+                        if (d != static_cast<ufloat_g_t>(0.0))
                         {
-                            found = true;
-                            ixmax = ixmin-1;
-                            iymax = iymin-1;
+                            d = DotV(v1-vp,n) / d;
+                            vec3<ufloat_g_t> vi = vp + ray*d;
+                            
+                            if (CheckPointInLineExtended(vi,v1,v2))
+                            {
+                                found = true;
+                                ixmax = ixmin-1;
+                                iymax = iymin-1;
+                            }
                         }
                     }
                 }
@@ -118,7 +126,7 @@ void Cu_ComputeVoxelRayIndicators_MD
                     {
                         vec3<ufloat_g_t> vp
                         (
-                            static_cast<ufloat_g_t>(0.0),
+                            dx_Lo2 + dx_L*static_cast<ufloat_g_t>(ix),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iy),
                             dx_Lo2 + dx_L*static_cast<ufloat_g_t>(iz)
                         );
@@ -132,7 +140,7 @@ void Cu_ComputeVoxelRayIndicators_MD
                         ufloat_g_t d = DotV(v1-vp,n) / DotV(ray,n);
                         vec3<ufloat_g_t> vi = vp + ray*d;
                         
-                        if (CheckPointInFaceExtended<ufloat_g_t,3>(vi,v1,v2,v3,n))
+                        if (CheckPointInTriangleExtended(vi,v1,v2,v3,n))
                         {
                             found = true;
                             ixmax = ixmin-1;
@@ -195,8 +203,10 @@ void Cu_ComputeVoxelRayIndicators_1D
         if (N_DIM==2)
         {
             // Compute bounding box limits.
-            int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
-            int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            //int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            //int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
+            int iymin = static_cast<int>( Tmin(v1.y,v2.y) * Ny);
+            int iymax = static_cast<int>( Tmax(v1.y,v2.y) * Ny);
             
             // Consider rays in half the possible directions. Both senses will be accounted for.
             for (int iy = iymin; iy <= iymax; iy++)
@@ -580,7 +590,7 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 template <bool make_2D>
 int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
 {
-    std::cout << "CONSTRUCTION OF BINS ON LEVEL " << L << std::endl;
+    std::cout << "CONSTRUCTION OF 1D BINS ON LEVEL " << L << std::endl;
     
     // Some constants.
     ufloat_g_t *c_geom_f_face_Xt = geometry->c_geom_f_face_Xt;
@@ -1043,7 +1053,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
     int use_zip = true;      // Indicates to perform compaction before sorting by key.
     
     // Correct optimizations, if necessary.
-    if (n_bin_levels < n_max_levels_wall)
+    if (n_max_levels_wall != n_bin_level_MD+1)
     {
         use_ray = false;
         use_map = false;
@@ -1059,7 +1069,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         
         // Compute constants.
         long int n_limits_MD = 1;
-        for (int d = 0; d < N_DIM-0; d++) n_limits_MD *= (2+n_bin_spec);
+        for (int d = 0; d < N_DIM; d++) n_limits_MD *= (2+n_bin_spec);
         long int n_filtered = 0;
         std::cout << "Using a bin radius of " << n_limits_MD << std::endl;
         

@@ -79,7 +79,9 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     int **c_binned_face_ids_N_3D;
     
     // Multi-directional 3D bins (single level for now).
+    int n_bin_level_MD;
     int n_bins_MD;
+    int n_bin_density_MD;
     int *binned_face_ids_MD;
     int *binned_face_ids_n_MD;
     int *binned_face_ids_N_MD;
@@ -192,7 +194,9 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         }
         
         // Also, make the MD bins at the specified wall level.
-        G_MakeBinsGPU_MD(std::min(n_max_levels_wall,n_bin_levels)-1);
+        n_bin_level_MD = std::min(n_max_levels_wall,n_bin_levels)-1;
+        n_bin_density_MD = n_bin_density[n_bin_level_MD];
+        G_MakeBinsGPU_MD(n_bin_level_MD);
         
         std::cout << "[-] Finished making bins object." << std::endl << std::endl;
     }

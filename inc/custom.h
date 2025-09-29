@@ -28,7 +28,11 @@ bool Cu_RefineRegion
     //return   (x-0.3125)*(x-0.3125) + (y-0.5)*(y-0.5) + (z-0.5)*(z-0.5) < 0.2/D;
     //return   x > 0.3-0.1/D && x <= 0.3+0.1/D && y > 0.5-0.25/D && y < 0.5+0.25/D; 
     //return   x > 0.5-0.1/D && x <= 0.5+0.1/D && y > 0.5-0.25/D && y < 0.5+0.25/D;
-    return   nbr_1==-2;
+    
+    // Uncomment for refinement near the outlet.
+    //return   nbr_1==-2;
+    
+    return nbr_5<0;
     
     //return false;
 }
@@ -46,7 +50,7 @@ void Cu_ComputeIC(ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, const uf
     // --- HERE ---
     
     rho = (ufloat_t)1.0;
-    u = (ufloat_t)0.05;
+    u = (ufloat_t)0.0;
     v = (ufloat_t)0.0;
     w = (ufloat_t)0.0;
 }
@@ -80,24 +84,24 @@ ufloat_t Cu_ImposeBC
 //     }
     
     // FPSC (2D).
-    if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
-    {
-        ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-        return f - (ufloat_t)(2.0)*wp*cdotu;
-    }
-    if (nbr_id == -2)
-    {
-        ufloat_t cdotu = cxp*u + cyp*v + czp*w;
-        cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
-        return -f + (ufloat_t)(2.0)*wp*cdotu;
-    }
-    
-    // LDC (3D).
-//     if (nbr_id == -6)
+//     if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4)
 //     {
 //         ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
 //         return f - (ufloat_t)(2.0)*wp*cdotu;
 //     }
+//     if (nbr_id == -2)
+//     {
+//         ufloat_t cdotu = cxp*u + cyp*v + czp*w;
+//         cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
+//         return -f + (ufloat_t)(2.0)*wp*cdotu;
+//     }
+    
+    // LDC (3D).
+    if (nbr_id == -6)
+    {
+        ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+        return f - (ufloat_t)(2.0)*wp*cdotu;
+    }
     
     // FPSC (3D).
 //     if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)

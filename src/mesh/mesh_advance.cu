@@ -209,8 +209,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineWithSolution(int i, int iter_s
 #endif
         for (int L = N_LEVEL_START; L < MAX_LEVELS-1; L++)
             solver->S_Interpolate(0,L,V_INTERP_INTERFACE);
-        for (int L = N_LEVEL_START; L < MAX_LEVELS; L++)
-            solver->S_RefreshVariables(0,L);
         // |
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -330,7 +328,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     {
         std::cout << "Writing legacy output..." << std::endl;
         // Print to .vthb file.
-        M_Print_VTHB(0, i);
+        M_Print_VTHB_Patch(0, i);
         std::cout << "Finished legacy printing..." << std::endl;
     }
     if (N_PRINT_LEVELS_IMAGE > 0)

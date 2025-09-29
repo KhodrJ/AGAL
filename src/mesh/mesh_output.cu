@@ -14,7 +14,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_LoadToGPU()
         for (int p = 0; p < N_Q; p++)
             gpuErrchk( cudaMemcpy(&c_cells_f_F[i_dev][p*n_maxcells], &cells_f_F[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );
         for (int d = 0; d < N_DIM; d++)
-            gpuErrchk( cudaMemcpy(&c_cblock_f_X[i_dev][d*n_maxcblocks], &cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_t), cudaMemcpyHostToDevice) );    
+            gpuErrchk( cudaMemcpy(&c_cblock_f_X[i_dev][d*n_maxcblocks], &cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );    
 
 
         // Connectivity arrays.
@@ -54,7 +54,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RetrieveFromGPU()
         for (int p = 0; p < N_Q; p++)
             gpuErrchk( cudaMemcpy(&cells_f_F[i_dev][p*n_maxcells], &c_cells_f_F[i_dev][p*n_maxcells], cells_id_max*sizeof(ufloat_t), cudaMemcpyDeviceToHost) );
         for (int d = 0; d < N_DIM; d++)
-            gpuErrchk( cudaMemcpy(&cblock_f_X[i_dev][d*n_maxcblocks], &c_cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_t), cudaMemcpyDeviceToHost) );
+            gpuErrchk( cudaMemcpy(&cblock_f_X[i_dev][d*n_maxcblocks], &c_cblock_f_X[i_dev][d*n_maxcblocks], cblocks_id_max*sizeof(ufloat_g_t), cudaMemcpyDeviceToHost) );
 
 
         // Connectivity arrays.

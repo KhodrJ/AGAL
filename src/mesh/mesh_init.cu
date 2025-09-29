@@ -152,7 +152,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
     gpuErrchk( cudaMemGetInfo(&free_t, &total_t) );
     cudaDeviceSynchronize();
     N_bytes_pc = std::ceil( 
-        sizeof(int)*(1) +                           // Cell masks.
+        sizeof(int)*(2) +                           // Cell masks.
         sizeof(ufloat_t)*(N_Q) +                    // Solution field.
     (
         sizeof(float)*(N_DIM) +                     // Spatial coordinates
@@ -181,18 +181,18 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
     for (int i_dev = 0; i_dev < N_DEV; i_dev++)
     {
         // Allocate memory for pointers.
-        cells_ID_mask[i_dev] = new int[n_maxcells]{1};
-        cells_f_F[i_dev] = new ufloat_t[n_maxcells*N_Q]{0};
-        cblock_f_X[i_dev] = new ufloat_t[n_maxcblocks*N_DIM]{0};
-        cblock_ID_mask[i_dev] = new int[2*n_maxcblocks]{0};
-        cblock_ID_nbr[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
-        cblock_ID_nbr_child[i_dev] = new int[n_maxcblocks*N_Q_max]{0};
-        cblock_ID_onb[i_dev] = new int[n_maxcblocks]{0};
-        cblock_ID_ref[i_dev] = new int[n_maxcblocks]{0};
-        cblock_level[i_dev] = new int[n_maxcblocks]{0};
+        cells_ID_mask[i_dev] = new int[n_maxcells*2];
+        cells_f_F[i_dev] = new ufloat_t[n_maxcells*N_Q];
+        cblock_f_X[i_dev] = new ufloat_g_t[n_maxcblocks*N_DIM];
+        cblock_ID_mask[i_dev] = new int[n_maxcblocks*2];
+        cblock_ID_nbr[i_dev] = new int[n_maxcblocks*N_Q_max];
+        cblock_ID_nbr_child[i_dev] = new int[n_maxcblocks*N_Q_max];
+        cblock_ID_onb[i_dev] = new int[n_maxcblocks];
+        cblock_ID_ref[i_dev] = new int[n_maxcblocks];
+        cblock_level[i_dev] = new int[n_maxcblocks];
         
-        tmp_1[i_dev] = new int[n_maxcblocks]{0};
-        tmp_2[i_dev] = new ufloat_t[n_maxcblocks]{0};
+        tmp_1[i_dev] = new int[n_maxcblocks];
+        tmp_2[i_dev] = new ufloat_t[n_maxcblocks];
         
         // Allocate memory for id_set and reset to 0.
         n_ids[i_dev] = new int[MAX_LEVELS+1];
@@ -234,9 +234,9 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         // Geometry mesh data.
         
         // Cell data.
-        gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*sizeof(int)) );
+        gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask[i_dev], n_maxcells*2*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_cells_f_F[i_dev], n_maxcells*N_Q*sizeof(ufloat_t)) );
-        gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_t)) );
+        gpuErrchk( cudaMalloc((void **)&c_cblock_f_X[i_dev], n_maxcblocks*N_DIM*sizeof(ufloat_g_t)) );
         gpuErrchk( cudaMalloc((void **)&c_cblock_f_Ff[i_dev], n_maxcblocks*6*sizeof(ufloat_t)) );
         gpuErrchk( cudaMalloc((void **)&c_cblock_ID_mask[i_dev], n_maxcblocks*2*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_cblock_ID_nbr[i_dev], n_maxcblocks*N_Q_max*sizeof(int)) );
@@ -279,13 +279,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         
         // Value setting.
             // Reset masks to 1.
-        Cu_ResetToValue<<<(M_BLOCK+n_maxcells-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells, c_cells_ID_mask[i_dev], V_CELLMASK_INTERIOR);
+        Cu_ResetToValue<<<(M_BLOCK+n_maxcells*2-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells*2, c_cells_ID_mask[i_dev], V_CELLMASK_INTERIOR);
             // Reset active IDs to 0.
         Cu_ResetToValue<<<(M_BLOCK+(2*n_maxcblocks)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(2*n_maxcblocks, c_cblock_ID_mask[i_dev], V_BLOCKMASK_REGULAR);
             // Reset nbr IDs to N_SKIPID.
-        Cu_ResetToValue<<<(M_BLOCK+N_Q_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(N_Q_max*n_maxcblocks, c_cblock_ID_nbr[i_dev], N_SKIPID);
+        Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks*N_Q_max-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks*N_Q_max, c_cblock_ID_nbr[i_dev], N_SKIPID);
             // Reset nbr-child IDs to N_SKIPID.
-        Cu_ResetToValue<<<(M_BLOCK+N_Q_max*n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(N_Q_max*n_maxcblocks, c_cblock_ID_nbr_child[i_dev], N_SKIPID);
+        Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks*N_Q_max-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks*N_Q_max, c_cblock_ID_nbr_child[i_dev], N_SKIPID);
             // Reset refinement IDs to 'unrefined'.
         Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_ref[i_dev], V_REF_ID_INACTIVE);
             // Reset levels to 0.
@@ -512,8 +512,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         n_gaps[i_dev] = n_maxcblocks-n_ids[i_dev][0];
         
         // Initialize the probed solution fields.
-        cells_f_U_probed_tn[i_dev] = new ufloat_t[n_ids_probed[i_dev]*M_CBLOCK*N_DIM]{0};
-        cells_f_U_mean[i_dev] = new ufloat_t[n_ids[i_dev][0]*M_CBLOCK*4]{0};
+        cells_f_U_probed_tn[i_dev] = new ufloat_t[n_ids_probed[i_dev]*M_CBLOCK*N_DIM];
+        cells_f_U_mean[i_dev] = new ufloat_t[n_ids[i_dev][0]*M_CBLOCK*4];
         
         
         // o====================================================================================

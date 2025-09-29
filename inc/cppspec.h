@@ -235,7 +235,7 @@ inline double toc_simple(std::string s, int scale=T_S, int print=1) { return tic
 */
 template <class T>
 __global__
-void Cu_ResetToValue(int N, T *arr, T val)
+void Cu_ResetToValue(long int N, T *arr, T val)
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     

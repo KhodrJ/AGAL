@@ -57,6 +57,15 @@ inline int DebugDrawTriangleInMATLAB(std::ofstream &out, double vx1, double vy1,
 // | Device debug helpers.
 // o====================================================================================
 
+template <typename T>
+__host__ __device__ __forceinline__
+int DebugDraw2DSquareInMATLAB_DEV(vec3<T> vm, vec3<T> vM, char c1=' ', char c2=' ')
+{
+    printf("plot([%17.15f %17.15f %17.15f %17.15f %17.15f],[%17.15f %17.15f %17.15f %17.15f %17.15f],'%c%c');\n", vm.x, vM.x, vM.x, vm.x, vm.x, vm.y, vm.y, vM.y, vM.y, vm.y, c1, c2);
+    
+    return 0;
+}
+
 template <typename T, int DIM, int SIGN>
 __host__ __device__ __forceinline__
 int DebugDraw3DSquareInMATLAB_DEV(vec3<T> vm, vec3<T> vM, char c1=' ', char c2=' ')
@@ -92,7 +101,7 @@ template <typename T>
 __host__ __device__ __forceinline__
 int DebugDraw2DPointInMATLAB_DEV(vec2<T> vp, char c1='k', char c2=' ')
 {
-    printf("plot2(%17.15f,%17.15f,'%c%c');\n", vp.x, vp.y, c1, c2);
+    printf("plot(%17.15f,%17.15f,'%c%c');\n", vp.x, vp.y, c1, c2);
     
     return 0;
 }
@@ -101,7 +110,16 @@ template <typename T>
 __host__ __device__ __forceinline__
 int DebugDraw2DPointInMATLAB_DEV(vec3<T> vp, char c1='k', char c2=' ')
 {
-    printf("plot2(%17.15f,%17.15f,'%c%c');\n", vp.x, vp.y, c1, c2);
+    printf("plot(%17.15f,%17.15f,'%c%c');\n", vp.x, vp.y, c1, c2);
+    
+    return 0;
+}
+
+template <typename T>
+__host__ __device__ __forceinline__
+int DebugDraw2DLineSegmentInMATLAB_DEV(vec3<T> v1, vec3<T> v2, char c1='k', char c2=' ', char c3=' ')
+{
+    printf("plot([%17.15f,%17.15f],[%17.15f,%17.15f],'%c%c%c');\n", v1.x, v2.x, v1.y, v2.y, c1, c2, c3);
     
     return 0;
 }
@@ -117,9 +135,9 @@ int DebugDraw3DPointInMATLAB_DEV(vec3<T> vp, char c1='k', char c2=' ')
 
 template <typename T>
 __host__ __device__ __forceinline__
-int DebugDraw3DLineSegmentInMATLAB_DEV(vec3<T> v1, vec3<T> v2, char c1='k', char c2=' ')
+int DebugDraw3DLineSegmentInMATLAB_DEV(vec3<T> v1, vec3<T> v2, char c1='k', char c2=' ', char c3=' ')
 {
-    printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'%c%c');\n", v1.x, v2.x, v1.y, v2.y, v1.z, v2.z, c1, c2);
+    printf("plot3([%17.15f,%17.15f],[%17.15f,%17.15f],[%17.15f,%17.15f],'%c%c%c');\n", v1.x, v2.x, v1.y, v2.y, v1.z, v2.z, c1, c2, c3);
     
     return 0;
 }

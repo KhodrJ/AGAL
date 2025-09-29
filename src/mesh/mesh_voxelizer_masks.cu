@@ -17,12 +17,13 @@
 /*                                                                                    */
 /**************************************************************************************/
 
-template <const ArgsPack *AP>
+template <const ArgsPack *AP, int version=0>
 __global__
-void Cu_MarkBlocks_CheckMasks
+void Cu_MarkBlocks_CheckMasks_S1
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
+    const int n_maxcells,
     const int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
@@ -62,7 +63,6 @@ void Cu_MarkBlocks_CheckMasks
             // Load neighbor-block indices into shared memory.
             if (threadIdx.x==0)
             {
-                //#pragma unroll
                 for (int p = 0; p < N_Q_max; p++)
                     s_ID_nbr[p] = cblock_ID_nbr[i_kap_b + V_CONN_MAP[p]*n_maxcblocks];
             }
@@ -74,92 +74,122 @@ void Cu_MarkBlocks_CheckMasks
             int K = 0;
             if (N_DIM==3)
                 K = (threadIdx.x / 4) / 4;
+            int curr_mask = N_SKIPID;
             
-            // Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
-            for (int p = 1; p < N_Q_max; p++)
+            if (version==0)
             {
-                // nbr_kap_b is the index of the neighboring block w.r.t the current cell.
-                // nbr_kap_c is the index of the cell in that neighboring block.
-                // nbr_kap_h is the index of the halo to store that value.
+                // Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
+                /*
+                for (int p = 1; p < N_Q_max; p++)
+                {
+                    // nbr_kap_b is the index of the neighboring block w.r.t the current cell.
+                    // nbr_kap_c is the index of the cell in that neighboring block.
+                    // nbr_kap_h is the index of the halo to store that value.
+                    
+                    // First, increment indices along pth direction. Store the resulting halo index.
+                    int Ip = I + V_CONN_ID[p + 0*27];
+                    int Jp = J + V_CONN_ID[p + 1*27];
+                    int Kp = 0;
+                    if (N_DIM==3)
+                        Kp = K + V_CONN_ID[p + 2*27];
+                    int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+                    if (N_DIM==3)
+                        nbr_kap_h += 36*(Kp+1);
+                    
+                    // Then, identify the appropriate neighbor block to store the retrieved cell masks.
+                    int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+                    Ip = (4 + (Ip % 4)) % 4;
+                    Jp = (4 + (Jp % 4)) % 4;
+                    if (N_DIM==3)
+                        Kp = (4 + (Kp % 4)) % 4;
+                    int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    
+                    // Write cell mask to the halo.
+                    bool changed = 
+                            (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && 
+                            (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && 
+                            (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
+                    if (changed && nbr_kap_b > -1)
+                        s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
+                }
+                */
+                for (int p = 1; p < N_Q_max; p++)
+                {
+                    Cu_FillHaloWithNbrs<int,N_DIM>(
+                        p,
+                        s_ID_mask,
+                        cells_ID_mask,
+                        I,J,K,
+                        s_ID_nbr,
+                        M_CBLOCK
+                    );
+                }
+                curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+                s_ID_mask[(I+1)+6*(J+1)+(N_DIM-2)*36*(K+1)] = curr_mask;
+                __syncthreads();
                 
-                // First, increment indices along pth direction. Store the resulting halo index.
-                int Ip = I + V_CONN_ID[p + 0*27];
-                int Jp = J + V_CONN_ID[p + 1*27];
-                int Kp = 0;
-                if (N_DIM==3)
-                    Kp = K + V_CONN_ID[p + 2*27];
-                int nbr_kap_h = (Ip+1) + 6*(Jp+1);
-                if (N_DIM==3)
-                    nbr_kap_h += 36*(Kp+1);
-                
-                // Then, identify the appropriate neighbor block to store the retrieved cell masks.
-                int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                if (N_DIM==3)
-                    Kp = (4 + (Kp % 4)) % 4;
-                int nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                
-                // Write cell mask to the halo.
-                bool changed = (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
-                if (changed && nbr_kap_b > -1)
-                    s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
-            }
-            int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-            s_ID_mask[(I+1)+6*(J+1)+(N_DIM-2)*36*(K+1)] = curr_mask;
-            __syncthreads();
-            
-            // Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
-            for (int p = 0; p < N_Q_max; p++)
-            {
-                // First, increment indices along pth direction. Store the resulting halo index.
-                int Ip = I + V_CONN_ID[p + 0*27];
-                int Jp = J + V_CONN_ID[p + 1*27];
-                int Kp = 0;
-                if (N_DIM==3)
-                    Kp = K + V_CONN_ID[p + 2*27];
-                int nbr_kap_h = (Ip+1) + 6*(Jp+1);
-                if (N_DIM==3)
-                    nbr_kap_h += 36*(Kp+1);
-                
-                // Now, check the neighboring cell mask for all cells using values stored in shared memory.
-                if (s_ID_mask[nbr_kap_h] == V_CELLMASK_SOLID)
-                    near_a_solid_cell = true;
+                // Now go through the shared memory array and check if the current cells are adjacent to any solid cells.
+                for (int p = 0; p < N_Q_max; p++)
+                {
+                    // First, increment indices along pth direction. Store the resulting halo index.
+                    int Ip = I + V_CONN_ID[p + 0*27];
+                    int Jp = J + V_CONN_ID[p + 1*27];
+                    int Kp = 0;
+                    if (N_DIM==3)
+                        Kp = K + V_CONN_ID[p + 2*27];
+                    int nbr_kap_h = (Ip+1) + 6*(Jp+1);
+                    if (N_DIM==3)
+                        nbr_kap_h += 36*(Kp+1);
+                    
+                    // Now, check the neighboring cell mask for all cells using values stored in shared memory.
+                    if (s_ID_mask[nbr_kap_h] == V_CELLMASK_SOLID)
+                        near_a_solid_cell = true;
+                }
             }
             
             
             
             // [DEPRECATED]
-            // Each cell checks the mask of its neighboring cell, if it exists.
-            // If at least one is a solid cell, then mark this as 'on the boundary'.
-            /*
-            int curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
-            for (int p = 0; p < N_Q_max; p++)
+            if (version==1)
             {
-                int Ip = I + V_CONN_ID[p + 0*27];
-                int Jp = J + V_CONN_ID[p + 1*27];
-                int Kp = 0;
-                if (N_DIM==3)
-                    Kp = K + V_CONN_ID[p + 2*27];
-                
-                int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
-                Ip = (4 + (Ip % 4)) % 4;
-                Jp = (4 + (Jp % 4)) % 4;
-                if (N_DIM==3)
-                    Kp = (4 + (Kp % 4)) % 4;
-                int nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                
-                if (nbr_kap_b >= 0 && cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c] == V_CELLMASK_SOLID)
-                    near_a_solid_cell = true;
+                // Each cell checks the mask of its neighboring cell, if it exists.
+                // If at least one is a solid cell, then mark this as 'on the boundary'.
+                curr_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+                for (int p = 0; p < N_Q_max; p++)
+                {
+                    //int Ip = I + V_CONN_ID[p + 0*27];
+                    //int Jp = J + V_CONN_ID[p + 1*27];
+                    //int Kp = 0;
+                    //if (N_DIM==3)
+                    //    Kp = K + V_CONN_ID[p + 2*27];
+                    
+                    //int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
+                    //Ip = (4 + (Ip % 4)) % 4;
+                    //Jp = (4 + (Jp % 4)) % 4;
+                    //if (N_DIM==3)
+                    //    Kp = (4 + (Kp % 4)) % 4;
+                    //int nbr_kap_c = Ip + 4*Jp + 16*Kp;
+                    int nbr_kap_b = N_SKIPID;
+                    int nbr_kap_c = N_SKIPID;
+                    Cu_GetNbrIndices<N_DIM>(
+                        p,
+                        &nbr_kap_b,
+                        &nbr_kap_c,
+                        I,J,K,
+                        s_ID_nbr
+                    );
+                    
+                    if (nbr_kap_b >= 0 && cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c] == V_CELLMASK_SOLID)
+                        near_a_solid_cell = true;
+                }
             }
-            */
             
             
             
             s_D[threadIdx.x] = 0;
             if (near_a_solid_cell && curr_mask != V_CELLMASK_SOLID)
             {
-                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_BOUNDARY;
+                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x + n_maxcells] = V_CELLMASK_BOUNDARY;
                 s_D[threadIdx.x] = 1;
             }
             __syncthreads();
@@ -176,14 +206,61 @@ void Cu_MarkBlocks_CheckMasks
             
             // If at least one cell was a boundary cell, mark this block as along the boundary.
             // Also, store the total number of boundary cells in this cell-block in tmp1.
-            if (threadIdx.x == 0 && s_D[threadIdx.x] > 0)
+            if (threadIdx.x == 0 && s_D[0] > 0)
             {
-                tmp_1[i_kap_b] = s_D[threadIdx.x];
+                tmp_1[i_kap_b] = s_D[0];
                 cblock_ID_onb[i_kap_b] = 1;
             }
         }
     }
 }
+
+
+template <const ArgsPack *AP, int version=0>
+__global__
+void Cu_MarkBlocks_CheckMasks_S2
+(
+    const int n_ids_idev_L,
+    const int *__restrict__ id_set_idev_L,
+    const int n_maxcells,
+    const int n_maxcblocks,
+    int *__restrict__ cells_ID_mask,
+    int *__restrict__ cblock_ID_onb
+)
+{
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // Loop over block Ids.
+    if (i_kap_b > -1)
+    {
+        // Latter condition is added only if n>0.
+        if (cblock_ID_onb[i_kap_b] == 1)
+        {
+            if (cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x + n_maxcells] == V_CELLMASK_BOUNDARY)
+                cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] = V_CELLMASK_BOUNDARY;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__

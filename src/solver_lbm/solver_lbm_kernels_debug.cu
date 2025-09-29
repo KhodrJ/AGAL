@@ -23,7 +23,7 @@ void Cu_Debug_DrawGeometry
     const int *__restrict__ cells_ID_mask,
     const ufloat_t *__restrict__ cells_f_F,
     const ufloat_g_t *__restrict__ cells_f_X_b,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_nbr_child,
     const int *__restrict__ cblock_ID_mask,

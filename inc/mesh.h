@@ -108,6 +108,14 @@ bool BlockNotSolid(int block_mask)
 {
     return block_mask != V_BLOCKMASK_SOLID;
 }
+__host__ __device__ __forceinline__
+bool BlockNotNearSolid(int block_mask)
+{
+    return
+        block_mask != V_BLOCKMASK_SOLID &&
+        block_mask != V_BLOCKMASK_SOLIDA &&
+        block_mask != V_BLOCKMASK_SOLIDB;
+}
 
 // Mesh refinements types.
 constexpr int V_MESH_REF_NW_CASES            = 0;     ///< Near-wall refinement for the benchmark cases.
@@ -119,49 +127,9 @@ constexpr int V_MESH_REF_SOLUTION            = 3;     ///< Refinement based on t
 constexpr int V_MESH_RESTART_SAVE            = 0;     ///< Save the mesh to restart later.
 constexpr int V_MESH_RESTART_LOAD            = 1;     ///< Load mesh data from previous save.
 
-bool init_conn = false;
-__constant__ int V_CONN_ID[81];
-__constant__ int V_CONN_MAP[27];
-int V_CONN_ID_H[81];
-int V_CONN_MAP_H[27];
-
-template <int N_DIM>
-inline int InitConnectivity()
-{
-    // o====================================================================================
-    // | Load connectivity indices into (GPU) constant memory.
-    // o====================================================================================
-    
-    int V_CONN_ID_2D[81] = {0, 1, 0, -1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    int V_CONN_ID_3D[81] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
-    
-    int V_CONN_MAP_2D[27] = {7, 4, 8, 3, 0, 1, 6, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    int V_CONN_MAP_3D[27] = {20, 12, 26, 10, 6, 15, 24, 17, 21, 8, 4, 13, 2, 0, 1, 14, 3, 7, 22, 18, 23, 16, 5, 9, 25, 11, 19};
-    
-    if (N_DIM==2)
-    {
-        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_2D, sizeof(int)*81);
-        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_2D, sizeof(int)*27);
-        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_2D[p];
-        for (int p = 0; p < 81; p++) V_CONN_MAP_H[p] = V_CONN_MAP_2D[p];
-    }
-    if (N_DIM==3)
-    {
-        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_3D, sizeof(int)*81);
-        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_3D, sizeof(int)*27);
-        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_3D[p];
-        for (int p = 0; p < 81; p++) V_CONN_MAP_H[p] = V_CONN_MAP_3D[p];
-    }
-    init_conn = true;
-    
-    return 0;
-}
-
-
 #include "structs.h"
 #include "custom.h"
 #include "util.h"
-#include "index_mapper.h"
 
 
 
@@ -419,7 +387,7 @@ class Mesh
     
     //! Array of cell-block spatial coordinates.
     //! Stores the coordinate of the lower bottom-left corner of the cell-block in a structure of arrays format (i.e. x: cb0, cb1, cb2,..., y: cb0, cb1, cb2,... and so on).
-    ufloat_t     **cblock_f_X = new ufloat_t*[N_DEV];
+    ufloat_g_t     **cblock_f_X = new ufloat_t*[N_DEV];
     
     //! Array of IDs indicating whether index block participates in inteperpolation or averaging.
     //! Stores an indicator integer (0 - inactive, 1 - active) indicating whether or not the current cell-block is active in interpolation / averaging.
@@ -525,7 +493,7 @@ class Mesh
     ufloat_t     **c_cells_f_F = new ufloat_t*[N_DEV];
     
     //! GPU counterpart of @ref cblock_f_X.
-    ufloat_t     **c_cblock_f_X = new ufloat_t*[N_DEV];
+    ufloat_g_t     **c_cblock_f_X = new ufloat_t*[N_DEV];
     
     //! GPU counterpart of @ref cblock_ID_mask.
     int        **c_cblock_ID_mask = new int*[N_DEV];

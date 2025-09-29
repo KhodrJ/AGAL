@@ -77,6 +77,53 @@ template <class T> __host__ __device__ __forceinline__ int Tsign(T a, T tol=EPS<
 }
 
 // o====================================================================================
+// | Connectivity arrays.
+// o====================================================================================
+
+bool init_conn = false;
+__constant__ int V_CONN_ID[81];
+__constant__ int V_CONN_ID_PB[27];
+__constant__ int V_CONN_MAP[27];
+int V_CONN_ID_H[81];
+int V_CONN_ID_PB_H[27];
+int V_CONN_MAP_H[27];
+
+template <int N_DIM>
+inline int InitConnectivity()
+{
+    int V_CONN_ID_2D[81] = {0, 1, 0, -1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int V_CONN_ID_3D[81] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
+    
+    int V_CONN_ID_PB_2D[27] = {0, 3, 4, 1, 2, 7, 8, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    int V_CONN_ID_PB_3D[27] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25};
+    
+    int V_CONN_MAP_2D[27] = {7, 4, 8, 3, 0, 1, 6, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int V_CONN_MAP_3D[27] = {20, 12, 26, 10, 6, 15, 24, 17, 21, 8, 4, 13, 2, 0, 1, 14, 3, 7, 22, 18, 23, 16, 5, 9, 25, 11, 19};
+    
+    if (N_DIM==2)
+    {
+        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_2D, sizeof(int)*81);
+        cudaMemcpyToSymbol(V_CONN_ID_PB, V_CONN_ID_PB_2D, sizeof(int)*27);
+        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_2D, sizeof(int)*27);
+        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_2D[p];
+        for (int p = 0; p < 27; p++) V_CONN_ID_PB_H[p] = V_CONN_ID_PB_2D[p];
+        for (int p = 0; p < 27; p++) V_CONN_MAP_H[p] = V_CONN_MAP_2D[p];
+    }
+    if (N_DIM==3)
+    {
+        cudaMemcpyToSymbol(V_CONN_ID, V_CONN_ID_3D, sizeof(int)*81);
+        cudaMemcpyToSymbol(V_CONN_ID_PB, V_CONN_ID_PB_3D, sizeof(int)*27);
+        cudaMemcpyToSymbol(V_CONN_MAP, V_CONN_MAP_3D, sizeof(int)*27);
+        for (int p = 0; p < 81; p++) V_CONN_ID_H[p] = V_CONN_ID_3D[p];
+        for (int p = 0; p < 27; p++) V_CONN_ID_PB_H[p] = V_CONN_ID_PB_3D[p];
+        for (int p = 0; p < 27; p++) V_CONN_MAP_H[p] = V_CONN_MAP_3D[p];
+    }
+    init_conn = true;
+    
+    return 0;
+}
+
+// o====================================================================================
 // | Vec2.
 // o====================================================================================
 
@@ -456,16 +503,16 @@ bool CheckPointInLine(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInLineExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2)
+bool CheckPointInLineExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, T eps=EPS<T>())
 {
     // Assumes that the point is on an infinite line defined by the segment.
     
     // First vertex.
-    if (DotV2D(vp-v1,v2-v1) <= -EPS<T>()*static_cast<T>(100))
+    if (DotV2D(vp-v1,v2-v1) <= -eps)
         return false;
     
     // Second vertex.
-    if (-DotV2D(vp-v2,v2-v1) <= -EPS<T>()*static_cast<T>(100))
+    if (-DotV2D(vp-v2,v2-v1) <= -eps)
         return false;
     
     return true;
@@ -473,24 +520,24 @@ bool CheckPointInLineExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T
 
 template <typename T>
 __host__ __device__ __forceinline__
-bool CheckPointInTriangleExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+bool CheckPointInTriangleExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n, T eps=EPS<T>())
 {
     // First edge.
     vec3<T> ven = InwardNormalUnit(v1,v2,n);
     T s = DotV(v1-vp,ven);
-    if (s <= -EPS<T>()*static_cast<T>(100))
+    if (s <= -eps)
         return false;
     
     // Second edge.
     ven = InwardNormalUnit(v2,v3,n);
     s = DotV(v2-vp,ven);
-    if (s <= -EPS<T>()*static_cast<T>(100))
+    if (s <= -eps)
         return false;
     
     // Third edge.
     ven = InwardNormalUnit(v3,v1,n);
     s = DotV(v3-vp,ven);
-    if (s <= -EPS<T>()*static_cast<T>(100))
+    if (s <= -eps)
         return false;
     
     return true;
@@ -533,12 +580,12 @@ bool CheckPointInFace(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, c
 
 template <typename T, int N_DIM>
 __host__ __device__ __forceinline__
-bool CheckPointInFaceExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n)
+bool CheckPointInFaceExtended(const vec3<T> &vp, const vec3<T> &v1, const vec3<T> &v2, const vec3<T> &v3, const vec3<T> &n, T eps=EPS<T>())
 {
     if (N_DIM==2)
-        return CheckPointInLineExtended(vp,v1,v2);
+        return CheckPointInLineExtended(vp,v1,v2,eps);
     else
-        return CheckPointInTriangleExtended(vp,v1,v2,v3,n);
+        return CheckPointInTriangleExtended(vp,v1,v2,v3,n,eps);
 }
 
 template <typename T>
@@ -735,6 +782,23 @@ int BlockwiseReduction(int t, int B, T *s_data)
     return 0;
 }
 
+template <typename T>
+__device__ __forceinline__
+int BlockwiseMaximum(int t, int B, T *s_data)
+{
+    for (int s=B/2; s>0; s>>=1)
+    {
+        if (t < s)
+        {
+            s_data[t] = Tmax(s_data[t], s_data[t+s]);
+        }
+        __syncthreads();
+    }
+    
+    return 0;
+}
+
+#include "util_index.h"
 #include "util_tribin.h"         // Triangle-AABB bin overlap.
 #include "util_tribin_old.h"     // My own triangle-AABB bin overlap test. [REMOVE]
 #include "util_math.h"           // Useful mathematics routines.

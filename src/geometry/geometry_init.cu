@@ -26,6 +26,10 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init()
     G_BIN_SPEC              = parser->params_int["G_BIN_SPEC"];
     MAX_LEVELS_WALL         = parser->params_int["MAX_LEVELS_WALL"];
     
+    // Corrections.
+    if (G_BIN_LEVELS > MAX_LEVELS_WALL)
+        G_BIN_LEVELS = MAX_LEVELS_WALL;
+    
     return 0;
 }
 

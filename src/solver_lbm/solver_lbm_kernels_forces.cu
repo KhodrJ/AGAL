@@ -24,7 +24,7 @@ void Cu_ComputeForcesCV
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
     const ufloat_t *__restrict__ cells_f_F,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr_child,
     ufloat_t *__restrict__ cblock_f_Ff,
     const ufloat_t cv_xm,
@@ -115,8 +115,11 @@ void Cu_ComputeForcesCV
             if (rhoup < 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
             if (rhoup > 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
             if (rhoup < 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
-            if (rhoup > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
-            if (rhowp < 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            if (N_DIM==3)
+            {
+                if (rhoup > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+                if (rhowp < 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            }
         }
         if (participatesV && post_step==1 && i_kap_bc<0)
         {
@@ -124,8 +127,11 @@ void Cu_ComputeForcesCV
             if (rhoup < 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
             if (rhoup > 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
             if (rhoup < 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
-            if (rhoup > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
-            if (rhowp < 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            if (N_DIM==3)
+            {
+                if (rhoup > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+                if (rhowp < 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+            }
         }
         
         
@@ -310,7 +316,7 @@ void Cu_ComputeForcesMEA
     const int *__restrict__ cells_ID_mask,
     const ufloat_t *__restrict__ cells_f_F,
     const ufloat_g_t *__restrict__ cells_f_X_b,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_onb,
@@ -609,7 +615,7 @@ void Cu_ComputePressureOnWall
     const int *__restrict__ cells_ID_mask,
     const ufloat_t *__restrict__ cells_f_F,
     const ufloat_g_t *__restrict__ cells_f_X_b,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_onb,

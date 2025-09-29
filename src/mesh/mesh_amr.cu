@@ -1445,7 +1445,7 @@ void Cu_RefineCells_Q1_2
 
 
 // Formerly: Cu_RefineCells_S1.
-template <typename ufloat_t, const ArgsPack *AP>
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 __global__
 void Cu_AddRemoveBlocks
 (
@@ -1455,7 +1455,7 @@ void Cu_AddRemoveBlocks
     int *__restrict__ cblock_ID_nbr_child,
     int *__restrict__ cblock_ID_ref,
     int *__restrict__ cblock_level,
-    ufloat_t *__restrict__ cblock_f_X,
+    ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ scattered_map
 )
 {
@@ -2371,7 +2371,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         // Scatter gaps to indices of marked cells for the write process, then retrieve newly-generated blocks by level for insertion in ID sets.
         if (proceed_refinement || proceed_coarsening)
         {
-            Cu_AddRemoveBlocks<ufloat_t,AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+            Cu_AddRemoveBlocks<ufloat_t,ufloat_g_t,AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 id_max_curr, n_maxcblocks, dx_cblock,
                 c_cblock_ID_nbr_child[i_dev], c_cblock_ID_ref[i_dev], c_cblock_level[i_dev], c_cblock_f_X[i_dev],
                 c_tmp_2[i_dev]

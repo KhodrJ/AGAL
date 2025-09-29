@@ -37,6 +37,7 @@
 #include "solver_lbm_criterion.cu"
 #include "solver_lbm_init.cu"
 #include "solver_lbm_kernels.cu"
+#include "solver_lbm_kernels_les.cu"
 #include "solver_lbm_kernels_comm.cu"
 #include "solver_lbm_kernels_forces.cu"
 #include "solver_lbm_kernels_debug.cu"
@@ -52,7 +53,7 @@ constexpr ArgsPack AP3D __attribute__((unused)) = ArgsPack(3,M_BLOCK_C,1,1,M_LBL
 
 // Define some LBM argument packs for the tests.
 constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VS_D2Q9, CM_BGK, IM_CUBIC);
-constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_CUBIC);
+constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q19, CM_BGK, IM_LINEAR);
 constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VS_D3Q27, CM_BGK, IM_CUBIC);
 
 // Typedefs and chosen packs.
@@ -75,29 +76,34 @@ typedef float REAL_g;
 
 int main(int argc, char *argv[])
 {
+    size_t size;
+    cudaDeviceGetLimit(&size, cudaLimitPrintfFifoSize);
+    printf("Current printf buffer size: %zu bytes\n", size);
+    cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 16 * 1024 * 1024); // 16 MB
+    
     // Read input file and use map to make solver input.
     std::string input_file_directory = "../input/";
     Parser parser(input_file_directory);
     
     // Create a new geometry and import from input folder.
-    Geometry<REAL_s,REAL_g,&APc> geometry(&parser);
-    if (geometry.G_LOADTYPE == static_cast<int>(LoadType::STL))
-        geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
-    else
-    {
-        geometry.G_ImportBoundariesFromTextFile();
-        geometry.G_Convert_IndexListsToCoordList();
-    }
-    geometry.G_Init_Arrays_CoordsList_CPU();
-    if (geometry.G_PRINT)
-        geometry.G_PrintSTL();
-    geometry.G_InitBins(BinMake::GPU,0);
+//     Geometry<REAL_s,REAL_g,&APc> geometry(&parser);
+//     if (geometry.G_LOADTYPE == static_cast<int>(LoadType::STL))
+//         geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
+//     else
+//     {
+//         geometry.G_ImportBoundariesFromTextFile();
+//         geometry.G_Convert_IndexListsToCoordList();
+//     }
+//     geometry.G_Init_Arrays_CoordsList_CPU();
+//     if (geometry.G_PRINT)
+//         geometry.G_PrintSTL();
+//     geometry.G_InitBins(BinMake::GPU,0);
     
     // Create a mesh.
-    const int N_U = LPc.N_Q + (APc.N_DIM+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity.
+    const int N_U = LPc.N_Q + (APc.N_DIM+1+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity + 1 eddy viscosity.
     //const int N_U = 1;
     Mesh<REAL_s,REAL_g,&APc> mesh(&parser, N_U);
-    mesh.M_AddGeometry(&geometry);
+//     mesh.M_AddGeometry(&geometry);
     
     // Create a solver.
     Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh);

@@ -128,6 +128,7 @@ SRC_SOLVER_LBM = solver_lbm_init.cu\
 	solver_lbm_kernels.cu\
 	solver_lbm_kernels_comm.cu\
 	solver_lbm_kernels_forces.cu\
+	solver_lbm_kernels_les.cu\
 	solver_lbm_kernels_debug.cu
 OBJ_SOLVER_LBM = $(SRC_SOLVER_LBM:.cu=.o)
 # solver_lbm_%.o: solver_lbm_%.cu solver_lbm.h solver.h cppspec.h
@@ -148,7 +149,7 @@ INC_MAIN = cppspec.h\
 	util_tribin_old.h\
 	util_math.h\
 	util_interp.h\
-	index_mapper.h\
+	util_index.h\
 	custom.h\
 	debug_matlab.h
 # SRC_MAIN = main_read_input.cu

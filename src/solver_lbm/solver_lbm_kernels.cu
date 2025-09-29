@@ -20,7 +20,7 @@ void Cu_SetInitialConditions
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
     ufloat_t *__restrict__ cells_f_F,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const ufloat_t dx_L
 )
 {
@@ -173,6 +173,10 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_RefreshVariables(int i_dev, int L, 
 
     return 0;
 }
+
+
+
+
 
 
 
@@ -408,11 +412,6 @@ void Cu_Stream
                     // Assign the correct neighbor cell-block ID.
                     int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
                     int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
-                    //Ip = (4 + (Ip % 4)) % 4;
-                    //Jp = (4 + (Jp % 4)) % 4;
-                    //if (N_DIM==3)
-                    //        Kp = (4 + (Kp % 4)) % 4;
-                    //int nbr_kap_c = Ip + 4*Jp + 16*Kp;
                     
                     // Retrieve neighboring DDFs, if applicable.
                     ufloat_t f_pb = (ufloat_t)(-1.0);
@@ -420,7 +419,7 @@ void Cu_Stream
                         f_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
                     
                     // Exchange, if applicable.
-                    if ( valid_mask != V_CELLMASK_SOLID && f_pb>=0 && dQ < 0)
+                    if (valid_mask != V_CELLMASK_SOLID && f_pb>=0 && dQ < 0)
                     {
                         cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells] = f_p;
                         cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells] = f_pb;
@@ -501,7 +500,7 @@ void Cu_ImposeBC
     const int *__restrict__ cells_ID_mask,
     ufloat_t *__restrict__ cells_f_F,
     const ufloat_g_t *__restrict__ cells_f_X_b,
-    const ufloat_t *__restrict__ cblock_f_X,
+    const ufloat_g_t *__restrict__ cblock_f_X,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_nbr_child,
     const int *__restrict__ cblock_ID_mask,
@@ -594,7 +593,7 @@ void Cu_ImposeBC
                     if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
                     {
                         // Get face-cell link.
-                        ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b] / dx_L_g;
+                        ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
                         
                         // Re-compute incremented local indices.
                         int Ip = I + V_CONN_ID[LBMpb[p] + 0*27];
@@ -645,7 +644,7 @@ void Cu_ImposeBC
                     if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
                     {
                         // Get face-cell link.
-                        ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells_b] / dx_L_g;
+                        ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells_b];
                         
                         // Re-compute incremented local indices.
                         int Ip = I + V_CONN_ID[p + 0*27];
