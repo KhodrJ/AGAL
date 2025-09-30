@@ -28,7 +28,7 @@ void Cu_Interpolate_Linear
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ ufloat_t s_F[M_TBLOCK];
 
     int i_kap_b = -1;
@@ -189,7 +189,7 @@ void Cu_Average
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ ufloat_t s_Fc[M_TBLOCK];
     __shared__ int s_ID_mask_child[M_TBLOCK];
 
@@ -426,7 +426,7 @@ void Cu_Interpolate_Cubic
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ ufloat_t s_F[M_TBLOCK];
 
     int i_kap_b = -1;

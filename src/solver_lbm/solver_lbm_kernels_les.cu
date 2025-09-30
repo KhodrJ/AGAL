@@ -302,7 +302,7 @@ void Cu_ComputeEddyViscosityFromNbrs
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ ufloat_t s_u[M_HBLOCK];
     __shared__ ufloat_t s_v[M_HBLOCK];
     __shared__ ufloat_t s_w[M_HBLOCK];
@@ -472,7 +472,7 @@ void Cu_ComputeEddyViscosity
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     constexpr LESModel LM = LP->LM;
     __shared__ ufloat_t s_u[M_HBLOCK];
     __shared__ ufloat_t s_v[M_HBLOCK];

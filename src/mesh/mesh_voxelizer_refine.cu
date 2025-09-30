@@ -23,7 +23,7 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_MarkBoundary
 (
-    const long int id_max_curr,
+    const int id_max_curr,
     const long int n_maxcblocks,
     const bool hit_max,
     const int L,
@@ -124,7 +124,7 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_MarkExterior
 (
-    const long int id_max_curr,
+    const int id_max_curr,
     const long int n_maxcblocks,
     const bool hit_max,
     const int L,
@@ -222,7 +222,7 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_UpdateSolidChildren
 (
-    const long int id_max_curr,
+    const int id_max_curr,
     const long int n_maxcblocks,
     const int L,
     const int *__restrict__ cblock_ID_mask,
@@ -278,7 +278,7 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_Propagate
 (
-    const long int id_max_curr,
+    const int id_max_curr,
     const long int n_maxcblocks,
     const int L,
     int *__restrict__ cblock_ID_ref,
@@ -396,7 +396,7 @@ template <const ArgsPack *AP>
 __global__
 void Cu_MarkBlocks_Finalize
 (
-    const long int id_max_curr,
+    const int id_max_curr,
     int *__restrict__ cblock_ID_ref,
     int *__restrict__ tmp_1
 )

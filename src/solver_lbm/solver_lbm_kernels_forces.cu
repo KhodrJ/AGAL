@@ -38,7 +38,7 @@ void Cu_ComputeForcesCV
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ ufloat_t s_Fp[M_TBLOCK*N_DIM];
     __shared__ ufloat_t s_Fm[M_TBLOCK*N_DIM];
     
@@ -330,7 +330,7 @@ void Cu_ComputeForcesMEA
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ int s_ID_nbr[N_Q_max];
     __shared__ ufloat_t s_Fp[M_TBLOCK*N_DIM];
     __shared__ ufloat_t s_Fm[M_TBLOCK*N_DIM];
@@ -629,7 +629,7 @@ void Cu_ComputePressureOnWall
     constexpr int M_CBLOCK = AP->M_CBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
     constexpr int N_Q_max = AP->N_Q_max;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     __shared__ int s_ID_nbr[N_Q_max];
     __shared__ ufloat_t s_F_p[M_HBLOCK];
     

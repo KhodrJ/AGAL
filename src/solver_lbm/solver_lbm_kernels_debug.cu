@@ -35,7 +35,7 @@ void Cu_Debug_DrawGeometry
 {
     constexpr int N_DIM = AP->N_DIM;
     constexpr int M_CBLOCK = AP->M_CBLOCK;
-    constexpr int N_Q = LP->N_Q;
+    constexpr long int N_Q = LP->N_Q;
     
     int i_kap_b = -1;
     if (blockIdx.x < n_ids_idev_L)

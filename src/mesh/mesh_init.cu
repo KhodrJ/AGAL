@@ -334,7 +334,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         ufloat_t *init_grid_cblock_f_X = new ufloat_t[N_DIM*n_coarsecblocks];
 
         // Prepare shuffled indices, if selected for presentation/testing purposes (activate manually).
-        bool shuffle_root_grid = true;
+        bool shuffle_root_grid = false;
         int *shuffled_indices;
         if (shuffle_root_grid)
         {
