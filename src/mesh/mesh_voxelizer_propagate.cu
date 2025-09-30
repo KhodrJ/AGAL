@@ -23,7 +23,7 @@ void Cu_Voxelize_Propagate_Right_WARP
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr
@@ -95,7 +95,7 @@ void Cu_Voxelize_Propagate_Right
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr,
@@ -172,7 +172,7 @@ void Cu_Voxelize_Propagate_Left
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr
@@ -256,7 +256,7 @@ void Cu_Voxelize_Propagate_Internal
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask
 )
 {
@@ -322,7 +322,7 @@ void Cu_Voxelize_PatchGaps
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr

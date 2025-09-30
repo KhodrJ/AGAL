@@ -53,7 +53,7 @@ constexpr ArgsPack AP3D __attribute__((unused)) = ArgsPack(3,M_BLOCK_C,1,1,M_LBL
 
 // Define some LBM argument packs for the tests.
 constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VelocitySet::D2Q9, CollisionOperator::BGK, InterpOrder::Cubic, LESModel::WALE);
-constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q19, CollisionOperator::BGK, InterpOrder::Linear, LESModel::Vreman);
+constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q19, CollisionOperator::BGK, InterpOrder::Linear, LESModel::WALE);
 constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q27, CollisionOperator::BGK, InterpOrder::Linear, LESModel::WALE);
 
 // Typedefs and chosen packs.

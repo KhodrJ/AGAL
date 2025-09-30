@@ -106,7 +106,7 @@ __global__
 void Cu_UpdateBoundaries
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ cblock_ID_nbr_child,
     const int *__restrict__ cblock_ID_mask,
@@ -145,7 +145,7 @@ __global__
 void Cu_UpdateConnectivity
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_nbr_child,
@@ -937,7 +937,7 @@ __global__
 void Cu_UpdateMasks_1
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr_child
@@ -972,7 +972,7 @@ __global__
 void Cu_UpdateMasks_2
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_ref,
     int *__restrict__ cells_ID_mask
@@ -1305,7 +1305,7 @@ __global__
 void Cu_RefineCells_Prep
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ efficient_map
@@ -1330,7 +1330,7 @@ __global__
 void Cu_RefineCells_Prep_Reset
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ efficient_map
@@ -1356,7 +1356,7 @@ __global__
 void Cu_RefineCells_Q1_1
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr_child
 )
@@ -1384,7 +1384,7 @@ __global__
 void Cu_RefineCells_Q1_2
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     const int *__restrict__ cblock_ID_nbr_child
@@ -1450,7 +1450,7 @@ __global__
 void Cu_AddRemoveBlocks
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx,
     int *__restrict__ cblock_ID_nbr_child,
     int *__restrict__ cblock_ID_ref,
@@ -1557,7 +1557,7 @@ __global__
 void Cu_RefineCells_S2_1
 (
     const int id_max_curr,
-    const int n_maxcblocks, 
+    const long int n_maxcblocks, 
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ cblock_ID_nbr_child,
@@ -1626,7 +1626,7 @@ __global__
 void Cu_RefineCells_S2_2
 (
     const int id_max_curr,
-    const int n_maxcblocks, 
+    const long int n_maxcblocks, 
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ cblock_ID_nbr_child,
@@ -1816,7 +1816,7 @@ __global__
 void Cu_CoarsenCells_S2
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     int *__restrict__ cblock_ID_nbr,
     int *__restrict__ cblock_ID_nbr_child
@@ -1843,7 +1843,7 @@ __global__
 void Cu_FreezeRefined
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cblock_ID_ref
 )
 {
@@ -1862,7 +1862,7 @@ __global__
 void Cu_UnfreezeRefined
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cblock_ID_ref
 )
 {
@@ -1881,7 +1881,7 @@ __global__
 void Cu_RefinementValidator_1
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr_child
 )
@@ -1907,7 +1907,7 @@ __global__
 void Cu_RefinementValidator_2
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_level,
     const int *__restrict__ cblock_ID_nbr,
@@ -1937,7 +1937,7 @@ __global__
 void Cu_RefinementValidator_3
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_ref,
@@ -1986,7 +1986,7 @@ __global__
 void Cu_RefinementValidator_4
 (
     const int id_max_curr,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ cblock_ID_nbr_child
 )
 {

@@ -288,7 +288,7 @@ void Cu_ComputeEddyViscosityFromNbrs
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     const int *__restrict__ id_set_idev_L,
     ufloat_t *__restrict__ cells_f_F,

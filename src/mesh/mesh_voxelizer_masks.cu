@@ -24,7 +24,7 @@ void Cu_MarkBlocks_CheckMasks_S1
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
     const int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr,
@@ -223,7 +223,7 @@ void Cu_MarkBlocks_CheckMasks_S2
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
     const int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_onb
 )
@@ -373,7 +373,7 @@ void Cu_MarkBlocks_MarkInterior
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     int *__restrict__ cells_ID_mask,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_nbr,

@@ -12,7 +12,7 @@ void Cu_Voxelize_V1_WARP
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_g_t dx_L,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
@@ -205,7 +205,7 @@ void Cu_Voxelize_V1
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_g_t dx_L,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
@@ -355,7 +355,7 @@ void Cu_Voxelize_V2_WARP
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_g_t dx_L,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,
@@ -560,7 +560,7 @@ void Cu_Voxelize_V2
 (
     const int n_ids_idev_L,
     const int *__restrict__ id_set_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_g_t dx_L,
     int *__restrict__ cells_ID_mask,
     int *__restrict__ cblock_ID_mask,

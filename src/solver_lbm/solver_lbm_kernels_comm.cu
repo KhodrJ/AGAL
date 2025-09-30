@@ -16,7 +16,7 @@ void Cu_Interpolate_Linear
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t tau_ratio,
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
@@ -177,7 +177,7 @@ void Cu_Average
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t tau_ratio,
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
@@ -409,7 +409,7 @@ void Cu_Interpolate_Cubic
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t tau_ratio,
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,

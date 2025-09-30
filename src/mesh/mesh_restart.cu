@@ -104,7 +104,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Restart(int i_dev, int var, int *iter)
         char *buffer_init = new char[init_read_length];
         int cblocks_id_max = 1;
         long int cells_id_max = 1;
-        int n_maxcblocks_old = 1;
+        long int n_maxcblocks_old = 1;
         
         // Size data.
         long int pos = 0;

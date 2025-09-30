@@ -300,7 +300,7 @@ class Mesh
     ufloat_t        dx_cblock               = 1.0;          ///< Spatial step on cell-block basis.
     int             n_coarsecblocks         = 1;            ///< Total number of coarse blocks in the domain.
     long int        n_maxcells              = 1;            ///< Maximum number of cells that can be stored in GPU memory.
-    int             n_maxcblocks            = 1;            ///< Maximum number of cell-blocks corresponding to @ref n_maxcells.
+    long int        n_maxcblocks            = 1;            ///< Maximum number of cell-blocks corresponding to @ref n_maxcells.
     long int        n_solida                = 0;            ///< Number of cells adjacent to a solid cell.
     int             n_solidb                = 0;            ///< Number of cell-blocks containing at least one cell adjacent to a solid cell.
     int             n_solidb_a              = 0;            ///< The value @ref n_solidb adjusted for alignment in device memory.
@@ -451,7 +451,7 @@ class Mesh
     
     //! Array of largest cell-block IDs per grid level.
     //! Stores the maximum cell-block ID on a grid level. The element with index @ref MAX_LEVELS represents the largest ID in the array and is used to identify the limit of access in the data arrays (saves time when I don't need to go through all possible cell-cblocks).
-    int        **id_max = new int*[N_DEV];
+    int   **id_max = new int*[N_DEV];
     
     //! Array of gap cell-block IDs in data arrays.
     //! Stores the cell-block IDs of gaps that are formed in the data arrays when cell-blocks are coarsened as a simulation is processed. Stored in reverse order for convenience during the refinement and coarsening routine.

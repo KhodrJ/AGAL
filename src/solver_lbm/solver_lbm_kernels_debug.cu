@@ -15,7 +15,7 @@ void Cu_Debug_DrawGeometry
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const int n_maxblocks_b,
     const ufloat_t dx_L,

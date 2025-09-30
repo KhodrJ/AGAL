@@ -16,9 +16,9 @@ template <typename ufloat_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
 void Cu_ComputeRefCriteria_OLD
 (
-    const int id_max_curr,
+    const long int id_max_curr,
     const int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_level,
@@ -439,9 +439,9 @@ template <typename ufloat_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
 void Cu_ComputeRefCriteria
 (
-    const int id_max_curr,
+    const long int id_max_curr,
     const int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_level,

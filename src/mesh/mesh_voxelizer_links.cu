@@ -26,7 +26,7 @@ __global__
 void Cu_LinkLengthComputation
 (
     const int n_ids_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const ufloat_g_t dx_L,
     const int *__restrict__ id_set_idev_L,
@@ -203,7 +203,7 @@ __global__
 void Cu_LinkLengthValidation
 (
     const int n_ids_idev_L,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const ufloat_g_t dx_L,
     const int *__restrict__ id_set_idev_L,

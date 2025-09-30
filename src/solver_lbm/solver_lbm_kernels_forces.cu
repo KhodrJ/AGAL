@@ -17,7 +17,7 @@ void Cu_ComputeForcesCV
     const int is_root,
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     const ufloat_t dv_L,
     const ufloat_t otau_0,
@@ -307,7 +307,7 @@ void Cu_ComputeForcesMEA
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const int n_maxblocks_b,
     const ufloat_t dx_L,
@@ -606,7 +606,7 @@ void Cu_ComputePressureOnWall
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const int n_maxblocks_b,
     const ufloat_t dx_L,

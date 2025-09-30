@@ -11,7 +11,7 @@ template <typename ufloat_t, const ArgsPack *AP>
 __global__
 void Cu_ComputeRefCriteria_NearWall_Cases
 (
-    int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dxb_L, int L,
+    int n_ids_idev_L, int *id_set_idev_L, long int n_maxcblocks, ufloat_t dxb_L, int L,
     int *cblock_ID_ref, int *cblock_ID_onb, int *cblock_ID_nbr, ufloat_t *cblock_f_X
 )
 {
@@ -68,7 +68,7 @@ template <typename ufloat_t>
 __global__
 void Cu_ComputeRefCriteria_Uniform
 (
-    int n_ids_idev_L, int *id_set_idev_L, int n_maxcblocks, ufloat_t dxb_L, int L,
+    int n_ids_idev_L, int *id_set_idev_L, long int n_maxcblocks, ufloat_t dxb_L, int L,
     int *cblock_ID_ref
 )
 {

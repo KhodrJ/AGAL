@@ -16,7 +16,7 @@ void Cu_SetInitialConditions
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
     ufloat_t *__restrict__ cells_f_F,
@@ -207,7 +207,7 @@ void Cu_Collide
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     const ufloat_t tau_L,
     const int *__restrict__ id_set_idev_L,
@@ -294,7 +294,7 @@ void Cu_CollideLES
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     const ufloat_t nu,
     const int *__restrict__ id_set_idev_L,
@@ -387,7 +387,7 @@ void Cu_CollideLES
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const ufloat_t dx_L,
     const ufloat_t nu,
     const int *__restrict__ id_set_idev_L,
@@ -535,7 +535,7 @@ void Cu_Stream
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const int *__restrict__ id_set_idev_L,
     const int *__restrict__ cells_ID_mask,
@@ -690,7 +690,7 @@ void Cu_ImposeBC
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
-    const int n_maxcblocks,
+    const long int n_maxcblocks,
     const int n_maxcells_b,
     const ufloat_t dx_L,
     const ufloat_t dx_L_g,
