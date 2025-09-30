@@ -16,30 +16,18 @@ enum class VelocitySet
     D3Q19,
     D3Q27
 };
-constexpr int VS_D2Q9 = 0;
-constexpr int VS_D3Q19 = 1;
-constexpr int VS_D3Q27 = 2;
-
 enum class CollisionOperator
 {
     BGK,
     TRT,
     MRT
 };
-constexpr int CM_BGK = 0;
-constexpr int CM_TRT = 1;
-constexpr int CM_MRT = 2;
-
 enum class InterpOrder
 {
     Linear,
     Quadratic,
     Cubic
 };
-constexpr int IM_LINEAR = 0;
-constexpr int IM_QUADRATIC = 1;
-constexpr int IM_CUBIC = 2;
-
 enum class LESModel
 {
     None,
@@ -48,13 +36,13 @@ enum class LESModel
     Vreman
 };
 
-constexpr int GetLBMSize(int VS)
+constexpr int GetLBMSize(VelocitySet VS)
 {
     switch (VS)
     {
-        case VS_D2Q9: return 9;
-        case VS_D3Q19: return 19;
-        case VS_D3Q27: return 27;
+        case VelocitySet::D2Q9: return 9;
+        case VelocitySet::D3Q19: return 19;
+        case VelocitySet::D3Q27: return 27;
         default: return 9;
     }
 }
@@ -65,21 +53,24 @@ __constant__ int LBMpb[27];
 struct LBMPack
 {
     const ArgsPack AP;
-    const int VS;
-    const int CM;
-    const int IM;
+    const VelocitySet VS;
+    const CollisionOperator CM;
+    const InterpOrder IM;
+    const LESModel LM;
     const int N_Q = GetLBMSize(VS);
     
     constexpr LBMPack(
         const ArgsPack *AP_,
-        const int VS_,
-        const int CM_,
-        const int IM_
+        const VelocitySet VS_,
+        const CollisionOperator CM_,
+        const InterpOrder IM_,
+        const LESModel LM_=LESModel::None
     ) : 
         AP(*AP_),
         VS(VS_),
         CM(CM_),
-        IM(IM_)
+        IM(IM_),
+        LM(LM_)
     {
     }
 };
@@ -87,6 +78,7 @@ struct LBMPack
 // VS is the velocity set (D2Q9, D3Q19, D3Q27).
 // CM is the collision model (BGK, TRT, MRT).
 // IM is the interpolation model (linear, quadratic, cubic).
+// LM is the LES model (none, Smagorinsky, Vreman, WALE).
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
 {
@@ -122,10 +114,11 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     int        N_LEVEL_START;           ///< Grid level to employ as the root grid for advancement.
     
     // Constants.
-    const int VS         = LP->VS;
-    const int CM         = LP->CM;
-    const int IM         = LP->IM;
-    const int N_Q        = LP->N_Q;
+    const VelocitySet VS               = LP->VS;
+    const CollisionOperator CM         = LP->CM;
+    const InterpOrder IM               = LP->IM;
+    const LESModel LM                  = LP->LM;
+    const int N_Q                      = LP->N_Q;
     
     // o====================================================================================
     // | LBM solver parameters and routines.
@@ -190,12 +183,12 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     // o====================================================================================
     
     // Interpolation.
-    template <int IM=LP->IM, typename std::enable_if<(IM==IM_LINEAR), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var)
+    template <InterpOrder IM=LP->IM, typename std::enable_if<(IM==InterpOrder::Linear), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var)
     {
         S_Interpolate_Linear(i_dev, L, var);
         return 0;
     }
-    template <int IM=LP->IM, typename std::enable_if<(IM==IM_CUBIC), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) 
+    template <InterpOrder IM=LP->IM, typename std::enable_if<(IM==InterpOrder::Cubic), int>::type = 0> int S_InterpolateW(int i_dev, int L, int var) 
     {
         S_Interpolate_Cubic(i_dev, L, var);
         return 0;
@@ -218,7 +211,7 @@ class Solver_LBM : public Solver<ufloat_t,ufloat_g_t,AP>
     {
         delete[] dxf_vec;
         delete[] tau_vec;
-        if (CM==CM_MRT)
+        if (CM==CollisionOperator::MRT)
             delete[] s_vec;
     }
 };

@@ -115,14 +115,14 @@ void ExtrapolateToHalo
 // | Finite differences.
 // o====================================================================================
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D1_Central(const T &dx, const T &dm1, const T &d, const T &dp1)
 {
     return (dp1 - dm1)/(static_cast<T>(2.0)*dx);
 }
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D1_Central_Stencil(const T &dx, const T &dm1, const T &d, const T &dp1, const T &p=static_cast<T>(1.0), const T &q=static_cast<T>(1.0))
 {
@@ -133,14 +133,14 @@ T FinDiff_D1_Central_Stencil(const T &dx, const T &dm1, const T &d, const T &dp1
     return (cp*dp1 + c0*d + cq*dm1)/dx;
 }
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D1_Forward(const T &dx, const T &dm1, const T &d, const T &dp1)
 {
     return (dp1 - d)/dx;
 }
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D1_Backward(const T &dx, const T &dm1, const T &d, const T &dp1)
 {
@@ -148,14 +148,14 @@ T FinDiff_D1_Backward(const T &dx, const T &dm1, const T &d, const T &dp1)
 }
 
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D2_Central(const T &dx, const T &dm1, const T &d, const T &dp1)
 {
     return (dp1 + dm1 - static_cast<T>(2.0)*d)/(dx*dx);
 }
 
-template <typename T, int N_DIM>
+template <typename T>
 __host__ __device__ __forceinline__
 T FinDiff_D2_Central_Stencil(const T &dx, const T &dm1, const T &d, const T &dp1, const T &p=static_cast<T>(1.0), const T &q=static_cast<T>(1.0))
 {

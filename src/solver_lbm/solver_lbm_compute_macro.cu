@@ -3,7 +3,7 @@
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeMacroProperties(int i_dev, int i_kap, int i_Q, int kap_i, ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w)
 {
-	if (VS == VS_D2Q9)
+	if (VS == VelocitySet::D2Q9)
 	{
 		ufloat_t f_0 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 0L*n_maxcells];
 		ufloat_t f_1 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 3L*n_maxcells];
@@ -19,7 +19,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeMacroProperties(int i_dev, i
 		v = ( +f_2 -f_4 +f_5 +f_6 -f_7 -f_8) / rho;
 		w = 0;
 	}
-	if (VS == VS_D3Q19)
+	if (VS == VelocitySet::D3Q19)
 	{
 		ufloat_t f_0 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 0L*n_maxcells];
 		ufloat_t f_1 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 2L*n_maxcells];
@@ -45,7 +45,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeMacroProperties(int i_dev, i
 		v = ( +f_3 -f_4 +f_7 -f_8 +f_11 -f_12 -f_13 +f_14 +f_17 -f_18) / rho;
 		w = ( +f_5 -f_6 +f_9 -f_10 +f_11 -f_12 -f_15 +f_16 -f_17 +f_18) / rho;
 	}
-	if (VS == VS_D3Q27)
+	if (VS == VelocitySet::D3Q27)
 	{
 		ufloat_t f_0 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 0L*n_maxcells];
 		ufloat_t f_1 = mesh->cells_f_F[i_dev][i_kap*M_CBLOCK + i_Q*M_TBLOCK + kap_i + 2L*n_maxcells];

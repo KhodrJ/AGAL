@@ -234,7 +234,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S3(int i_dev)
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
-int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateMasks_Vis(int i_dev, int L)
+int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateSolidChildren(int i_dev, int L)
 {
     if (n_ids[i_dev][L] > 0)
     {

@@ -703,7 +703,7 @@ class Mesh
     int             M_Geometry_Voxelize_S1(int i_dev, int L);
     int             M_Geometry_Voxelize_S2(int i_dev, int L);
     int             M_Geometry_Voxelize_S3(int i_dev);
-    int             M_UpdateMasks_Vis(int i_dev, int L);
+    int             M_UpdateSolidChildren(int i_dev, int L);
     int             M_Geometry_FillBinned3D(int i_dev);
     int             M_LinkLengthComputation(int i_dev, int L);
     int             M_Advance_InitTextOutput();

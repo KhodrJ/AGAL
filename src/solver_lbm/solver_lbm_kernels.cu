@@ -289,22 +289,221 @@ void Cu_Collide
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+__global__
+void Cu_CollideLES
+(
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const ufloat_t dx_L,
+    const ufloat_t nu,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    constexpr int N_Q = LP->N_Q;
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+        int valid_block = cblock_ID_mask[i_kap_b];
+        
+        // Latter condition is added only if n>0.
+        //if ((i_kap_bc<0) || (valid_block>-3))
+        if (i_kap_bc < 0 || BlockNotSolid(valid_block))
+        {
+            // Get cell mask. Initialize variables for macroscopic properties.
+            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+            ufloat_t rho = (ufloat_t)0.0;
+            ufloat_t u = (ufloat_t)0.0;
+            ufloat_t v = (ufloat_t)0.0;
+            ufloat_t w = (ufloat_t)0.0;
+            ufloat_t f_p[N_Q];
+            
+            
+            // Loop over DDFs and compute macroscopic properties.
+            #pragma unroll
+            for (int p = 0; p < N_Q; p++)
+            {
+                ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
+                rho += f_pi;
+                u += V_CONN_ID[p+0*27]*f_pi;
+                v += V_CONN_ID[p+1*27]*f_pi;
+                if (N_DIM==3)
+                    w += V_CONN_ID[p+2*27]*f_pi;
+                f_p[p] = f_pi;
+            }
+            u /= rho;
+            v /= rho;
+            if (N_DIM==3)
+                w /= rho;
+            ufloat_t udotu = u*u + v*v + w*w;
+            
+            
+            // Store macroscopic properties.
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells] = rho;
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells] = u;
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells] = v;
+            if (N_DIM==3)
+                cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells] = w;
+            
+            
+            // Compute updated relaxation rate.
+            ufloat_t nu_SGS = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+4)*n_maxcells];
+            ufloat_t tau_L = static_cast<ufloat_t>(3.0)*(nu+nu_SGS) + static_cast<ufloat_t>(0.5)*dx_L;
+            ufloat_t omeg = dx_L / tau_L;
+            ufloat_t omegp = (ufloat_t)(1.0) - omeg;
+            
+            
+            // Perform collision step.
+            #pragma unroll
+            for (int p = 0; p < N_Q; p++)
+            {
+                ufloat_t f_pi = (ufloat_t)(-1.0);
+                ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
+                f_pi = f_p[p]*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
+                
+                if (valid_mask != V_CELLMASK_SOLID)
+                    cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells] = f_pi;
+            }
+        }
+    }
+}
+
+/*
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+__global__
+void Cu_CollideLES
+(
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const int n_maxcblocks,
+    const ufloat_t dx_L,
+    const ufloat_t nu,
+    const int *__restrict__ id_set_idev_L,
+    const int *__restrict__ cells_ID_mask,
+    ufloat_t *__restrict__ cells_f_F,
+    const int *__restrict__ cblock_ID_nbr_child,
+    const int *__restrict__ cblock_ID_mask
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    constexpr int N_Q = LP->N_Q;
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+        int valid_block = cblock_ID_mask[i_kap_b];
+        
+        if (i_kap_bc < 0 || BlockNotSolid(valid_block))
+        {
+            // Get cell mask. Initialize variables for macroscopic properties.
+            int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
+            ufloat_t rho = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+0)*n_maxcells];
+            ufloat_t u = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells];
+            ufloat_t v = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells];
+            ufloat_t w = static_cast<ufloat_t>(0.0);
+            if (N_DIM==3)
+                w = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells];
+            ufloat_t udotu = u*u + v*v + w*w;
+            
+            // Compute updated relaxation rate.
+            ufloat_t nu_SGS = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+4)*n_maxcells];
+            ufloat_t tau_L = static_cast<ufloat_t>(3.0)*(nu) + static_cast<ufloat_t>(0.5)*dx_L;
+            ufloat_t omeg = dx_L / tau_L;
+            ufloat_t omegp = (ufloat_t)(1.0) - omeg;
+            
+            // Loop over DDFs and perform collision step.
+            for (int p = 0; p < N_Q; p++)
+            {
+                if ( (N_DIM==2 && (p==0||p==1||(p+1)%3==0))   ||   (N_DIM==3 && (p==0||p==26||((p-1)%2==0&&p<25))) )
+                {
+                    int pb = LBMpb[p];
+                    ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + pb*n_maxcells];
+                    ufloat_t f_pbi;
+                    if (p > 0)
+                        f_pbi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells];
+                    
+                    ufloat_t cdotu = (ufloat_t)V_CONN_ID[p+0*27]*u + (ufloat_t)V_CONN_ID[p+1*27]*v + (ufloat_t)V_CONN_ID[p+2*27]*w;
+                    f_pi = f_pi*omegp + ( (ufloat_t)LBMw[p]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
+                    if (p > 0)
+                    {
+                        ufloat_t cdotu = (ufloat_t)V_CONN_ID[pb+0*27]*u + (ufloat_t)V_CONN_ID[pb+1*27]*v + (ufloat_t)V_CONN_ID[pb+2*27]*w;
+                        f_pbi = f_pbi*omegp + ( (ufloat_t)LBMw[pb]*rho*((ufloat_t)(1.0) + (ufloat_t)(3.0)*cdotu + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*udotu) )*omeg;
+                    }
+                    
+                    if (valid_mask != V_CELLMASK_SOLID)
+                    {
+                        cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells] = f_pi;
+                        if (p > 0)
+                            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + pb*n_maxcells] = f_pbi;
+                    }
+                }
+            }
+        }
+    }
+}
+*/
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Collide(int i_dev, int L)
 {
     if (mesh->n_ids[i_dev][L] > 0)
     {
-        Cu_Collide<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
-        (
-            mesh->n_ids[i_dev][L], n_maxcells,
-            n_maxcblocks,
-            dxf_vec[L],
-            tau_vec[L],
-            &mesh->c_id_set[i_dev][L*n_maxcblocks],
-            mesh->c_cells_ID_mask[i_dev],
-            mesh->c_cells_f_F[i_dev],
-            mesh->c_cblock_ID_nbr_child[i_dev],
-            mesh->c_cblock_ID_mask[i_dev]
-        );
+        if (MAX_LEVELS==1)
+            S_RefreshVariables(i_dev, L);
+        
+        if (LP->LM != LESModel::None)
+        {
+            S_ComputeEddyViscosity(i_dev, L);
+            
+            Cu_CollideLES<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
+            (
+                mesh->n_ids[i_dev][L], n_maxcells,
+                n_maxcblocks,
+                dxf_vec[L],
+                v0,
+                &mesh->c_id_set[i_dev][L*n_maxcblocks],
+                mesh->c_cells_ID_mask[i_dev],
+                mesh->c_cells_f_F[i_dev],
+                mesh->c_cblock_ID_nbr_child[i_dev],
+                mesh->c_cblock_ID_mask[i_dev]
+            );
+        }
+        else
+        {
+            Cu_Collide<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
+            (
+                mesh->n_ids[i_dev][L], n_maxcells,
+                n_maxcblocks,
+                dxf_vec[L],
+                tau_vec[L],
+                &mesh->c_id_set[i_dev][L*n_maxcblocks],
+                mesh->c_cells_ID_mask[i_dev],
+                mesh->c_cells_f_F[i_dev],
+                mesh->c_cblock_ID_nbr_child[i_dev],
+                mesh->c_cblock_ID_mask[i_dev]
+            );
+        }
+        
+        //if (MAX_LEVELS==1)
+        //    S_RefreshVariables(i_dev, L);
     }
 
     return 0;

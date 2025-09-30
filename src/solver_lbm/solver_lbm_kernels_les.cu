@@ -26,7 +26,6 @@ T SubgridScale_Smagorinsky
     const T &wz
 )
 {
-    constexpr T ZERO = static_cast<T>(0.0);
     constexpr T HALF = static_cast<T>(0.5);
     constexpr T TWO = static_cast<T>(2.0);
     constexpr T CS2 = static_cast<T>(0.1*0.1);
@@ -44,7 +43,8 @@ T SubgridScale_Smagorinsky
             S_xx*S_xx + 
             TWO*S_xy*S_xy + 
             S_yy*S_yy;
-        nu_SGS = CS2*dx*dx*sqrt(TWO*F);
+        if (F > 0)
+            nu_SGS = CS2*dx*dx*sqrt(TWO*F);
     }
     else // N_DIM==3
     {
@@ -65,7 +65,8 @@ T SubgridScale_Smagorinsky
             S_yy*S_yy + 
             TWO*S_yz*S_yz + 
             S_zz*S_zz;
-        nu_SGS = CS2*dx*dx*sqrt(TWO*F);
+        if (F > 0)
+            nu_SGS = CS2*dx*dx*sqrt(TWO*F);
     }
     
     return nu_SGS;
@@ -87,7 +88,6 @@ T SubgridScale_WALE
     const T &wz
 )
 {
-    constexpr T ZERO = static_cast<T>(0.0);
     constexpr T ATHIRD = static_cast<T>(1.0/3.0);
     constexpr T HALF = static_cast<T>(0.5);
     constexpr T TWO = static_cast<T>(2.0);
@@ -126,8 +126,8 @@ T SubgridScale_WALE
             S_xx*S_xx + 
             TWO*S_xy*S_xy + 
             S_yy*S_yy;
-        nu_SGS = 
-            Cw2*dx*dx*(F1*Tsqrt(F1)) / (F2*F2*Tsqrt(F2) + F1*Tsqrt(Tsqrt(F1)));
+        if (F1 > 0 && F2 > 0)
+            nu_SGS =  Cw2*dx*dx*(F1*Tsqrt(F1)) / (F2*F2*Tsqrt(F2) + F1*Tsqrt(Tsqrt(F1)));
     }
     else // N_DIM==3
     {
@@ -159,11 +159,11 @@ T SubgridScale_WALE
         T gkk = gxx + gyy + gzz;
         //
         T Sd_xx = gxx - ATHIRD*gkk;
-        T Sd_xy = static_cast<T>(0.5)*(gxy + gyx);
-        T Sd_xz = static_cast<T>(0.5)*(gxz + gzx);
+        T Sd_xy = HALF*(gxy + gyx);
+        T Sd_xz = HALF*(gxz + gzx);
         //T Sd_yx = Sd_xy;
         T Sd_yy = gyy - ATHIRD*gkk;
-        T Sd_yz = static_cast<T>(0.5)*(gyz + gzy);
+        T Sd_yz = HALF*(gyz + gzy);
         //T Sd_zx = Sd_xz;
         //T Sd_zy = Sd_yz;
         T Sd_zz = gzz - ATHIRD*gkk;
@@ -183,13 +183,72 @@ T SubgridScale_WALE
             S_yy*S_yy + 
             TWO*S_yz*S_yz + 
             S_zz*S_zz;
-        nu_SGS = Cw2*dx*dx*(F1*Tsqrt(F1)) / (F2*F2*Tsqrt(F2) + F1*Tsqrt(Tsqrt(F1)));
+        if (F1 > 0 && F2 > 0)
+            nu_SGS = Cw2*dx*dx*(F1*Tsqrt(F1)) / (F2*F2*Tsqrt(F2) + F1*Tsqrt(Tsqrt(F1)));
     }
     
     return nu_SGS;
 }
 
-template <typename T, int N_DIM, int model=1>
+template <typename T, int N_DIM>
+__host__ __device__ __forceinline__
+T SubgridScale_Vreman
+(
+    const T dx,
+    const T &ux,
+    const T &uy,
+    const T &uz,
+    const T &vx,
+    const T &vy,
+    const T &vz,
+    const T &wx,
+    const T &wy,
+    const T &wz
+)
+{
+    constexpr T CV = static_cast<T>(0.1*0.1*2.5);
+    
+    T nu_SGS = static_cast<T>(0.0);
+    
+    if (N_DIM==2)
+    {
+        T B_xx = ux*ux + uy*uy;
+        T B_xy = ux*vx + uy*vy;
+        //T B_yx = B_xy;
+        T B_yy = vx*vx + vy*vy;
+        
+        T Bb = B_xx*B_yy - B_xy*B_xy;
+        T aa = 
+            ux*ux + vx*vx +
+            uy*uy + vy*vy;
+        if (aa > 0 && Bb > 0)
+            nu_SGS = CV*dx*dx*sqrt(Bb / aa);
+    }
+    else // N_DIM==3
+    {
+        T B_xx = ux*ux + uy*uy + uz*uz;
+        T B_xy = ux*vx + uy*vy + uz*vz;
+        T B_xz = ux*wx + uy*wy + uz*wz;
+        //T B_yx = B_xy;
+        T B_yy = vx*vx + vy*vy + vz*vz;
+        T B_yz = vx*wx + vy*wy + vz*wz;
+        //T B_zx = B_xz;
+        //T B_zy = B_yz;
+        T B_zz = wx*wx + wy*wy + wz*wz;
+        
+        T Bb = B_xx*B_yy - B_xy*B_xy + B_xx*B_zz - B_xz*B_xz + B_yy*B_zz - B_yz*B_yz;
+        T aa = 
+            ux*ux + vx*vx + wx*wx +
+            uy*uy + vy*vy + wy*wy +
+            uz*uz + vz*vz + wz*wz;
+        if (aa > 0 && Bb > 0)
+            nu_SGS = CV*dx*dx*sqrt(Bb / aa);
+    }
+    
+    return nu_SGS;
+}
+
+template <typename T, int N_DIM, LESModel model=LESModel::None>
 __host__ __device__ __forceinline__
 T SubgridScaleModel
 (
@@ -205,10 +264,14 @@ T SubgridScaleModel
     const T &wz
 )
 {
-    if (model == 0)
+    if (model == LESModel::Smagorinsky)
         return SubgridScale_Smagorinsky<T,N_DIM>(dx,ux,uy,uz,vx,vy,vz,wx,wy,wz);
-    else
+    else if (model == LESModel::WALE)
         return SubgridScale_WALE<T,N_DIM>(dx,ux,uy,uz,vx,vy,vz,wx,wy,wz);
+    else if (model == LESModel::Vreman)
+        return SubgridScale_Vreman<T,N_DIM>(dx,ux,uy,uz,vx,vy,vz,wx,wy,wz);
+    else
+        return static_cast<T>(0.0);
 }
 
 
@@ -221,7 +284,7 @@ T SubgridScaleModel
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 __global__
-void Cu_ComputeEddyViscosity
+void Cu_ComputeEddyViscosityFromNbrs
 (
     const int n_ids_idev_L,
     const long int n_maxcells,
@@ -240,9 +303,9 @@ void Cu_ComputeEddyViscosity
     constexpr int M_TBLOCK = AP->M_TBLOCK;
     constexpr int M_HBLOCK = AP->M_HBLOCK;
     constexpr int N_Q = LP->N_Q;
-    __shared__ ufloat_t s_u[M_TBLOCK];
-    __shared__ ufloat_t s_v[M_TBLOCK];
-    __shared__ ufloat_t s_w[M_TBLOCK];
+    __shared__ ufloat_t s_u[M_HBLOCK];
+    __shared__ ufloat_t s_v[M_HBLOCK];
+    __shared__ ufloat_t s_w[M_HBLOCK];
     __shared__ int s_ID_nbr[N_Q_max];
     
     int i_kap_b = -1;
@@ -393,13 +456,155 @@ void Cu_ComputeEddyViscosity
 }
 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
+__global__
+void Cu_ComputeEddyViscosity
+(
+    const int n_ids_idev_L,
+    const long int n_maxcells,
+    const ufloat_t dx_L,
+    const int *__restrict__ id_set_idev_L,
+    ufloat_t *__restrict__ cells_f_F,
+    const int *__restrict__ cblock_ID_mask,
+    const int *__restrict__ cblock_ID_nbr,
+    const int *__restrict__ cblock_ID_nbr_child
+)
+{
+    constexpr int N_DIM = AP->N_DIM;
+    constexpr int M_CBLOCK = AP->M_CBLOCK;
+    constexpr int M_HBLOCK = AP->M_HBLOCK;
+    constexpr int N_Q = LP->N_Q;
+    constexpr LESModel LM = LP->LM;
+    __shared__ ufloat_t s_u[M_HBLOCK];
+    __shared__ ufloat_t s_v[M_HBLOCK];
+    __shared__ ufloat_t s_w[M_HBLOCK];
+    
+    int i_kap_b = -1;
+    if (blockIdx.x < n_ids_idev_L)
+        i_kap_b = id_set_idev_L[blockIdx.x];
+    
+    // If cell-block Id is valid.
+    if (i_kap_b > -1)
+    {
+        int i_kap_bc = cblock_ID_nbr_child[i_kap_b];
+        int valid_block = cblock_ID_mask[i_kap_b];
+        
+        if (i_kap_bc < 0 || BlockNotSolid(valid_block))
+        {
+            // Compute local cell indices.
+            int I = threadIdx.x % 4;
+            int J = (threadIdx.x / 4) % 4;
+            int K = 0;
+            if (N_DIM==3)
+                K = (threadIdx.x / 4) / 4;
+            
+            // Macroscopic properties.
+            ufloat_t u = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+1)*n_maxcells];
+            ufloat_t v = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+2)*n_maxcells];
+            ufloat_t w = static_cast<ufloat_t>(0.0);
+            if (N_DIM==3)
+                w = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells];
+            
+            // Load current block data to shared memory.
+            s_u[Cu_Halo<N_DIM>(I,J,K)] = u;
+            s_v[Cu_Halo<N_DIM>(I,J,K)] = v;
+            if (N_DIM==3)
+                s_w[Cu_Halo<N_DIM>(I,J,K)] = w;
+            __syncthreads();
+            
+            // Extrapolate to the halo.
+            ExtrapolateToHalo<ufloat_t,N_DIM>(s_u,I,J,K);
+            ExtrapolateToHalo<ufloat_t,N_DIM>(s_v,I,J,K);
+            if (N_DIM==3)
+                ExtrapolateToHalo<ufloat_t,N_DIM>(s_w,I,J,K);
+            __syncthreads();
+            
+            // Compute velocity gradient tensor.
+            ufloat_t ux = FinDiff_D1_Central(
+                dx_L,
+                s_u[Cu_Halo<N_DIM>(I-1,J,K)],
+                s_u[Cu_Halo<N_DIM>(I,J,K)],
+                s_u[Cu_Halo<N_DIM>(I+1,J,K)]
+            );
+            ufloat_t uy = FinDiff_D1_Central(
+                dx_L,
+                s_u[Cu_Halo<N_DIM>(I,J-1,K)],
+                s_u[Cu_Halo<N_DIM>(I,J,K)],
+                s_u[Cu_Halo<N_DIM>(I,J+1,K)]
+            );
+            
+            ufloat_t vx = FinDiff_D1_Central(
+                dx_L,
+                s_v[Cu_Halo<N_DIM>(I-1,J,K)],
+                s_v[Cu_Halo<N_DIM>(I,J,K)],
+                s_v[Cu_Halo<N_DIM>(I+1,J,K)]
+            );
+            ufloat_t vy = FinDiff_D1_Central(
+                dx_L,
+                s_v[Cu_Halo<N_DIM>(I,J-1,K)],
+                s_v[Cu_Halo<N_DIM>(I,J,K)],
+                s_v[Cu_Halo<N_DIM>(I,J+1,K)]
+            );
+            ufloat_t uz = static_cast<ufloat_t>(0.0);
+            ufloat_t vz = static_cast<ufloat_t>(0.0);
+            ufloat_t wx = static_cast<ufloat_t>(0.0);
+            ufloat_t wy = static_cast<ufloat_t>(0.0);
+            ufloat_t wz = static_cast<ufloat_t>(0.0);
+            
+            if (N_DIM==3)
+            {
+                uz = FinDiff_D1_Central(
+                    dx_L,
+                    s_u[Cu_Halo<N_DIM>(I,J,K-1)],
+                    s_u[Cu_Halo<N_DIM>(I,J,K)],
+                    s_u[Cu_Halo<N_DIM>(I,J,K+1)]
+                );
+                vz = FinDiff_D1_Central(
+                    dx_L,
+                    s_v[Cu_Halo<N_DIM>(I,J,K-1)],
+                    s_v[Cu_Halo<N_DIM>(I,J,K)],
+                    s_v[Cu_Halo<N_DIM>(I,J,K+1)]
+                );
+                wx = FinDiff_D1_Central(
+                    dx_L,
+                    s_w[Cu_Halo<N_DIM>(I-1,J,K)],
+                    s_w[Cu_Halo<N_DIM>(I,J,K)],
+                    s_w[Cu_Halo<N_DIM>(I+1,J,K)]
+                );
+                wy = FinDiff_D1_Central(
+                    dx_L,
+                    s_w[Cu_Halo<N_DIM>(I,J-1,K)],
+                    s_w[Cu_Halo<N_DIM>(I,J,K)],
+                    s_w[Cu_Halo<N_DIM>(I,J+1,K)]
+                );
+                wz = FinDiff_D1_Central(
+                    dx_L,
+                    s_w[Cu_Halo<N_DIM>(I,J,K-1)],
+                    s_w[Cu_Halo<N_DIM>(I,J,K)],
+                    s_w[Cu_Halo<N_DIM>(I,J,K+1)]
+                );
+            }
+            
+            // Store macroscopic properties.
+            ufloat_t nu_SGS = SubgridScaleModel<ufloat_t,N_DIM,LM>(
+                dx_L,
+                ux,uy,uz,
+                vx,vy,vz,
+                wx,wy,wz
+            );
+            //printf("%17.15f\n", nu_SGS);
+            cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+4)*n_maxcells] = nu_SGS;
+        }
+    }
+}
+
+template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeEddyViscosity(int i_dev, int L)
 {
-    if (mesh->n_ids[i_dev][L] > 0)
+    if (mesh->n_ids[i_dev][L] > 0 && LP->LM != LESModel::None)
     {
         Cu_ComputeEddyViscosity<ufloat_t,ufloat_g_t,AP,LP><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
-            mesh->n_ids[i_dev][L], n_maxcells, n_maxcblocks, dxf_vec[L],
+            mesh->n_ids[i_dev][L], n_maxcells, dxf_vec[L],
             &mesh->c_id_set[i_dev][L*n_maxcblocks],
             mesh->c_cells_f_F[i_dev],
             mesh->c_cblock_ID_mask[i_dev], mesh->c_cblock_ID_nbr[i_dev], mesh->c_cblock_ID_nbr_child[i_dev]

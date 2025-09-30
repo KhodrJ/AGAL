@@ -32,8 +32,8 @@ void Cu_ComputeRefCriteria_OLD
     const int MAX_LEVELS_INTERIOR
 )
 {
-    constexpr int VS = LP->VS;
-    constexpr int CM = LP->CM;
+    constexpr VelocitySet VS = LP->VS;
+    constexpr CollisionOperator CM = LP->CM;
     constexpr int N_DIM = AP->N_DIM;
     constexpr int N_QUADS = AP->N_QUADS;
     constexpr int N_Q_max = AP->N_Q_max;
@@ -100,9 +100,9 @@ void Cu_ComputeRefCriteria_OLD
                 //
                 //
                 //
-if (VS == VS_D2Q9)
+if (VS == VelocitySet::D2Q9)
 {
-                if (CM == CM_BGK)
+                if (CM == CollisionOperator::BGK)
                 {
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; 
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 3*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; 
@@ -121,9 +121,9 @@ if (VS == VS_D2Q9)
                     v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 7*n_maxcells] / rho_kap;
                 }
 }
-if (VS == VS_D3Q19)
+if (VS == VelocitySet::D3Q19)
 {
-                if (CM == CM_BGK)
+                if (CM == CollisionOperator::BGK)
                 {
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;
@@ -153,9 +153,9 @@ if (VS == VS_D3Q19)
                     v_kap = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 8*n_maxcells] / rho_kap;
                 }
 }
-if (VS == VS_D3Q27)
+if (VS == VelocitySet::D3Q27)
 {
-                if (CM == CM_BGK)
+                if (CM == CollisionOperator::BGK)
                 {
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 0*n_maxcells]; rho_kap += f_i; u_kap = u_kap; v_kap = v_kap; w_kap = w_kap;
                     f_i = cells_f_F[i_kap_b*M_CBLOCK + i_Q*M_TBLOCK + (size_t)threadIdx.x + 2*n_maxcells]; rho_kap += f_i; u_kap = u_kap +f_i; v_kap = v_kap; w_kap = w_kap;

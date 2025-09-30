@@ -84,7 +84,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
             // Invoke refinement and coarsening routine.
             if (MAX_LEVELS > 1 && L < MAX_LEVELS_WALL-1)
                 M_RefineAndCoarsenBlocks(0);
-            M_UpdateMasks_Vis(0,L);
+            
+            // Update children of solid blocks to ensure consistent propagation.
+            if (geometry_init)
+                M_UpdateSolidChildren(0,L);
             
             solver->S_SetIC(0,L);
             cudaDeviceSynchronize();
@@ -182,7 +185,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineWithSolution(int i, int iter_s
     // | Solution-based refinement calls.
     // o====================================================================================
     
-    if (N_PROBE_AVE == 0 || (N_PROBE_AVE==1 && (i+1) <= N_PROBE_AVE_START))
+    if (MAX_LEVELS_INTERIOR > 1 && (N_PROBE_AVE == 0 || (N_PROBE_AVE==1 && (i+1) <= N_PROBE_AVE_START)))
     {
         // Output to refinement time counter (includes grid hierarchy sizes of last iteration).
         std::cout << "Refining... " << i+1 << ", t = " << (i+1)*dxf_vec[0] << std::endl;

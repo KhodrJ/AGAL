@@ -33,6 +33,8 @@ bool Cu_RefineRegion
     //return   nbr_1==-2;
     
     return nbr_5<0;
+    //double D = (double)(1<<L);
+    //return z > 1.0 - 0.2/D;
     
     //return false;
 }

@@ -44,7 +44,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init()
 //     S_LES_P3                               = params_dbl["S_LES_P3"]; // TODO
     
     // BGK.
-    if (CM==CM_BGK)
+    if (CM==CollisionOperator::BGK)
     {
         tau_vec = new ufloat_t[MAX_LEVELS];
         for (int L = 0; L < MAX_LEVELS; L++)
@@ -52,7 +52,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init()
     }
     
     // MRT.
-    if (CM==CM_MRT)
+    if (CM==CollisionOperator::MRT)
     {
         tau_vec = new ufloat_t[6*MAX_LEVELS];
         s_vec = new double[6];
@@ -93,7 +93,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Init()
     // Update modes of interpolation and averaging in advance routine.
     V_INTERP_ADVANCE = V_INTERP_INTERFACE;
     V_AVERAGE_ADVANCE = V_AVERAGE_INTERFACE;
-    if (IM != IM_LINEAR) // If not using linear interpolation, the whole block of cells needs to be updated from fine grid.
+    if (IM != InterpOrder::Linear) // If not using linear interpolation, the whole block of cells needs to be updated from fine grid.
         V_AVERAGE_ADVANCE = V_AVERAGE_BLOCK;
     
     std::cout << "Initialized solver (LBM) object..." << std::endl;
