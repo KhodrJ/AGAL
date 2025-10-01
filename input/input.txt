@@ -16,7 +16,7 @@ N_ITER_TOTAL                    100*Nx
 G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
-G_VIS_TREE                      1
+G_VIS_TREE                      0
 G_BIN_APPROACH                  1
 G_BIN_DENSITY                   16
 G_BIN_LEVELS                    10

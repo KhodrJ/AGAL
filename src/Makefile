@@ -16,6 +16,7 @@ EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
 #VTK_VER = 9.2
 #VTK_INC ?= ../lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
 #VTK_LIB ?= ../lib/vtk-$(VTK_VER)/lib64/
+#|
 # I used this for the Trillium cluster.
 #VTK_VER = 9.5
 #VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)

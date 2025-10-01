@@ -50,7 +50,6 @@
 #include "vtkDoubleArray.h"
 #include "vtkNew.h"
 #include "vtkOverlappingAMR.h"
-#include "vtkNonOverlappingAMR.h"
 #include "vtkPointData.h"
 #include "vtkPoints.h"
 #include "vtkUniformGrid.h"
