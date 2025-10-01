@@ -194,18 +194,20 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S3(int i_dev)
     if (n_solidb > 0)
     {
         // Allocate memory for the solid cell linkage data.
-        cells_ID_mask_b[i_dev] = new int[n_maxcells_b*N_Q_max];
-        cells_f_X_b[i_dev] = new ufloat_g_t[n_maxcells_b*N_Q_max];
+        if (geometry->bins->make_links == 1)
+        {
+            cells_ID_mask_b[i_dev] = new int[n_maxcells_b*N_Q_max];
+            cells_f_X_b[i_dev] = new ufloat_g_t[n_maxcells_b*N_Q_max];
+            gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask_b[i_dev], n_maxcells_b*N_Q_max*sizeof(int)) );
+            gpuErrchk( cudaMalloc((void **)&c_cells_f_X_b[i_dev], n_maxcells_b*N_Q_max*sizeof(ufloat_g_t)) );
+        }
         cblock_ID_onb_solid[i_dev] = new int[n_maxcblocks];
-        gpuErrchk( cudaMalloc((void **)&c_cells_ID_mask_b[i_dev], n_maxcells_b*N_Q_max*sizeof(int)) );
-        gpuErrchk( cudaMalloc((void **)&c_cells_f_X_b[i_dev], n_maxcells_b*N_Q_max*sizeof(ufloat_g_t)) );
         gpuErrchk( cudaMalloc((void **)&c_cblock_ID_onb_solid[i_dev], n_maxcblocks*sizeof(int)) );
-        gpuErrchk( cudaMalloc((void **)&c_cblock_ID_face[i_dev], n_solidb*N_Q_max*sizeof(int)) );
         
         // Reset some arrays. Make a device pointer to the new cblock_ID_onb_solid array.
+        if (geometry->bins->make_links == 1)
+            Cu_ResetToValue<<<(M_BLOCK+(n_maxcells_b*N_Q_max)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells_b*N_Q_max, c_cells_f_X_b[i_dev], static_cast<ufloat_g_t>(-1.0));
         Cu_ResetToValue<<<(M_BLOCK+n_maxcblocks-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcblocks, c_cblock_ID_onb_solid[i_dev], -1);
-        Cu_ResetToValue<<<(M_BLOCK+(n_solidb*N_Q_max)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_solidb*N_Q_max, c_cblock_ID_face[i_dev], -1);
-        Cu_ResetToValue<<<(M_BLOCK+(n_maxcells_b*N_Q_max)-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(n_maxcells_b*N_Q_max, c_cells_f_X_b[i_dev], static_cast<ufloat_g_t>(-1.0));
         thrust::device_ptr<int> *c_cblock_ID_onb_solid_dptr = new thrust::device_ptr<int>[N_DEV];
         c_cblock_ID_onb_solid_dptr[i_dev] = thrust::device_pointer_cast(c_cblock_ID_onb_solid[i_dev]);
         
@@ -246,11 +248,14 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateSolidChildren(int i_dev, int L)
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", UpdateSolidChildren"; toc_simple("",T_US,1);
         
-        Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
-            c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
-        );
-        cudaDeviceSynchronize();
+        if (geometry->G_VIS_TREE==1)
+        {
+            Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+                n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
+                c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
+            );
+            cudaDeviceSynchronize();
+        }
     }
     
     return 0;
@@ -259,7 +264,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateSolidChildren(int i_dev, int L)
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_LinkLengthComputation(int i_dev, int L)
 {
-    if (n_solidb > 0 && n_ids[i_dev][L] > 0)
+    if (n_solidb > 0 && n_ids[i_dev][L] > 0 && geometry->bins->make_links==1)
     {
         cudaDeviceSynchronize();
         tic_simple("");

@@ -105,10 +105,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         }
         
         // Cell-blocks near the wall construct their list of faces.
-        if (geometry_init)
+        if (geometry_init && geometry->bins->make_links==1)
         {
-            //for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-            //    M_LinkLengthComputation(0,L);
+            for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+                M_LinkLengthComputation(0,L);
         }
         
         // Freeze mesh: these new near-wall cells are not eligible for coarsening.

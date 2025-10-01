@@ -100,6 +100,7 @@ class Geometry
                                                                           [0: bounding-box, 1: intersection].
     int             G_BIN_LEVELS            = 1;                     ///< Number of bin levels to use.
     int             G_BIN_SPEC              = 1;                     ///< Number of bins (2+G_BIN_SPEC)^D that defines maximum length of a face.
+    int             G_VIS_TREE              = 0;                     ///< Indicates that the voxelization tree is to be visualized.
     std::string     input_dir;                                       ///< Input directory.
     std::string     output_dir;                                      ///< Output directory.
     std::string     G_FILENAME;

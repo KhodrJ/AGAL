@@ -16,10 +16,12 @@ N_ITER_TOTAL                    100*Nx
 G_LOADTYPE                      0
 G_PRINT                         0
 G_NEAR_WALL_DISTANCE            0.05
+G_VIS_TREE                      1
 G_BIN_APPROACH                  1
 G_BIN_DENSITY                   16
 G_BIN_LEVELS                    10
 G_BIN_SPEC                      2
+G_BIN_MAKE_LINKS                0
 G_FILENAME                      bunny_ascii.stl
 
 # SOLVER

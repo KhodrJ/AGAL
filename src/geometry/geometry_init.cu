@@ -24,6 +24,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init()
     G_BIN_DENSITY           = parser->params_int["G_BIN_DENSITY"];
     G_BIN_LEVELS            = parser->params_int["G_BIN_LEVELS"];
     G_BIN_SPEC              = parser->params_int["G_BIN_SPEC"];
+    G_VIS_TREE              = parser->params_int["G_VIS_TREE"];
     MAX_LEVELS_WALL         = parser->params_int["MAX_LEVELS_WALL"];
     
     // Corrections.

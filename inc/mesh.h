@@ -478,7 +478,7 @@ class Mesh
     size_t          free_t = 0;                             ///< Number of free bytes in GPU memory.
     size_t          total_t = 0;                            ///< Number of total bytes in GPU memory.
     long int        N_bytes_pc;                             ///< Number of bytes required per cell.
-    double          M_FRAC                  = 0.85;         ///< Fraction of free memory to use.
+    double          M_FRAC                  = 0.975;        ///< Fraction of free memory to use.
     cudaStream_t    *streams = new cudaStream_t[N_DEV];     ///< CUDA streams employed by mesh.
 
     //! GPU counterpart of @ref cells_ID_mask.

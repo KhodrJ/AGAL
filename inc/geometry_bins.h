@@ -44,6 +44,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
     int n_bin_levels = 1;
     int n_bin_spec;
     int n_max_levels_wall = 1;
+    int make_links = 0;
     int Nx;
     int Ny;
     int Nz;
@@ -118,6 +119,7 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         n_bin_approach = geometry->parser->params_int["G_BIN_APPROACH"];
         n_bin_levels = geometry->parser->params_int["G_BIN_LEVELS"];
         n_bin_spec = geometry->parser->params_int["G_BIN_SPEC"];
+        make_links = geometry->parser->params_int["G_BIN_MAKE_LINKS"];
         n_max_levels_wall = geometry->parser->params_int["MAX_LEVELS_WALL"];
         
         // Derived parameters.
@@ -194,9 +196,12 @@ class Geometry<ufloat_t,ufloat_g_t,AP>::Bins
         }
         
         // Also, make the MD bins at the specified wall level.
-        n_bin_level_MD = std::min(n_max_levels_wall,n_bin_levels)-1;
-        n_bin_density_MD = n_bin_density[n_bin_level_MD];
-        G_MakeBinsGPU_MD(n_bin_level_MD);
+        if (make_links)
+        {
+            n_bin_level_MD = std::min(n_max_levels_wall,n_bin_levels)-1;
+            n_bin_density_MD = n_bin_density[n_bin_level_MD];
+            G_MakeBinsGPU_MD(n_bin_level_MD);
+        }
         
         std::cout << "[-] Finished making bins object." << std::endl << std::endl;
     }
