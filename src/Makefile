@@ -1,28 +1,25 @@
 # Library paths.
-VTK_VER = 9.5
 EIG_VER = 3.4.0
 #|
-#Use this for personal installation.
-#VTK_INC ?= /usr/local/include/vtk-$(VTK_VER)
-#VTK_LIB ?= /usr/local/lib/
-#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
-#|
-# I used this on the Mist cluster.
-#VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
-#VTK_LIB ?= ../lib/vtk/vtk-$(VTK_VER)/lib64/
-#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
-#|
-# I used this on the Narval cluster.
-#VTK_INC ?= /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/vtk/9.1.0/include/vtk-9.1/
-#VTK_LIB ?= /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/vtk/9.1.0/lib/
-#EIG_INC ?= ../lib/eigen/eigen-$(EIG_VER)/
-#|
-# I used this for my personal laptop build.
-#VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
-#VTK_LIB ?= ../lib/vtk/vtk-$(VTK_VER)/lib64/
+# I used this for personal installation (970M, Debian).
+VTK_VER = 9.5
 VTK_INC ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)/
 VTK_LIB ?= ../../AGAL-latest/lib/vtk-$(VTK_VER)/lib/
 EIG_INC ?= ../../AGAL-latest/lib/eigen/eigen-$(EIG_VER)/
+#|
+# I used this for personal computer (RTX 4070, WSL).
+#VTK_VER = 9.4
+#VTK_INC ?= ../lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk-$(VTK_VER)/lib/
+#|
+# I used this for the Narval cluster.
+#VTK_VER = 9.2
+#VTK_INC ?= ../lib/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk-$(VTK_VER)/lib64/
+# I used this for the Trillium cluster.
+#VTK_VER = 9.5
+#VTK_INC ?= ../lib/vtk/vtk-$(VTK_VER)/include/vtk-$(VTK_VER)
+#VTK_LIB ?= ../lib/vtk/vtk-$(VTK_VER)/lib64/
 LIBS = -lcuda\
        -lgomp\
        -lvtkCommonCore-$(VTK_VER) \
