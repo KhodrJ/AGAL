@@ -32,11 +32,13 @@ bool Cu_RefineRegion
     // Uncomment for refinement near the outlet.
     //return   nbr_1==-2;
     
-    return nbr_5<0;
-    //double D = (double)(1<<L);
+//     double D = (double)(1<<L);
+//     bool near_top = nbr_5;
+//     bool near_sides = z > 1.0-0.05/D && ((nbr_1<0) || (nbr_2<0) || (nbr_3<0) || (nbr_4<0));
+//     return near_top || near_sides;
     //return z > 1.0 - 0.2/D;
     
-    //return false;
+    return false;
 }
 
 // o====================================================================================
@@ -52,7 +54,7 @@ void Cu_ComputeIC(ufloat_t &rho, ufloat_t &u, ufloat_t &v, ufloat_t &w, const uf
     // --- HERE ---
     
     rho = (ufloat_t)1.0;
-    u = (ufloat_t)0.0;
+    u = (ufloat_t)0.05;
     v = (ufloat_t)0.0;
     w = (ufloat_t)0.0;
 }
@@ -72,11 +74,7 @@ ufloat_t Cu_ImposeBC
     // --- HERE ---
     // Change the boundary conditions conditions here.
     // Uncomment blocks below for presets like lid-driven cavity and flow past cylinders.
-    // --- HERE ---
-    
-    
-    
-    
+    // --- HERE ---  
     
     // LDC (2D).
 //     if (nbr_id == -4)
@@ -99,24 +97,24 @@ ufloat_t Cu_ImposeBC
 //     }
     
     // LDC (3D).
-    if (nbr_id == -6)
-    {
-        ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
-        return f - (ufloat_t)(2.0)*wp*cdotu;
-    }
-    
-    // FPSC (3D).
-//     if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
+//     if (nbr_id == -6)
 //     {
 //         ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
 //         return f - (ufloat_t)(2.0)*wp*cdotu;
 //     }
-//     if (nbr_id == -2)
-//     {
-//         ufloat_t cdotu = cxp*u + cyp*v + czp*w;
-//         cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
-//         return -f + (ufloat_t)(2.0)*wp*cdotu;
-//     }
+    
+    // FPSC (3D).
+    if (nbr_id == -1 || nbr_id == -3 || nbr_id == -4 || nbr_id == -5 || nbr_id == -6)
+    {
+        ufloat_t cdotu = (ufloat_t)(3.0)*( cxp*(ufloat_t)(0.05) );
+        return f - (ufloat_t)(2.0)*wp*cdotu;
+    }
+    if (nbr_id == -2)
+    {
+        ufloat_t cdotu = cxp*u + cyp*v + czp*w;
+        cdotu = (ufloat_t)(1.0) + (ufloat_t)(4.5)*cdotu*cdotu - (ufloat_t)(1.5)*(u*u + v*v + w*w);
+        return -f + (ufloat_t)(2.0)*wp*cdotu;
+    }
 
 
 

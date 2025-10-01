@@ -62,7 +62,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsCPU(int L)
             {
                 // Load face vertices from coordinate list.
                 vec3<ufloat_g_t> v1, v2, v3;
-                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(j, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(j, geom_f_face_Xt, NVDP, n_faces_a, v1, v2, v3);
                 
                 if (N_DIM==2)
                 {

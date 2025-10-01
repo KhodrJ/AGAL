@@ -52,13 +52,16 @@ constexpr ArgsPack AP2D __attribute__((unused)) = ArgsPack(2,M_BLOCK_C,1,1,M_LBL
 constexpr ArgsPack AP3D __attribute__((unused)) = ArgsPack(3,M_BLOCK_C,1,1,M_LBLOCK_C,M_LWBLOCK_C,2048);
 
 // Define some LBM argument packs for the tests.
-constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VelocitySet::D2Q9, CollisionOperator::BGK, InterpOrder::Cubic, LESModel::WALE);
-constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q19, CollisionOperator::BGK, InterpOrder::Linear, LESModel::WALE);
-constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q27, CollisionOperator::BGK, InterpOrder::Linear, LESModel::WALE);
+constexpr LBMPack LP2D __attribute__((unused)) = LBMPack(&AP2D, VelocitySet::D2Q9, CollisionOperator::BGK, InterpOrder::Cubic, LESModel::None);
+constexpr LBMPack LP3D_1 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q19, CollisionOperator::BGK, InterpOrder::Linear, LESModel::None);
+constexpr LBMPack LP3D_2 __attribute__((unused)) = LBMPack(&AP3D, VelocitySet::D3Q27, CollisionOperator::BGK, InterpOrder::Linear, LESModel::None);
 
 // Typedefs and chosen packs.
 typedef float REAL_s;
 typedef float REAL_g;
+
+// Am I using geometry?
+bool using_geometry = true;
 
 #ifdef USED2Q9
     constexpr ArgsPack APc = AP2D;
@@ -86,33 +89,37 @@ int main(int argc, char *argv[])
     Parser parser(input_file_directory);
     
     // Create a new geometry and import from input folder.
-//     Geometry<REAL_s,REAL_g,&APc> geometry(&parser);
-//     if (geometry.G_LOADTYPE == static_cast<int>(LoadType::STL))
-//         geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
-//     else
-//     {
-//         geometry.G_ImportBoundariesFromTextFile();
-//         geometry.G_Convert_IndexListsToCoordList();
-//     }
-//     geometry.G_Init_Arrays_CoordsList_CPU();
-//     if (geometry.G_PRINT)
-//         geometry.G_PrintSTL();
-//     geometry.G_InitBins(BinMake::GPU,0);
+    Geometry<REAL_s,REAL_g,&APc> geometry(&parser);
+    if (using_geometry)
+    {
+        if (geometry.G_LOADTYPE == static_cast<int>(LoadType::STL))
+            geometry.G_ImportSTL_ASCII(geometry.G_FILENAME);
+        else
+        {
+            geometry.G_ImportBoundariesFromTextFile();
+            geometry.G_Convert_IndexListsToCoordList();
+        }
+        geometry.G_Init_Arrays_CoordsList_CPU();
+        if (geometry.G_PRINT)
+            geometry.G_PrintSTL();
+        geometry.G_InitBins(BinMake::GPU,0);
+    }
     
     // Create a mesh.
-    const int N_U = LPc.N_Q + (APc.N_DIM+1+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity + 1 eddy viscosity.
-    //const int N_U = 1;
+    //const int N_U = LPc.N_Q + (APc.N_DIM+1+1); // Size of solution field: N_Q DDFs + 1 density + N_DIM velocity + 1 eddy viscosity.
+    const int N_U = 1;
     Mesh<REAL_s,REAL_g,&APc> mesh(&parser, N_U);
-//     mesh.M_AddGeometry(&geometry);
+    if (using_geometry)
+        mesh.M_AddGeometry(&geometry);
     
     // Create a solver.
-    Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh);
-    mesh.M_AddSolver(&solver);
+    //Solver_LBM<REAL_s,REAL_g,&APc,&LPc> solver(&mesh);
+    //mesh.M_AddSolver(&solver);
     
     // Solver loop (includes rendering and printing).
-    mesh.M_AdvanceLoop();
-    //mesh.M_Advance_RefineNearWall();
-    //mesh.M_Advance_PrintData(0,0);
+    //mesh.M_AdvanceLoop();
+    mesh.M_Advance_RefineNearWall();
+    mesh.M_Advance_PrintData(0,0);
     
     return 0;
 }

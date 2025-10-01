@@ -26,8 +26,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
 {
     // New variables.
     vtkNew<vtkOverlappingAMR> data;
-    int blocks_per_level[N_PRINT_LEVELS_LEGACY];
-    for (int L = 0; L < N_PRINT_LEVELS_LEGACY; L++)
+    int blocks_per_level[N_PRINT_LEVELS_VTHB];
+    for (int L = 0; L < N_PRINT_LEVELS_VTHB; L++)
         blocks_per_level[L] = n_ids[i_dev][L];
     double global_origin[3] = {0,0,0};
     
@@ -35,7 +35,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
     int n_levels_nonzero_blocks = 1;
     if (MAX_LEVELS>1)
     {
-        for (int L = 1; L < N_PRINT_LEVELS_LEGACY; L++)
+        for (int L = 1; L < N_PRINT_LEVELS_VTHB; L++)
         {
             if (n_ids[i_dev][L] > 0)
                 n_levels_nonzero_blocks++;
@@ -54,7 +54,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
     double u_kap[M_TBLOCK*(7+1)]; for (int i = 0; i < M_TBLOCK*(7+1); i++) u_kap[i] = 0.0;
     
     // For each level, insert all existing blocks.
-    for (int L = 0; L < std::min(n_levels_nonzero_blocks, N_PRINT_LEVELS_LEGACY); L++)
+    for (int L = 0; L < std::min(n_levels_nonzero_blocks, N_PRINT_LEVELS_VTHB); L++)
     {
         // Construct spacing array for level L.
         double dxf_L = (double)dxf_vec[L];
@@ -119,6 +119,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
             data_kap_w->SetName("Vorticity");
             data_kap_w->SetNumberOfComponents(3);
             data_kap_w->SetNumberOfTuples(M_CBLOCK);
+                // Q-Criterion.
+            vtkNew<vtkDoubleArray> data_kap_Q;
+            data_kap_Q->SetName("Q-Criterion");
+            data_kap_Q->SetNumberOfComponents(1);
+            data_kap_Q->SetNumberOfTuples(M_CBLOCK);
             
             
             // Compute debug properties.
@@ -194,11 +199,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
                     }
                     
                     // Vorticity.
-                    
                     data_kap_w->SetTuple3(i_global, 
                         u_kap[kap_i + 4*M_TBLOCK],
                         u_kap[kap_i + 5*M_TBLOCK],
                         u_kap[kap_i + 6*M_TBLOCK]
+                    );
+                    
+                    // Q-Criterion.
+                    data_kap_Q->SetTuple1(i_global,
+                        u_kap[kap_i + 7*M_TBLOCK]
                     );
                 }
             }
@@ -209,6 +218,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_VTHB(int i_dev, int iter)
             grid_kap->GetCellData()->AddArray(data_kap_sc);
             grid_kap->GetCellData()->AddArray(data_kap_v);
             grid_kap->GetCellData()->AddArray(data_kap_w);
+            grid_kap->GetCellData()->AddArray(data_kap_Q);
             
             // Create the vtkAMRBox and insert it into AMR object.
             vtkAMRBox box_kap(origin_kap, n_dim_lattice, h_L_kap, data->GetOrigin(), data->GetGridDescription());

@@ -84,7 +84,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RetrieveFromGPU()
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u)
 {
-    solver->S_ComputeProperties(i_dev, i_Q, i_kap, dx_L, out_u);
+    if (N_Q > 1)
+        solver->S_ComputeProperties(i_dev, i_Q, i_kap, dx_L, out_u);
 
     return 0;
 }
@@ -92,7 +93,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeProperties(int i_dev, int i_Q, int i_
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeOutputProperties(int i_dev, int i_Q, int i_kap, ufloat_t dx_L, double *out_u)
 {
-    solver->S_ComputeOutputProperties(i_dev, i_Q, i_kap, dx_L, out_u);
+    if (N_Q > 1)
+        solver->S_ComputeOutputProperties(i_dev, i_Q, i_kap, dx_L, out_u);
     
     return 0;
 }
@@ -100,7 +102,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeOutputProperties(int i_dev, int i_Q, 
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_ComputeForces(int i_dev, int L)
 {
-    solver->S_ComputeForces(i_dev, L);
+    if (N_Q > 1)
+        solver->S_ComputeForces(i_dev, L);
     
     return 0;
 }

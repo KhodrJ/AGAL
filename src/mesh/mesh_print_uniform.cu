@@ -15,11 +15,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_FillBlock(int i_dev, int *Is, int i_kap, int
     
     if (child_0 >= 0 && L+1 < N_PRINT_LEVELS) // Has children, keep traversing.
     {
-// #if (N_DIM==3)
         for (int xk = 0; xk < (N_DIM==3?2:1); xk++)
-// #else
-//         int xk = 0;
-// #endif
         {
             for (int xj = 0; xj < 2; xj++)
             {
@@ -36,11 +32,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_FillBlock(int i_dev, int *Is, int i_kap, int
     }
     else // No children, print here.
     {
-// #if (N_DIM==3)
         for (int k_q = 0; k_q < (N_DIM==3?Nqx:1); k_q++)
-// #else
-//         int k_q = 0;
-// #endif
         {
             for (int j_q = 0; j_q < Nqx; j_q++)
             {
@@ -52,11 +44,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_FillBlock(int i_dev, int *Is, int i_kap, int
                     M_ComputeProperties(i_dev, i_Q, i_kap, dxf_vec[L], out_u_);
                     
                     // Modify the cell values in the region defined by the leaf block.
-// #if (N_DIM==3)
                     for (int k = 0; k < (N_DIM==3?4:1); k++)
-// #else
-//                     int k = 0;
-// #endif
                     {
                         for (int j = 0; j < 4; j++)
                         {
@@ -72,11 +60,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_FillBlock(int i_dev, int *Is, int i_kap, int
                                     Kp += mult_f[l]*4*Nqx*Is[l + 2*N_PRINT_LEVELS];
                                 }
                                 
-// #if (N_DIM==3)
                                 for (int kk = 0; kk < (N_DIM==3?mult_f[L]:1); kk++)
-// #else
-//                                 int kk = 0;
-// #endif
                                 {
                                     for (int jj = 0; jj < mult_f[L]; jj++)
                                     {
@@ -112,7 +96,7 @@ template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP>
 int Mesh<ufloat_t,ufloat_g_t,AP>::M_RenderAndPrint_Uniform(int i_dev, int iter)
 {
     // Parameters.
-        // Domain extents (w.r.t root grid, I_min <= I < I_max).
+    // Domain extents (w.r.t root grid, I_min <= I < I_max).
     int I_min = VOL_I_MIN;
     int I_max = VOL_I_MAX;
     int J_min = VOL_J_MIN;
@@ -144,13 +128,15 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RenderAndPrint_Uniform(int i_dev, int iter)
     Nxi_f[0] = (I_max-I_min)*4*Nqx;
     Nxi_f[1] = (J_max-J_min)*4*Nqx;
     Nxi_f[2] = (K_max-K_min)*4*Nqx; if (N_DIM==2) Nxi_f[2] = 1;
-    //for (int d = 0; d < 3; d++)
-    //    Nxi_f[d] = Nxi[d];
     for (int d = 0; d < N_DIM; d++)
         Nxi_f[d] *= mult;
     int vol = Nxi_f[0]*Nxi_f[1]*Nxi_f[2];
         // Cell data arrays.
-    int n_data = 1+3+1+1;
+    int n_data = 
+        1 + // Density.
+        3 + // Velocity.
+        1 + // Level.
+        1;  // Cell-block Id.
     double *tmp_data = new double[n_data*vol];
     double *tmp_data_b = new double[n_data*vol];
     for (long int p = 0; p < n_data*vol; p++)
@@ -170,7 +156,6 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RenderAndPrint_Uniform(int i_dev, int iter)
     //#pragma omp parallel for
     for (int kap = 0; kap < n_ids[i_dev][0]; kap++)
     {
-        //std::cout << "Doing block: " << kap << std::endl;
         int Is[N_PRINT_LEVELS*3];
         for (int Ld = 0; Ld < N_PRINT_LEVELS*3; Ld++)
             Is[Ld] = 0;

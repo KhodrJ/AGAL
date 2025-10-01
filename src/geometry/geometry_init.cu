@@ -88,13 +88,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
         G_RefineFaces_Length();
         
         std::cout << "[-] Initializing the CPU coords list array..." << std::endl;
-        geom_f_face_X = new ufloat_g_t[16*n_faces_a];
-        geom_f_face_Xt = new ufloat_g_t[16*n_faces_a];
+        geom_f_face_X = new ufloat_g_t[NVDP*n_faces_a];
+        geom_f_face_Xt = new ufloat_g_t[NVDP*n_faces_a];
         
         for (int j = 0; j < n_faces_a; j++)
         {
-            //for (int p = 0; p < 16; p++) geom_f_face_X[j + p*n_faces_a] = 0.0;
-            for (int p = 0; p < 16; p++) geom_f_face_Xt[p + j*16] = 0.0;
+            // Reset array data to zero.
+            for (int p = 0; p < NVDP; p++) geom_f_face_X[j + p*n_faces_a] = static_cast<ufloat_g_t>(0.0);
+            for (int p = 0; p < NVDP; p++) geom_f_face_Xt[p + j*NVDP] = static_cast<ufloat_g_t>(0.0);
+            
             if (j < n_faces)
             {
                 // Load vertices from vectors.
@@ -135,85 +137,43 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::G_Init_Arrays_CoordsList_CPU()
                 v3 = v3 + UnitV(v3-vc)*eps;
                 
                 // Write vertices.
-//                 geom_f_face_X[j + 0*n_faces_a] = v1.x;
-//                 geom_f_face_X[j + 1*n_faces_a] = v1.y;
-//                 geom_f_face_X[j + 2*n_faces_a] = v1.z;
-//                 geom_f_face_X[j + 3*n_faces_a] = v2.x;
-//                 geom_f_face_X[j + 4*n_faces_a] = v2.y;
-//                 geom_f_face_X[j + 5*n_faces_a] = v2.z;
-//                 geom_f_face_X[j + 6*n_faces_a] = v3.x;
-//                 geom_f_face_X[j + 7*n_faces_a] = v3.y;
-//                 geom_f_face_X[j + 8*n_faces_a] = v3.z;
+                geom_f_face_X[j + 0*n_faces_a] = v1.x;
+                geom_f_face_X[j + 1*n_faces_a] = v1.y;
+                geom_f_face_X[j + 2*n_faces_a] = v1.z;
+                geom_f_face_X[j + 3*n_faces_a] = v2.x;
+                geom_f_face_X[j + 4*n_faces_a] = v2.y;
+                geom_f_face_X[j + 5*n_faces_a] = v2.z;
+                geom_f_face_X[j + 6*n_faces_a] = v3.x;
+                geom_f_face_X[j + 7*n_faces_a] = v3.y;
+                geom_f_face_X[j + 8*n_faces_a] = v3.z;
                 //
-                geom_f_face_Xt[0 + j*16] = v1.x;
-                geom_f_face_Xt[1 + j*16] = v1.y;
-                geom_f_face_Xt[2 + j*16] = v1.z;
-                geom_f_face_Xt[3 + j*16] = v2.x;
-                geom_f_face_Xt[4 + j*16] = v2.y;
-                geom_f_face_Xt[5 + j*16] = v2.z;
-                geom_f_face_Xt[6 + j*16] = v3.x;
-                geom_f_face_Xt[7 + j*16] = v3.y;
-                geom_f_face_Xt[8 + j*16] = v3.z;
+                geom_f_face_Xt[0 + j*NVDP] = v1.x;
+                geom_f_face_Xt[1 + j*NVDP] = v1.y;
+                geom_f_face_Xt[2 + j*NVDP] = v1.z;
+                geom_f_face_Xt[3 + j*NVDP] = v2.x;
+                geom_f_face_Xt[4 + j*NVDP] = v2.y;
+                geom_f_face_Xt[5 + j*NVDP] = v2.z;
+                geom_f_face_Xt[6 + j*NVDP] = v3.x;
+                geom_f_face_Xt[7 + j*NVDP] = v3.y;
+                geom_f_face_Xt[8 + j*NVDP] = v3.z;
                 
                 // Write normals.
-//                 geom_f_face_X[j + 9*n_faces_a] = n.x;
-//                 geom_f_face_X[j + 10*n_faces_a] = n.y;
-//                 geom_f_face_X[j + 11*n_faces_a] = n.z;
+                geom_f_face_X[j + 9*n_faces_a] = n.x;
+                geom_f_face_X[j + 10*n_faces_a] = n.y;
+                geom_f_face_X[j + 11*n_faces_a] = n.z;
                 //
-                geom_f_face_Xt[9 + j*16] = n.x;
-                geom_f_face_Xt[10 + j*16] = n.y;
-                geom_f_face_Xt[11 + j*16] = n.z;
-                
-                // Write edges.
-//                 geom_f_face_X[j + 12*n_faces_a] = ex1;
-//                 geom_f_face_X[j + 13*n_faces_a] = ey1;
-//                 geom_f_face_X[j + 14*n_faces_a] = ez1;
-//                 geom_f_face_X[j + 15*n_faces_a] = ex2;
-//                 geom_f_face_X[j + 16*n_faces_a] = ey2;
-//                 geom_f_face_X[j + 17*n_faces_a] = ez2;
-//                 geom_f_face_X[j + 18*n_faces_a] = ex3;
-//                 geom_f_face_X[j + 19*n_faces_a] = ey3;
-//                 geom_f_face_X[j + 20*n_faces_a] = ez3;
-                //
-//                 geom_f_face_X[12 + j*32] = ex1;
-//                 geom_f_face_X[13 + j*32] = ey1;
-//                 geom_f_face_X[14 + j*32] = ez1;
-//                 geom_f_face_X[15 + j*32] = ex2;
-//                 geom_f_face_X[16 + j*32] = ey2;
-//                 geom_f_face_X[17 + j*32] = ez2;
-//                 geom_f_face_X[18 + j*32] = ex3;
-//                 geom_f_face_X[19 + j*32] = ey3;
-//                 geom_f_face_X[20 + j*32] = ez3;
-                
-                // Write edge normals.
-//                 geom_f_face_X[j + 21*n_faces_a] = enx1;
-//                 geom_f_face_X[j + 22*n_faces_a] = eny1;
-//                 geom_f_face_X[j + 23*n_faces_a] = enz1;
-//                 geom_f_face_X[j + 24*n_faces_a] = enx2;
-//                 geom_f_face_X[j + 25*n_faces_a] = eny2;
-//                 geom_f_face_X[j + 26*n_faces_a] = enz2;
-//                 geom_f_face_X[j + 27*n_faces_a] = enx3;
-//                 geom_f_face_X[j + 28*n_faces_a] = eny3;
-//                 geom_f_face_X[j + 29*n_faces_a] = enz3;
-                //
-//                 geom_f_face_X[21 + j*32] = enx1;
-//                 geom_f_face_X[22 + j*32] = eny1;
-//                 geom_f_face_X[23 + j*32] = enz1;
-//                 geom_f_face_X[24 + j*32] = enx2;
-//                 geom_f_face_X[25 + j*32] = eny2;
-//                 geom_f_face_X[26 + j*32] = enz2;
-//                 geom_f_face_X[27 + j*32] = enx3;
-//                 geom_f_face_X[28 + j*32] = eny3;
-//                 geom_f_face_X[29 + j*32] = enz3;
+                geom_f_face_Xt[9 + j*NVDP] = n.x;
+                geom_f_face_Xt[10 + j*NVDP] = n.y;
+                geom_f_face_Xt[11 + j*NVDP] = n.z;
             }
         }
         
         // Allocate memory on the GPU to store geometry data and copy the CPU data.
         std::cout << "[-] Initializing the GPU coords list array..." << std::endl;
-        //gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t)) );
-        //gpuErrchk( cudaMemcpy(c_geom_f_face_X, geom_f_face_X, 16*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
-        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt, N_VERTEX_DATA_PADDED*n_faces_a*sizeof(ufloat_g_t)) );
-        gpuErrchk( cudaMemcpy(c_geom_f_face_Xt, geom_f_face_Xt, N_VERTEX_DATA_PADDED*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_X, NVDP*n_faces_a*sizeof(ufloat_g_t)) );
+        gpuErrchk( cudaMemcpy(c_geom_f_face_X, geom_f_face_X, NVDP*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMalloc((void **)&c_geom_f_face_Xt, NVDP*n_faces_a*sizeof(ufloat_g_t)) );
+        gpuErrchk( cudaMemcpy(c_geom_f_face_Xt, geom_f_face_Xt, NVDP*n_faces_a*sizeof(ufloat_g_t), cudaMemcpyHostToDevice) );
         std::cout << "[-] Finished copying the coords list array to the GPU..." << std::endl;
         cudaDeviceSynchronize();
         

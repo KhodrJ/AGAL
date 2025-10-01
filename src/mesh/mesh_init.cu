@@ -51,7 +51,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
     N_PROBE_AVE_FREQUENCY   = parser->params_int["N_PROBE_AVE_FREQUENCY"];
     N_PROBE_AVE_START       = parser->params_int["N_PROBE_AVE_START"];
     N_PRINT_LEVELS          = parser->params_int["N_PRINT_LEVELS"];
-    N_PRINT_LEVELS_LEGACY   = parser->params_int["N_PRINT_LEVELS_LEGACY"];
+    N_PRINT_LEVELS_VTHB     = parser->params_int["N_PRINT_LEVELS_VTHB"];
+    N_PRINT_LEVELS_PATCH    = parser->params_int["N_PRINT_LEVELS_PATCH"];
     N_PRINT_LEVELS_IMAGE    = parser->params_int["N_PRINT_LEVELS_IMAGE"];
     P_OUTPUT                = parser->params_int["P_OUTPUT"];
     N_OUTPUT_START          = parser->params_int["N_OUTPUT_START"];
@@ -81,8 +82,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
         N_LEVEL_START = MAX_LEVELS-1;
     if (N_PRINT_LEVELS > MAX_LEVELS)
         N_PRINT_LEVELS = MAX_LEVELS;
-    if (N_PRINT_LEVELS_LEGACY > MAX_LEVELS)
-        N_PRINT_LEVELS_LEGACY = MAX_LEVELS;
+    if (N_PRINT_LEVELS_VTHB > MAX_LEVELS)
+        N_PRINT_LEVELS_VTHB = MAX_LEVELS;
+    if (N_PRINT_LEVELS_PATCH > MAX_LEVELS)
+        N_PRINT_LEVELS_PATCH = MAX_LEVELS;
     if (N_PRINT_LEVELS_IMAGE > MAX_LEVELS)
         N_PRINT_LEVELS_IMAGE = MAX_LEVELS;
     
@@ -91,7 +94,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Init()
     {
         N_PRINT_LEVELS_IMAGE = 1;
         N_PRINT_LEVELS = 0;
-        N_PRINT_LEVELS_LEGACY = 0;
+        N_PRINT_LEVELS_VTHB = 0;
+        N_PRINT_LEVELS_PATCH = 0;
     }
     
     // Make the output directory if it doesn't already exist.

@@ -89,8 +89,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
             if (geometry_init)
                 M_UpdateSolidChildren(0,L);
             
-            solver->S_SetIC(0,L);
-            cudaDeviceSynchronize();
+            if (N_Q > 1)
+            {
+                solver->S_SetIC(0,L);
+                cudaDeviceSynchronize();
+            }
         }
         
         // After near-wall refinment, 
@@ -104,8 +107,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_RefineNearWall()
         // Cell-blocks near the wall construct their list of faces.
         if (geometry_init)
         {
-            for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
-                M_LinkLengthComputation(0,L);
+            //for (int L = N_LEVEL_START; L < MAX_LEVELS_WALL; L++)
+            //    M_LinkLengthComputation(0,L);
         }
         
         // Freeze mesh: these new near-wall cells are not eligible for coarsening.
@@ -299,7 +302,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
     std::cout << "Printing after iteration " << i << " (t = " << i*dxf_vec[N_LEVEL_START] << ")..." << std::endl;  
     
     // Ensure data is valid on all cells. Global average, then interpolate to ghost cells.
-    if (MAX_LEVELS > 1)
+    if (MAX_LEVELS > 1 && N_Q > 1)
     {
         for (int L = MAX_LEVELS-2; L >= 0; L--)
            solver->S_Average(0,L,V_AVERAGE_GRID);
@@ -327,7 +330,14 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Advance_PrintData(int i, int iter_s)
         M_RenderAndPrint_Uniform(0, i+1);
         std::cout << "Finished printing..." << std::endl;
     }
-    if (N_PRINT_LEVELS_LEGACY > 0)
+    if (N_PRINT_LEVELS_VTHB > 0)
+    {
+        std::cout << "Writing legacy output..." << std::endl;
+        // Print to .vthb file.
+        M_Print_VTHB(0, i);
+        std::cout << "Finished legacy printing..." << std::endl;
+    }
+    if (N_PRINT_LEVELS_PATCH > 0)
     {
         std::cout << "Writing legacy output..." << std::endl;
         // Print to .vthb file.

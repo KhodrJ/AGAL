@@ -74,8 +74,10 @@ class Geometry
     const int M_LWBLOCK                     = AP->M_LWBLOCK;         ///< Number of cell-blocks processed per thread-block in uprimary-mode.
     const int M_BLOCK                       = AP->M_BLOCK;           ///< Number of threads per thread-block in secondary-mode.
     const int M_RNDOFF                      = AP->M_RNDOFF;          ///< Round-off constant for memory alignment.
-    const int N_VERTEX_DATA                 = 9;                     ///< Maximum of nine data elements for vertices (3 coordinates x 3 vertices).
-    const int N_VERTEX_DATA_PADDED          = 16;                    ///< Number of data elements after padding to ensure alignement.
+    const int NVD                           = 9;                     ///< Maximum of nine data elements for vertices (3 coordinates x 3 vertices).
+                                                                     ///< Stands for 'N_VERTEX_DATA.'
+    const int NVDP                          = 16;                    ///< Number of data elements after padding to ensure alignement.
+                                                                     ///< Stands for 'N_VERTEX_DATA_PADDED.'
     
     // o====================================================================================
     // | Geometry parameters.

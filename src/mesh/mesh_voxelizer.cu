@@ -188,7 +188,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S3(int i_dev)
     n_solidb_old = n_solidb;
     n_solidb = ((n_solidb + 128) / 128) * 128;
     n_maxcells_b = n_solidb*M_CBLOCK;
-    std::cout << "Counted " << n_solida << " cells adjacent to the solid boundary (" << (double)n_solida / (double)n_maxcells << ", in " << n_solidb << " blocks or " << n_maxcells_b << " cells)..." << std::endl;
+    std::cout << "Counted " << n_solida << " cells adjacent to the solid boundary (" << (double)n_solida*100.00 / (double)n_maxcells << "%, in " << n_solidb << " blocks or " << n_maxcells_b << " cells)..." << std::endl;
     
     // If there were solid-adjacent cells, then allocate memory for face-cell linkages.
     if (n_solidb > 0)
@@ -246,11 +246,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_UpdateSolidChildren(int i_dev, int L)
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", UpdateSolidChildren"; toc_simple("",T_US,1);
         
-//         Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
-//             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
-//             c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
-//         );
-//         cudaDeviceSynchronize();
+        Cu_Voxelize_UpdateMasks_Vis<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+            n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks],
+            c_cells_ID_mask[i_dev], c_cblock_ID_nbr_child[i_dev]
+        );
+        cudaDeviceSynchronize();
     }
     
     return 0;
@@ -277,14 +277,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_LinkLengthComputation(int i_dev, int L)
         tic_simple("");
         int correction_counter_h = 0;
         cudaMemcpyToSymbol(correction_counter_d, &correction_counter_h, sizeof(int), 0, cudaMemcpyHostToDevice);
-        //cudaMemcpy(correction_counter_d, &correction_counter_h, sizeof(int), cudaMemcpyHostToDevice);
         Cu_LinkLengthValidation<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], n_maxcblocks, n_maxcells_b, dxf_vec[L],
             &c_id_set[i_dev][L*n_maxcblocks], c_cells_f_X_b[i_dev],
             c_cells_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_onb_solid[i_dev]
         );
         cudaMemcpyFromSymbol(&correction_counter_h, correction_counter_d, sizeof(int), 0, cudaMemcpyDeviceToHost);
-        //cudaMemcpy(&correction_counter_h, correction_counter_d, sizeof(int), cudaMemcpyDeviceToHost);
         cudaDeviceSynchronize();
         std::cout << "MESH_IDENTIFYFACES | L=" << L << ", LinkLengthValidation (" << correction_counter_h << " corrections)"; toc_simple("",T_US,1);
     }

@@ -25,7 +25,7 @@ void Cu_Voxelize_V1_WARP
     const int *__restrict__ binned_face_ids_N_3D,
     const int *__restrict__ binned_face_ids_3D,
     const int G_BIN_DENSITY,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     constexpr int N_Q_max = AP->N_Q_max;
@@ -85,7 +85,7 @@ void Cu_Voxelize_V1_WARP
             {
                 int f_p = binned_face_ids_3D[N_f+p];
                 vec3<ufloat_g_t> v1, v2, v3;
-                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, NVDP, n_faces_a, v1, v2, v3);
                 vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                 
                 // Account for all directions within the cell-neighbor halo.
@@ -219,7 +219,7 @@ void Cu_Voxelize_V1
     const int *__restrict__ binned_face_ids_3D,
     const int G_BIN_DENSITY,
     const bool hit_max,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -276,7 +276,7 @@ void Cu_Voxelize_V1
                 // Load face data.
                 int f_p = binned_face_ids_3D[N_f+p];
                 vec3<ufloat_d_t> v1, v2, v3;
-                LoadFaceData<ufloat_g_t,FaceArrangement::AoS, ufloat_d_t>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                LoadFaceData<ufloat_g_t,FaceArrangement::AoS, ufloat_d_t>(f_p, geom_f_face_Xt, NVDP, n_faces_a, v1, v2, v3);
                 vec3<ufloat_d_t> n = FaceNormalUnit<ufloat_d_t,N_DIM>(v1,v2,v3);
                 
                 // Voxelize the face into the current cell-block with a triangle-bin overlap test.

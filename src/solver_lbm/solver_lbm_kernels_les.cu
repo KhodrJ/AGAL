@@ -44,7 +44,7 @@ T SubgridScale_Smagorinsky
             TWO*S_xy*S_xy + 
             S_yy*S_yy;
         if (F > 0)
-            nu_SGS = CS2*dx*dx*sqrt(TWO*F);
+            nu_SGS = CS2*dx*dx*Tsqrt(TWO*F);
     }
     else // N_DIM==3
     {
@@ -66,7 +66,7 @@ T SubgridScale_Smagorinsky
             TWO*S_yz*S_yz + 
             S_zz*S_zz;
         if (F > 0)
-            nu_SGS = CS2*dx*dx*sqrt(TWO*F);
+            nu_SGS = CS2*dx*dx*Tsqrt(TWO*F);
     }
     
     return nu_SGS;
@@ -206,7 +206,7 @@ T SubgridScale_Vreman
     const T &wz
 )
 {
-    constexpr T CV = static_cast<T>(0.1*0.1*2.5);
+    constexpr T CV = static_cast<T>(0.17*0.17*2.5);
     
     T nu_SGS = static_cast<T>(0.0);
     
@@ -221,8 +221,9 @@ T SubgridScale_Vreman
         T aa = 
             ux*ux + vx*vx +
             uy*uy + vy*vy;
+        Bb = Bb/aa;
         if (aa > 0 && Bb > 0)
-            nu_SGS = CV*dx*dx*sqrt(Bb / aa);
+            nu_SGS = CV*dx*dx*Tsqrt(Bb);
     }
     else // N_DIM==3
     {
@@ -241,8 +242,9 @@ T SubgridScale_Vreman
             ux*ux + vx*vx + wx*wx +
             uy*uy + vy*vy + wy*wy +
             uz*uz + vz*vz + wz*wz;
+        Bb = Bb/aa;
         if (aa > 0 && Bb > 0)
-            nu_SGS = CV*dx*dx*sqrt(Bb / aa);
+            nu_SGS = CV*dx*dx*Tsqrt(Bb);
     }
     
     return nu_SGS;

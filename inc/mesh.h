@@ -340,7 +340,8 @@ class Mesh
     int             N_PROBE_AVE_START       = 0;            ///< Indicates the iteration when time-average calculation begins.
     // - Input/Output.
     int             N_PRINT_LEVELS          = 1;            ///< Number of grid levels to include when printing.
-    int             N_PRINT_LEVELS_LEGACY   = 1;            ///< Number of grid levels to include when printing (legacy .vthb format).
+    int             N_PRINT_LEVELS_VTHB     = 1;            ///< Number of grid levels to include when printing (legacy .vthb format).
+    int             N_PRINT_LEVELS_PATCH    = 1;            ///< Number of grid levels to include when printing (patched .vthb format).
     int             N_PRINT_LEVELS_IMAGE    = 1;            ///< Number of grid levels to include when printing (image data .vti format).
     int             P_OUTPUT                = Nx;           ///< Frequency of output calls.
     int             N_OUTPUT_START          = 0;            ///< Indicates the iteration after which to start producing output files.

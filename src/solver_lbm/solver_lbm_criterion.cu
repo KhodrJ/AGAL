@@ -490,8 +490,6 @@ void Cu_ComputeRefCriteria
             ufloat_t w = static_cast<ufloat_t>(0.0);
             if (N_DIM==3)
                 w = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + (N_Q+3)*n_maxcells];
-            if (i_kap_b == 115236)
-                printf("t=%i, (%17.15f,%17.15f,%17.15f)\n", threadIdx.x,u,v,w);
             
             // Compute velocity gradient.
             ufloat_t uX = static_cast<ufloat_t>(0.0);
@@ -544,9 +542,9 @@ void Cu_ComputeRefCriteria
             
             s_W[threadIdx.x] = 0;
             if (S_CRITERION == 0)
-                s_W[threadIdx.x] = sqrt((wY-vZ)*(wY-vZ) + (uZ-wX)*(uZ-wX) + (vX-uY)*(vX-uY)) ;
+                s_W[threadIdx.x] = floor(log2( sqrt((wY-vZ)*(wY-vZ) + (uZ-wX)*(uZ-wX) + (vX-uY)*(vX-uY)) ));
             if (S_CRITERION == 1)
-                s_W[threadIdx.x] = floor(log2( abs((uX*vY+vY*wZ+wZ*uX)-(uY*vX+vZ*wY+uZ*wX)) ));
+                s_W[threadIdx.x] = floor(log2( abs((ufloat_t)0.5*(uX*uX + vY*vY + wZ*wZ + (ufloat_t)2.0*(uY*vX + uZ*wX + wY*vZ))) ));
             
             // Set vorticity to zero if the cell is a ghost cell (it has wrong values).
             if (cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x] == V_CELLMASK_GHOST)

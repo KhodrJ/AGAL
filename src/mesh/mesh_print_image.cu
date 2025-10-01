@@ -98,6 +98,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_ImageData(int i_dev, int iter)
             data_kap_w->SetNumberOfComponents(3);
             data_kap_w->SetNumberOfTuples(n_cells_L);
             //
+            // Q-Criterion.
+            vtkNew<vtkDoubleArray> data_kap_Q;
+            data_kap_Q->SetName("Q-Criterion");
+            data_kap_Q->SetNumberOfComponents(1);
+            data_kap_Q->SetNumberOfTuples(n_cells_L);
+            //
             //     Reset.
             for (int k = 0; k < n_cells_L; k++)
             {
@@ -167,6 +173,11 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_ImageData(int i_dev, int iter)
                         u_kap[t + 5*M_TBLOCK],
                         u_kap[t + 6*M_TBLOCK]
                     );
+                    
+                    // Q-Criterion.
+                    data_kap_Q->SetTuple1(i_global, 
+                        u_kap[t + 7*M_TBLOCK]
+                    );
                 }
             }
             
@@ -177,6 +188,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Print_ImageData(int i_dev, int iter)
             grid_L->GetCellData()->AddArray(data_kap_sc);
             grid_L->GetCellData()->AddArray(data_kap_v);
             grid_L->GetCellData()->AddArray(data_kap_w);
+            grid_L->GetCellData()->AddArray(data_kap_Q);
             
             // Print the uniform grid.
             std::cout << "Finished building VTK dataset, writing (L = " << L << ")..." << std::endl;

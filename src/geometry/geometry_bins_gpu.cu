@@ -30,9 +30,9 @@ void Cu_ComputeVoxelRayIndicators_MD
     const ufloat_g_t Nz,
     const long int n_faces,
     const long int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_Xt,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
     int *__restrict__ ray_indicators,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -41,7 +41,7 @@ void Cu_ComputeVoxelRayIndicators_MD
     {
         // Load face vertices.
         vec3<ufloat_g_t> v1, v2, v3;
-        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        LoadFaceData<ufloat_g_t,FaceArrangement::SoA>(kap, geom_f_face_X, NVDP, n_faces_a, v1, v2, v3);
         vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
         
         // 
@@ -51,10 +51,6 @@ void Cu_ComputeVoxelRayIndicators_MD
             constexpr int N_Q_max = 9;
             
             // Compute bounding box limits.
-            //int ixmin = static_cast<int>( Tround((Tmin(v1.x,v2.x) - dx_Lo2)/dx_L) );
-            //int iymin = static_cast<int>( Tround((Tmin(v1.y,v2.y) - dx_Lo2)/dx_L) );
-            //int ixmax = static_cast<int>( Tround((Tmax(v1.x,v2.x) - dx_Lo2)/dx_L) );
-            //int iymax = static_cast<int>( Tround((Tmax(v1.y,v2.y) - dx_Lo2)/dx_L) );
             int ixmin = static_cast<int>( Tmin(v1.x,v2.x) * Nx);
             int iymin = static_cast<int>( Tmin(v1.y,v2.y) * Ny);
             int ixmax = static_cast<int>( Tmax(v1.x,v2.x) * Nx);
@@ -184,9 +180,9 @@ void Cu_ComputeVoxelRayIndicators_1D
     const ufloat_g_t Nz,
     const long int n_faces,
     const long int n_faces_a,
-    const ufloat_g_t *__restrict__ geom_f_face_Xt,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
     int *__restrict__ ray_indicators,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -195,7 +191,7 @@ void Cu_ComputeVoxelRayIndicators_1D
     {
         // Load face vertices.
         vec3<ufloat_g_t> v1, v2, v3;
-        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        LoadFaceData<ufloat_g_t,FaceArrangement::SoA>(kap, geom_f_face_X, NVDP, n_faces_a, v1, v2, v3);
         vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
         
         // 
@@ -290,7 +286,7 @@ void Cu_ComputeBoundingBoxLimits2D
     const long int n_faces,
     const long int n_faces_a,
     const int n_bin_spec,
-    const ufloat_g_t *__restrict__ geom_f_face_Xt,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
     int *__restrict__ bounding_box_limits,
     int *__restrict__ bounding_box_index_limits,
     const ufloat_g_t dx,
@@ -302,7 +298,7 @@ void Cu_ComputeBoundingBoxLimits2D
     const bool use_ray,
     const bool use_map,
     const int n_filtered,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -316,7 +312,7 @@ void Cu_ComputeBoundingBoxLimits2D
     {
         // Load face data.
         vec3<ufloat_g_t> v1, v2, v3;
-        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        LoadFaceData<ufloat_g_t,FaceArrangement::SoA>(kap, geom_f_face_X, NVDP, n_faces_a, v1, v2, v3);
         
         if (N_DIM==2)
         {
@@ -429,7 +425,7 @@ void Cu_ComputeBoundingBoxLimits3D
     const long int n_faces,
     const long int n_faces_a,
     const int n_bin_spec,
-    const ufloat_g_t *__restrict__ geom_f_face_Xt,
+    const ufloat_g_t *__restrict__ geom_f_face_X,
     int *__restrict__ bounding_box_limits,
     int *__restrict__ bounding_box_index_limits,
     const ufloat_g_t dx,
@@ -444,7 +440,7 @@ void Cu_ComputeBoundingBoxLimits3D
     const bool use_ray,
     const bool use_map,
     const int n_filtered,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
@@ -458,7 +454,7 @@ void Cu_ComputeBoundingBoxLimits3D
     {
         // Load face data,
         vec3<ufloat_g_t> v1, v2, v3;
-        LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(kap, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+        LoadFaceData<ufloat_g_t,FaceArrangement::SoA>(kap, geom_f_face_X, NVDP, n_faces_a, v1, v2, v3);
         
         if (N_DIM==2)
         {
@@ -593,7 +589,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
     std::cout << "CONSTRUCTION OF 1D BINS ON LEVEL " << L << std::endl;
     
     // Some constants.
-    ufloat_g_t *c_geom_f_face_Xt = geometry->c_geom_f_face_Xt;
+    ufloat_g_t *c_geom_f_face_X = geometry->c_geom_f_face_X;
     long int n_faces = geometry->n_faces;
     long int n_faces_a = geometry->n_faces_a;
     ufloat_g_t Lx0g = Lx0g_vec[L + 0*n_bin_levels];
@@ -697,7 +693,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 dxf_vec[L], static_cast<ufloat_g_t>(0.5)*dxf_vec[L],
                 static_cast<ufloat_g_t>(Nxi_L[L]), static_cast<ufloat_g_t>(Nxi_L[L + 1*n_bin_levels]), static_cast<ufloat_g_t>(Nxi_L[L + 2*n_bin_levels]),
                 n_faces, n_faces_a,
-                c_geom_f_face_Xt, c_ray_indicators
+                c_geom_f_face_X, c_ray_indicators
             );
             cudaDeviceSynchronize();
             std::cout << "MAKE_BINS PRE | L=" << L << ", Computing ray indicators"; toc_simple("",T_US,1);
@@ -745,7 +741,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         cudaDeviceSynchronize();
         Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_3D,
-            c_geom_f_face_Xt, c_bounding_box_limits, c_bounding_box_index_limits,
+            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
             Lx0g, Ly0g, Lz0g, n_bin_density[L],
             c_ray_indicators,
@@ -889,7 +885,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             cudaDeviceSynchronize();
             Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
                 n_faces, n_faces_a, n_limits_2D,
-                c_geom_f_face_Xt, c_bounding_box_limits, c_bounding_box_index_limits,
+                c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
                 (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz, n_bin_density[L],
                 c_ray_indicators,
                 use_ray, use_map, n_filtered
@@ -1041,7 +1037,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
     std::cout << "CONSTRUCTION OF MD BINS ON LEVEL " << L << std::endl;
     
     // Some constants.
-    ufloat_g_t *c_geom_f_face_Xt = geometry->c_geom_f_face_Xt;
+    ufloat_g_t *c_geom_f_face_X = geometry->c_geom_f_face_X;
     long int n_faces = geometry->n_faces;
     long int n_faces_a = geometry->n_faces_a;
     ufloat_g_t Lx0g = Lx0g_vec[L + 0*n_bin_levels];
@@ -1086,8 +1082,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         int *c_tmp_b_ii;                     // Used to gather starting-location indices.
         
         // Declare and allocate memory for the c_bounding_box_limits.
-        tic_simple("");
         cudaDeviceSynchronize();
+        tic_simple("");
         if (use_ray)
             gpuErrchk( cudaMalloc((void **)&c_ray_indicators, n_faces*sizeof(int)) );
         if (use_ray && use_map)
@@ -1108,8 +1104,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         Cu_ResetToValue<<<(M_BLOCK+n_bins_MD-1)/M_BLOCK, M_BLOCK>>>(n_bins_MD, c_binned_face_ids_N_MD, 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_MD-1)/M_BLOCK, M_BLOCK>>>(n_bins_MD, c_tmp_b_i, -1);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_MD-1)/M_BLOCK, M_BLOCK>>>(n_bins_MD, c_tmp_b_ii, -1);
-        cudaDeviceSynchronize();
-        std::cout << "Memory allocation: "; toc_simple("",T_US,1);
         
         // Wrap raw pointers with thrust device_ptr.
         thrust::device_ptr<int> ray_ptr = thrust::device_pointer_cast(c_ray_indicators);
@@ -1120,6 +1114,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
         gpuErrchk( cudaPeekAtLastError() );
+        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
         
         // Load connectivity arrays in constant GPU memory if not already done.
         if (!init_conn)
@@ -1141,7 +1136,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
                 dxf_vec[L], static_cast<ufloat_g_t>(0.5)*dxf_vec[L],
                 static_cast<ufloat_g_t>(Nxi_L[L]), static_cast<ufloat_g_t>(Nxi_L[L + 1*n_bin_levels]), static_cast<ufloat_g_t>(Nxi_L[L + 2*n_bin_levels]),
                 n_faces, n_faces_a,
-                c_geom_f_face_Xt, c_ray_indicators
+                c_geom_f_face_X, c_ray_indicators
             );
             cudaDeviceSynchronize();
             std::cout << "MAKE_BINS PRE | L=" << L << ", Computing ray indicators"; toc_simple("",T_US,1);
@@ -1170,12 +1165,16 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         }
         
         // Other memory allocations.
+        tic_simple("");
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_MD*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_MD*sizeof(int)) );
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_MD-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_MD, c_bounding_box_limits, n_bins_MD);
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_MD-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_MD, c_bounding_box_index_limits, -1);
         thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
+        cudaDeviceSynchronize();
+        gpuErrchk( cudaPeekAtLastError() );
+        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
         
         
         
@@ -1188,7 +1187,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         cudaDeviceSynchronize();
         Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_MD,
-            c_geom_f_face_Xt, c_bounding_box_limits, c_bounding_box_index_limits,
+            c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
             (ufloat_g_t)dxf_vec[L]+EPS<ufloat_g_t>(), (ufloat_g_t)Lx, (ufloat_g_t)Ly, (ufloat_g_t)Lz,
             Lx0g, Ly0g, Lz0g, n_bin_density[L],
             c_ray_indicators,

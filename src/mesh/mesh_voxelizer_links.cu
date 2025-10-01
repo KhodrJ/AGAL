@@ -42,7 +42,7 @@ void Cu_LinkLengthComputation
     const int *__restrict__ binned_face_ids_N,
     const int *__restrict__ binned_face_ids,
     const int n_bin_density,
-    const int N_VERTEX_DATA_PADDED=16
+    const int NVDP=16
 )
 {
     constexpr int N_DIM = AP->N_DIM;
@@ -100,7 +100,7 @@ void Cu_LinkLengthComputation
                 {
                     int f_p = binned_face_ids[N_f+p];
                     vec3<ufloat_g_t> v1, v2, v3;
-                    LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, N_VERTEX_DATA_PADDED, n_faces_a, v1, v2, v3);
+                    LoadFaceData<ufloat_g_t,FaceArrangement::AoS>(f_p, geom_f_face_Xt, NVDP, n_faces_a, v1, v2, v3);
                     vec3<ufloat_g_t> n = FaceNormalUnit<ufloat_g_t,N_DIM>(v1,v2,v3);
                     
                     // DEBUG
