@@ -660,8 +660,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_binned_face_ids_N_3D[L], 0);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_i, -1);
         Cu_ResetToValue<<<(M_BLOCK+n_bins_3D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_3D[L], c_tmp_b_ii, -1);
-        cudaDeviceSynchronize();
-        std::cout << "Memory allocation: "; toc_simple("",T_US,1);
         
         // Wrap raw pointers with thrust device_ptr.
         thrust::device_ptr<int> ray_ptr = thrust::device_pointer_cast(c_ray_indicators);
@@ -671,7 +669,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> c_tmp_b_i_ptr = thrust::device_pointer_cast(c_tmp_b_i);
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
-        gpuErrchk( cudaPeekAtLastError() );
+        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
         
         // Load connectivity arrays in constant GPU memory if not already done.
         if (!init_conn)
@@ -687,8 +685,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         {
             std::cout << "RAY COMPUTATION:" << std::endl;
             // STEP 1A: Traverse faces and identify the bins they should go in.
-            tic_simple("");
             cudaDeviceSynchronize();
+            tic_simple("");
             Cu_ComputeVoxelRayIndicators_1D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
                 dxf_vec[L], static_cast<ufloat_g_t>(0.5)*dxf_vec[L],
                 static_cast<ufloat_g_t>(Nxi_L[L]), static_cast<ufloat_g_t>(Nxi_L[L + 1*n_bin_levels]), static_cast<ufloat_g_t>(Nxi_L[L + 2*n_bin_levels]),
@@ -723,12 +721,15 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         }
         
         // Other memory allocations.
+        tic_simple("");
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_limits, n_lim_size_3D*sizeof(int)) );
         gpuErrchk( cudaMalloc((void **)&c_bounding_box_index_limits, n_lim_size_3D*sizeof(int)) );
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_3D-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_3D, c_bounding_box_limits, n_bins_3D[L]);
         Cu_ResetToValue<<<(M_BLOCK+n_lim_size_3D-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_3D, c_bounding_box_index_limits, -1);
         thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
+        cudaDeviceSynchronize();
+        std::cout << "Memory allocation (2): "; toc_simple("",T_US,1);
         
         
         
@@ -1174,7 +1175,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
         cudaDeviceSynchronize();
         gpuErrchk( cudaPeekAtLastError() );
-        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
+        std::cout << "Memory allocation (2): "; toc_simple("",T_US,1);
         
         
         
