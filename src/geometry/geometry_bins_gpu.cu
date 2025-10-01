@@ -768,7 +768,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         tic_simple("");
         thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, bbi_ptr);
         int n_binned_faces_3D = n_lim_size_3D;
-        //int n_binned_faces_3D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, is_nonnegative_and_less_than(n_bins_3D[L]));
+        if (!use_zip)
+            n_binned_faces_3D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, is_nonnegative_and_less_than(n_bins_3D[L]));
         cudaDeviceSynchronize();
         std::cout << "MAKE_BINS 3D | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_3D << ")"; toc_simple("",T_US,1);
         
@@ -781,7 +782,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             c_tmp_b_ii_ptr    // stores reduction
         );
         int n_unique_bins_b = result.first - c_tmp_b_i_ptr;
-        //int n_unique_bins_b2 = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_3D[L], is_nonnegative_and_less_than(n_bins_3D[L]));
+        if (!use_zip)
+            n_unique_bins_b = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_3D[L], is_nonnegative_and_less_than(n_bins_3D[L]));
         cudaDeviceSynchronize();
         std::cout << "MAKE_BINS 3D | L=" << L << ", Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
         
@@ -911,7 +913,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             tic_simple("");
             thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, bbi_ptr);
             int n_binned_faces_2D = n_lim_size_2D;
-            //int n_binned_faces_2D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, is_nonnegative_and_less_than(n_bins_2D[L]));
+            if (!use_zip)
+                n_binned_faces_2D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, is_nonnegative_and_less_than(n_bins_2D[L]));
             cudaDeviceSynchronize();
             std::cout << "MAKE_BINS 2D | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_2D << ")"; toc_simple("",T_US,1);
             
@@ -924,7 +927,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 c_tmp_b_ii_ptr    // stores reduction
             );
             int n_unique_bins_v = result.first - c_tmp_b_i_ptr;
-            //int n_unique_bins_v = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_2D, is_nonnegative_and_less_than(n_bins_2D));
+            if (!use_zip)
+                n_unique_bins_v = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_2D[L], is_nonnegative_and_less_than(n_bins_2D[L]));
             cudaDeviceSynchronize();
             std::cout << "MAKE_BINS 2D | L=" << L << ", Reduction (nbins=" << n_unique_bins_v << ") by key "; toc_simple("",T_US,1);
             
@@ -1214,7 +1218,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         tic_simple("");
         thrust::sort_by_key(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, bbi_ptr);
         int n_binned_faces_MD = n_lim_size_MD;
-        //int n_binned_faces_MD = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, is_nonnegative_and_less_than(n_bins_MD));
+        if (!use_zip)
+            n_binned_faces_MD = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, is_nonnegative_and_less_than(n_bins_MD));
         cudaDeviceSynchronize();
         std::cout << "MAKE_BINS MD | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_MD << ")"; toc_simple("",T_US,1);
         
@@ -1227,7 +1232,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
             c_tmp_b_ii_ptr    // stores reduction
         );
         int n_unique_bins_b = result.first - c_tmp_b_i_ptr;
-        //int n_unique_bins_b2 = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_MD, is_nonnegative_and_less_than(n_bins_MD));
+        if (!use_zip)
+            n_unique_bins_b = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_MD, is_nonnegative_and_less_than(n_bins_MD));
         cudaDeviceSynchronize();
         std::cout << "MAKE_BINS 3D | L=" << L << ", Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
         
