@@ -79,40 +79,6 @@ void Cu_MarkBlocks_CheckMasks_S1
             if (version==0)
             {
                 // Retrieve cell masks from the current block and from one cell-layer around it from neighboring blocks.
-                /*
-                for (int p = 1; p < N_Q_max; p++)
-                {
-                    // nbr_kap_b is the index of the neighboring block w.r.t the current cell.
-                    // nbr_kap_c is the index of the cell in that neighboring block.
-                    // nbr_kap_h is the index of the halo to store that value.
-                    
-                    // First, increment indices along pth direction. Store the resulting halo index.
-                    int Ip = I + V_CONN_ID[p + 0*27];
-                    int Jp = J + V_CONN_ID[p + 1*27];
-                    int Kp = 0;
-                    if (N_DIM==3)
-                        Kp = K + V_CONN_ID[p + 2*27];
-                    int nbr_kap_h = (Ip+1) + 6*(Jp+1);
-                    if (N_DIM==3)
-                        nbr_kap_h += 36*(Kp+1);
-                    
-                    // Then, identify the appropriate neighbor block to store the retrieved cell masks.
-                    int nbr_kap_b = s_ID_nbr[Cu_NbrMap<N_DIM>(Ip,Jp,Kp)];
-                    Ip = (4 + (Ip % 4)) % 4;
-                    Jp = (4 + (Jp % 4)) % 4;
-                    if (N_DIM==3)
-                        Kp = (4 + (Kp % 4)) % 4;
-                    int nbr_kap_c = Ip + 4*Jp + 16*Kp;
-                    
-                    // Write cell mask to the halo.
-                    bool changed = 
-                            (Ip != I+V_CONN_ID[p + 0*27] || V_CONN_ID[p + 0*27]==0) && 
-                            (Jp != J+V_CONN_ID[p + 1*27] || V_CONN_ID[p + 1*27]==0) && 
-                            (Kp != K+V_CONN_ID[p + 2*27] || V_CONN_ID[p + 2*27]==0);
-                    if (changed && nbr_kap_b > -1)
-                        s_ID_mask[nbr_kap_h] = cells_ID_mask[nbr_kap_b*M_CBLOCK + nbr_kap_c];
-                }
-                */
                 for (int p = 1; p < N_Q_max; p++)
                 {
                     Cu_FillHaloWithNbrs<int,N_DIM>(

@@ -192,7 +192,7 @@ inline double toc(std::string s, int scale=T_S) { return tic(s,1,scale); }
 
 
 // Another version of tic-toc for separate measurements, controls whether to output to terminal.
-inline double tic_simple(std::string s="", int mode=0, int scale=0, int print=1)
+inline double tic_simple(std::string s="", int mode=0, int scale=0, int print=1, std::ostream &out = std::cout)
 {
     static std::chrono::_V2::system_clock::time_point t_start_simple;
     
@@ -207,24 +207,24 @@ inline double tic_simple(std::string s="", int mode=0, int scale=0, int print=1)
         if (scale == T_S)
         {
             if (print)
-                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count() << " seconds\n";
+                out << s << ": " << std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count() << " seconds\n";
             return std::chrono::duration_cast<std::chrono::seconds>(t_end_simple-t_start_simple).count();
         }
         else if (scale == T_MS)
         {
             if (print)
-                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count() << " milliseconds\n";
+                out << s << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count() << " milliseconds\n";
             return std::chrono::duration_cast<std::chrono::milliseconds>(t_end_simple-t_start_simple).count();
         }
         else
         {
             if (print)
-                std::cout << s << ": " << std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count() << " microseconds\n";
+                out << s << ": " << std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count() << " microseconds\n";
             return std::chrono::duration_cast<std::chrono::microseconds>(t_end_simple-t_start_simple).count();
         }
     }
 }
-inline double toc_simple(std::string s, int scale=T_S, int print=1) { return tic_simple(s,1,scale,print); }
+inline double toc_simple(std::string s, int scale=T_S, int print=1, std::ostream &out = std::cout) { return tic_simple(s,1,scale,print,out); }
 
 //! Reset values of GPU array.
 /*! Reset the values of an array in GPU memory to a particular value.
@@ -236,7 +236,7 @@ template <class T>
 __global__
 void Cu_ResetToValue(long int N, T *arr, T val)
 {
-    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    long int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
     if (kap < N)
         arr[kap] = val;
@@ -275,9 +275,9 @@ void Cu_ContractByFrac(int N, T *arr, int frac, T *arr2)
 */
 template <class T>
 __global__
-void Cu_FillLinear(int N, T *arr)
+void Cu_FillLinear(long int N, T *arr)
 {
-    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    long int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
     if (kap < N)
     {

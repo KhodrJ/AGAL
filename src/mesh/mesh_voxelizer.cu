@@ -45,13 +45,12 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
         
         // Voxelize the solid, filling in all solid cells.
         tic_simple("");
-        //Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
-        Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_Voxelize_V2_WARP<ufloat_t,ufloat_g_t,AP> <<<(32+(32*n_ids[i_dev][L])-1)/32,32,0,streams[i_dev]>>>(
+        //Cu_Voxelize_V1<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks, dxf_vec[L],
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_f_X[i_dev], c_cblock_ID_nbr[i_dev],
             geometry->n_faces, geometry->n_faces_a, geometry->c_geom_f_face_Xt,
-            geometry->bins->c_binned_face_ids_n_3D[Lbin], geometry->bins->c_binned_face_ids_N_3D[Lbin], geometry->bins->c_binned_face_ids_3D[Lbin], geometry->bins->n_bin_density[Lbin],
-            hit_max
+            geometry->bins->c_binned_face_ids_n_3D[Lbin], geometry->bins->c_binned_face_ids_N_3D[Lbin], geometry->bins->c_binned_face_ids_3D[Lbin], geometry->bins->n_bin_density[Lbin]
         );
         cudaDeviceSynchronize();
         std::cout << "MESH_VOXELIZE | L=" << L << ", Voxelize"; toc_simple("",T_US,1);
@@ -68,17 +67,17 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
                 L==N_LEVEL_START
             );
             cudaDeviceSynchronize();
-            std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate (+x)"; toc_simple("",T_US,1);
+            std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate(+x)"; toc_simple("",T_US,1);
+            tic_simple("");
             if (L > N_LEVEL_START)
             {
-                tic_simple("");
                 Cu_Voxelize_Propagate_Left<ufloat_t,ufloat_g_t,AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
                     n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcblocks,
                     c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev]
                 );
-                cudaDeviceSynchronize();
-                std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate (-x)"; toc_simple("",T_US,1);
             }
+            cudaDeviceSynchronize();
+            std::cout << "MESH_VOXELIZE | L=" << L << ", VoxelizePropagate(-x)"; toc_simple("",T_US,1);
             int ns2 = thrust::count_if(thrust::device, mask_ptr, mask_ptr + id_max[i_dev][L]*M_CBLOCK, is_equal_to(V_CELLMASK_SOLID));
             
             // Propagate preliminary solid masks within the interior from both sides.
@@ -119,7 +118,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S1(int i_dev, int L)
                     j
                 );
                 cudaDeviceSynchronize();
-                std::cout << "MESH_VOXELIZE | L=" << L << ", Propagate (" << j << ")"; toc_simple("",T_US,1);
+                std::cout << "MESH_VOXELIZE | L=" << L << ", Propagate(" << j << ")"; toc_simple("",T_US,1);
             }
             
             // Finalize the intermediate marks for refinement.
@@ -155,13 +154,13 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S2(int i_dev, int L)
         // Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
         cudaDeviceSynchronize();
         tic_simple("");
-        Cu_MarkBlocks_CheckMasks_S1<AP> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
+        Cu_MarkBlocks_CheckMasks_S1<AP,1> <<<n_ids[i_dev][L],M_TBLOCK,0,streams[i_dev]>>>(
             n_ids[i_dev][L], &c_id_set[i_dev][L*n_maxcblocks], n_maxcells, n_maxcblocks,
             c_cells_ID_mask[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_onb[i_dev],
             c_tmp_1[i_dev]
         );
         cudaDeviceSynchronize();
-        std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks (1)"; toc_simple("",T_US,1);
+        std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks(1)"; toc_simple("",T_US,1);
         
         // Update solid-adjacent cell masks and indicate adjacency of blocks to the geometry boundary.
         tic_simple("");
@@ -170,7 +169,7 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_Geometry_Voxelize_S2(int i_dev, int L)
             c_cells_ID_mask[i_dev], c_cblock_ID_onb[i_dev]
         );
         cudaDeviceSynchronize();
-        std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks (2)"; toc_simple("",T_US,1);
+        std::cout << "MESH_CHECKMASKS | L=" << L << ", CheckMasks(2)"; toc_simple("",T_US,1);
     }
     
     return 0;
@@ -289,7 +288,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_LinkLengthComputation(int i_dev, int L)
         );
         cudaMemcpyFromSymbol(&correction_counter_h, correction_counter_d, sizeof(int), 0, cudaMemcpyDeviceToHost);
         cudaDeviceSynchronize();
-        std::cout << "MESH_IDENTIFYFACES | L=" << L << ", LinkLengthValidation (" << correction_counter_h << " corrections)"; toc_simple("",T_US,1);
+        std::cout << "MESH_IDENTIFYFACES | L=" << L << ", LinkLengthValidation"; toc_simple("",T_US,1);
+        std::cout << "(" << correction_counter_h << " corrections)" << std::endl;
     }
     
     return 0;

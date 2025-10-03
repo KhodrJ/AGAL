@@ -638,8 +638,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         int *c_tmp_b_ii;                     // Used to gather starting-location indices.
         
         // Declare and allocate memory for the c_bounding_box_limits.
-        tic_simple("");
         cudaDeviceSynchronize();
+        tic_simple("");
         if (use_ray)
             gpuErrchk( cudaMalloc((void **)&c_ray_indicators, n_faces*sizeof(int)) );
         if (use_ray && use_map)
@@ -669,7 +669,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> c_tmp_b_i_ptr = thrust::device_pointer_cast(c_tmp_b_i);
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
-        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
+        std::cout << "MemoryAllocation(1)3D"; toc_simple("",T_US,1);
         
         // Load connectivity arrays in constant GPU memory if not already done.
         if (!init_conn)
@@ -694,7 +694,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 c_geom_f_face_X, c_ray_indicators
             );
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS PRE | L=" << L << ", Computing ray indicators"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS PRE | L=" << L << ", ComputingRayIndicators1D"; toc_simple("",T_US,1);
             
             if (use_map)
             {
@@ -705,7 +705,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 n_lim_size_2D = n_limits_2D*n_filtered;
                 n_lim_size_3D = n_limits_3D*n_filtered;
                 cudaDeviceSynchronize();
-                std::cout << "MAKE_BINS PRE | L=" << L << ", Gathered ray indicators (filtered=" << n_filtered << "/" << n_faces << " [ " << 100.00*(double)n_filtered/(double)n_faces << "%])"; toc_simple("",T_US,1);
+                std::cout << "MAKE_BINS PRE | L=" << L << ", GatheredRayIndicators1D"; toc_simple("",T_US,1);
+                std::cout << "(filtered=" << n_filtered << "/" << n_faces << " [ " << 100.00*(double)n_filtered/(double)n_faces << "%])" << std::endl;
                 
                 // Step 1C: Scatter new ray indicators.
                 tic_simple("");
@@ -716,7 +717,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                     ray_ptr
                 );
                 cudaDeviceSynchronize();
-                std::cout << "MAKE_BINS PRE | L=" << L << ", Scattered new ray indicators"; toc_simple("",T_US,1);
+                std::cout << "MAKE_BINS PRE | L=" << L << ", ScatteredRayIndicators1D"; toc_simple("",T_US,1);
             }
         }
         
@@ -729,7 +730,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         thrust::device_ptr<int> bbi_ptr = thrust::device_pointer_cast(c_bounding_box_index_limits);
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
         cudaDeviceSynchronize();
-        std::cout << "Memory allocation (2): "; toc_simple("",T_US,1);
+        std::cout << "MemoryAllocation(2)3D"; toc_simple("",T_US,1);
         
         
         
@@ -739,7 +740,6 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         
         // STEP 2: Traverse faces and identify the bins they should go in.
         tic_simple("");
-        cudaDeviceSynchronize();
         Cu_ComputeBoundingBoxLimits3D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
             n_faces, n_faces_a, n_limits_3D,
             c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
@@ -749,7 +749,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             use_ray, use_map, n_filtered
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Computing bounding box limits"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", ComputingBoundingBoxLimits3D"; toc_simple("",T_US,1);
         
         // STEP 3: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
         // This might speed up the sort-by-key that follows.
@@ -761,7 +761,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             n_lim_size_3D = zipped_end - zipped;
             //n_lim_size_3D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, is_nonnegative_and_less_than(n_bins_3D[L]));
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 3D | L=" << L << ", Compaction"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 3D | L=" << L << ", Compaction3D"; toc_simple("",T_US,1);
         }
         
         // STEP 4: Sort by key.
@@ -771,7 +771,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         if (!use_zip)
             n_binned_faces_3D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, is_nonnegative_and_less_than(n_bins_3D[L]));
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_3D << ")"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", SortByKey3D"; toc_simple("",T_US,1);
+        std::cout << "(n_binned_faces=" << n_binned_faces_3D << ")" << std::endl;
         
         // STEP 5: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_2D.
         tic_simple("");
@@ -785,7 +786,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         if (!use_zip)
             n_unique_bins_b = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_3D[L], is_nonnegative_and_less_than(n_bins_3D[L]));
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", ReductionByKey3D"; toc_simple("",T_US,1);
+        std::cout << "(nbins=" << n_unique_bins_b << ")" << std::endl;
         
         // STEP 6: Scatter the bin sizes.
         tic_simple("");
@@ -795,13 +797,13 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             bnb_ptr
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Scatter (1)"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", Scatter(1)3D"; toc_simple("",T_US,1);
         
         // STEP 7: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
         tic_simple("");
         thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_3D, bb_ptr);
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Adjacent difference"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", AdjacentDifference3D"; toc_simple("",T_US,1);
         
         // STEP 8: Gather the indices of the starting locations.
         tic_simple("");
@@ -815,7 +817,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
         int fZ = 0;
         cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Copy-if"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", CopyIf3D"; toc_simple("",T_US,1);
         
         // STEP 9: Now scatter the starting-location indices.
         tic_simple("");
@@ -825,7 +827,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             bNb_ptr
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Scatter (2)"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", Scatter(2)3D"; toc_simple("",T_US,1);
         
         // Copy the indices of the binned faces.
         gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_3D[L], n_binned_faces_3D*sizeof(int)) );
@@ -872,8 +874,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             thrust::device_ptr<int> bNv_ptr = thrust::device_pointer_cast(c_binned_face_ids_N_2D[L]);
             
             // Reset values for the 2D binning part. I can reuse the temporary allocations since they are always larger than needed.
-            tic_simple("");
             cudaDeviceSynchronize();
+            tic_simple("");
             Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_binned_face_ids_n_2D[L], 0);
             Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_binned_face_ids_N_2D[L], 0);
             Cu_ResetToValue<<<(M_BLOCK+n_lim_size_2D-1)/M_BLOCK, M_BLOCK>>>(n_lim_size_2D, c_bounding_box_limits, n_bins_2D[L]);
@@ -881,11 +883,10 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_tmp_b_i, -1);
             Cu_ResetToValue<<<(M_BLOCK+n_bins_2D[L]-1)/M_BLOCK, M_BLOCK>>>(n_bins_2D[L], c_tmp_b_ii, -1);
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Memory allocation"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", MemoryAllocation(1)2D"; toc_simple("",T_US,1);
             
             // STEP 2: Traverse faces and identify the bins they should go in.
             tic_simple("");
-            cudaDeviceSynchronize();
             Cu_ComputeBoundingBoxLimits2D<ufloat_g_t,AP->N_DIM><<<(M_BLOCK+n_faces-1)/M_BLOCK,M_BLOCK>>>(
                 n_faces, n_faces_a, n_limits_2D,
                 c_geom_f_face_X, c_bounding_box_limits, c_bounding_box_index_limits,
@@ -894,7 +895,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 use_ray, use_map, n_filtered
             );
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Computing bounding box limits"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", ComputingBoundingBoxLimits2D"; toc_simple("",T_US,1);
             
             // STEP 3: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
             // This might speed up the sort-by-key that follows.
@@ -906,7 +907,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 n_lim_size_2D = zipped_end - zipped;
                 //n_lim_size_2D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, is_nonnegative_and_less_than(n_bins_2D[L]));
                 cudaDeviceSynchronize();
-                std::cout << "MAKE_BINS 2D | L=" << L << ", Compaction"; toc_simple("",T_US,1);
+                std::cout << "MAKE_BINS 2D | L=" << L << ", Compaction2D"; toc_simple("",T_US,1);
             }
             
             // STEP 4: Sort by key.
@@ -916,7 +917,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             if (!use_zip)
                 n_binned_faces_2D = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, is_nonnegative_and_less_than(n_bins_2D[L]));
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_2D << ")"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", SortByKey2D"; toc_simple("",T_US,1);
+            std::cout << "(n_binned_faces=" << n_binned_faces_2D << ")" << std::endl;
             
             // STEP 5: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_2D.
             tic_simple("");
@@ -930,7 +932,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             if (!use_zip)
                 n_unique_bins_v = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_2D[L], is_nonnegative_and_less_than(n_bins_2D[L]));
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Reduction (nbins=" << n_unique_bins_v << ") by key "; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", ReductionByKey2D"; toc_simple("",T_US,1);
+            std::cout << "(nbins=" << n_unique_bins_v << ")" << std::endl;
             
             // STEP 6: Scatter the bin sizes.
             tic_simple("");
@@ -940,13 +943,13 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 bnv_ptr
             );
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Scatter (1)"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", Scatter(1)2D"; toc_simple("",T_US,1);
             
             // STEP 7: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
             tic_simple("");
             thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_2D, bb_ptr);
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Adjacent difference"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", AdjacentDifference2D"; toc_simple("",T_US,1);
             
             // STEP 8: Gather the indices of the starting locations.
             tic_simple("");
@@ -960,7 +963,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
             fZ = 0;
             cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Copy-if"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", CopyIf2D"; toc_simple("",T_US,1);
             
             // STEP 9: Now scatter the starting-location indices.
             tic_simple("");
@@ -970,7 +973,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU(int L)
                 bNv_ptr
             );
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS 2D | L=" << L << ", Scatter (2)"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS 2D | L=" << L << ", Scatter(2)2D"; toc_simple("",T_US,1);
             
             // Copy the indices of the binned faces.
             gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_2D[L], n_binned_faces_2D*sizeof(int)) );
@@ -1119,7 +1122,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         thrust::device_ptr<int> c_tmp_b_ii_ptr = thrust::device_pointer_cast(c_tmp_b_ii);
         cudaDeviceSynchronize();
         gpuErrchk( cudaPeekAtLastError() );
-        std::cout << "Memory allocation (1): "; toc_simple("",T_US,1);
+        std::cout << "MemoryAllocation(1)MD"; toc_simple("",T_US,1);
         
         // Load connectivity arrays in constant GPU memory if not already done.
         if (!init_conn)
@@ -1144,7 +1147,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
                 c_geom_f_face_X, c_ray_indicators
             );
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS PRE | L=" << L << ", Computing ray indicators"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS PRE | L=" << L << ", ComputingRayIndicators"; toc_simple("",T_US,1);
             
             if (use_map)
             {
@@ -1154,7 +1157,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
                 n_filtered = filtered_result - map_ptr;
                 n_lim_size_MD = n_limits_MD*n_filtered;
                 cudaDeviceSynchronize();
-                std::cout << "MAKE_BINS PRE | L=" << L << ", Gathered ray indicators (filtered=" << n_filtered << "/" << n_faces << " [ " << 100.00*(double)n_filtered/(double)n_faces << "%])"; toc_simple("",T_US,1);
+                std::cout << "MAKE_BINS PRE | L=" << L << ", GatheredRayIndicators"; toc_simple("",T_US,1);
+                std::cout << "(filtered=" << n_filtered << "/" << n_faces << " [ " << 100.00*(double)n_filtered/(double)n_faces << "%])" << std::endl;
                 
                 // Step 1C: Scatter new ray indicators.
                 tic_simple("");
@@ -1165,7 +1169,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
                     ray_ptr
                 );
                 cudaDeviceSynchronize();
-                std::cout << "MAKE_BINS PRE | L=" << L << ", Scattered new ray indicators"; toc_simple("",T_US,1);
+                std::cout << "MAKE_BINS PRE | L=" << L << ", ScatteredRayIndicators"; toc_simple("",T_US,1);
             }
         }
         
@@ -1179,7 +1183,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         thrust::device_ptr<int> bb_ptr = thrust::device_pointer_cast(c_bounding_box_limits);
         cudaDeviceSynchronize();
         gpuErrchk( cudaPeekAtLastError() );
-        std::cout << "Memory allocation (2): "; toc_simple("",T_US,1);
+        std::cout << "MemoryAllocation(2)MD"; toc_simple("",T_US,1);
         
         
         
@@ -1199,7 +1203,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
             use_ray, use_map, n_filtered
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Computing bounding box limits"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", ComputingBoundingBoxLimitsMD"; toc_simple("",T_US,1);
         
         // STEP 3: If selected, make a zip iterator out of the bounding box limits and index arrays, and then remove all invalid bins.
         // This might speed up the sort-by-key that follows.
@@ -1211,7 +1215,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
             n_lim_size_MD = zipped_end - zipped;
             //n_lim_size_MD = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, is_nonnegative_and_less_than(n_bins_MD));
             cudaDeviceSynchronize();
-            std::cout << "MAKE_BINS MD | L=" << L << ", Compaction"; toc_simple("",T_US,1);
+            std::cout << "MAKE_BINS MD | L=" << L << ", CompactionMD"; toc_simple("",T_US,1);
         }
         
         // STEP 4: Sort by key.
@@ -1221,7 +1225,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         if (!use_zip)
             n_binned_faces_MD = thrust::count_if(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, is_nonnegative_and_less_than(n_bins_MD));
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Sort by key (n_binned_faces=" << n_binned_faces_MD << ")"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", SortByKeyMD"; toc_simple("",T_US,1);
+        std::cout << "(n_binned_faces=" << n_binned_faces_MD << ")" << std::endl;
         
         // STEP 5: Reduce the keys to get the number of faces in each bin. Scatter them to c_binned_face_ids_n_2D.
         tic_simple("");
@@ -1235,7 +1240,8 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         if (!use_zip)
             n_unique_bins_b = thrust::count_if(thrust::device, c_tmp_b_i_ptr, c_tmp_b_i_ptr + n_bins_MD, is_nonnegative_and_less_than(n_bins_MD));
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS 3D | L=" << L << ", Reduction (nbins=" << n_unique_bins_b << ") by key"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS 3D | L=" << L << ", ReductionByKeyMD"; toc_simple("",T_US,1);
+        std::cout << "(nbins=" << n_unique_bins_b << ")" << std::endl;
         
         // STEP 6: Scatter the bin sizes.
         tic_simple("");
@@ -1245,13 +1251,13 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
             bnb_ptr
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Scatter (1)"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", Scatter(1)MD"; toc_simple("",T_US,1);
         
         // STEP 7: Get the difference in the bounding box limits to identify the starting location for the Ids of each individual bin.
         tic_simple("");
         thrust::adjacent_difference(thrust::device, bb_ptr, bb_ptr + n_lim_size_MD, bb_ptr);
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Adjacent difference"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", AdjacentDifferenceMD"; toc_simple("",T_US,1);
         
         // STEP 8: Gather the indices of the starting locations.
         tic_simple("");
@@ -1265,7 +1271,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
         int fZ = 0;
         cudaMemcpy(c_tmp_b_ii, &fZ, sizeof(int), cudaMemcpyHostToDevice);
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Copy-if"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", CopyIfMD"; toc_simple("",T_US,1);
         
         // STEP 9: Now scatter the starting-location indices.
         tic_simple("");
@@ -1275,7 +1281,7 @@ int Geometry<ufloat_t,ufloat_g_t,AP>::Bins::G_MakeBinsGPU_MD(int L)
             bNb_ptr
         );
         cudaDeviceSynchronize();
-        std::cout << "MAKE_BINS MD | L=" << L << ", Scatter (2)"; toc_simple("",T_US,1);
+        std::cout << "MAKE_BINS MD | L=" << L << ", Scatter(2)MD"; toc_simple("",T_US,1);
         
         // Copy the indices of the binned faces.
         gpuErrchk( cudaMalloc((void **)&c_binned_face_ids_MD, n_binned_faces_MD*sizeof(int)) );
