@@ -10,7 +10,7 @@ This is a header library, so it does not need to be built. Simply add the requir
 
 ## Usage
 
-Detailed instructions for setting input parameters and specifying boundary conditions are being written. Please check back shortly.
+I'm currently cleaning up the code and writing detailed instructions for setting input parameters and specifying boundary conditions. Please check back shortly.
 
 # Remarks and Feedback
 
@@ -21,6 +21,7 @@ I intend to develop this code further as research with the Turbulence Research L
 The original manuscript [1] detailing the GPU-native algorithm was accepted by Computer Physics Communications. A manuscript detailing an updated framework for embedding complex geometries [2] is now in review.
 
 Please use the following BibTeX citation if you use this code in your research, or build on my framework:
+```
 @article{Jaber2025,
 title = {GPU-native adaptive mesh refinement with application to lattice Boltzmann simulations},
 journal = {Computer Physics Communications},
@@ -32,6 +33,7 @@ doi = {https://doi.org/10.1016/j.cpc.2025.109543},
 url = {https://www.sciencedirect.com/science/article/pii/S0010465525000463},
 author = {Khodr Jaber and Ebenezer E. Essel and Pierre E. Sullivan},
 }
+```
 
 [1] K. Jaber, E. E. Essel, and P. E. Sullivan, ‘GPU-native adaptive mesh refinement with application to lattice Boltzmann simulations’, Computer Physics Communications, vol. 311, p. 109543, 2025.
 [2] K. Jaber, E. E. Essel, and P. E. Sullivan, ‘GPU-native Embedding of Complex Geometries in Adaptive Octree Grids Applied to the Lattice Boltzmann Method’, arXiv [cs.CE]. 2025.
