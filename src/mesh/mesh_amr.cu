@@ -110,9 +110,13 @@ void Cu_UpdateBoundaries
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ cblock_ID_nbr_child,
     const int *__restrict__ cblock_ID_mask,
-    int *__restrict__ cblock_ID_onb
+    int *__restrict__ cblock_ID_onb,
+    int *__restrict__ efficient_map
 )
 {
+    // In version 0, update boundaries by ignoring invalid neighbor N_SKIPID.
+    // In version 1, account for invalid neighbors (used when updating cell masks).
+    
     constexpr int N_Q_max = AP->N_Q_max;
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
@@ -120,14 +124,19 @@ void Cu_UpdateBoundaries
     {
         int nbr_kap_p = 0;
         int block_on_boundary = 0;
+        //int block_on_interface_boundary = 0;
         int block_mask = cblock_ID_mask[kap];
-        //int i_kap_bc = cblock_ID_nbr_child[kap];
         
         for (int p = 1; p < N_Q_max; p++)
         {
             nbr_kap_p = cblock_ID_nbr[kap + p*n_maxcblocks];
             if (nbr_kap_p < 0)
             {
+                // If invalid neighbor, this block is on the refinement interface.
+                //if (nbr_kap_p == N_SKIPID)
+                //    block_on_interface_boundary = 1;
+                
+                // If the neighbor-child in the direction is negative but not invalid, it is on the domain boundary.
                 cblock_ID_nbr_child[kap + p*n_maxcblocks] = nbr_kap_p;
                 if (nbr_kap_p != N_SKIPID)
                     block_on_boundary = 1;
@@ -137,6 +146,8 @@ void Cu_UpdateBoundaries
             block_on_boundary = 1;
         
         cblock_ID_onb[kap] = block_on_boundary;
+        //if (block_on_interface_boundary == 1) [TODO]
+        //    efficient_map[kap] = 1;
     }
 }
 
@@ -994,15 +1005,19 @@ void Cu_UpdateMasks_2
     if (kap < id_max_curr && cblock_ID_ref[kap] != V_REF_ID_INACTIVE)
         s_ID_cblock[threadIdx.x] = kap;
     __syncthreads();
-
+    //int i_kap_b = -1;
+    //if (blockIdx.x < id_max_curr && efficient_map[blockIdx.x]==1 && cblock_ID_ref[blockIdx.x] != V_REF_ID_INACTIVE)
+    //if (blockIdx.x < id_max_curr && cblock_ID_ref[blockIdx.x] != V_REF_ID_INACTIVE)
+    //    i_kap_b = blockIdx.x;
+    
     for (int k = 0; k < M_TBLOCK; k++)
     {
         int i_kap_b = s_ID_cblock[k];
         
-        if (i_kap_b > -1)
+    if (i_kap_b > -1)
+    {
+        if (N_DIM==2)
         {
-if (N_DIM==2)
-{
             for (int j_q = 0; j_q < Nqx; j_q += 1)
             {
                 for (int i_q = 0; i_q < Nqx; i_q += 1)
@@ -1073,9 +1088,9 @@ if (N_DIM==2)
                     __syncthreads();
                 }
             }
-}
-else
-{
+        }
+        else
+        {
             for (int k_q = 0; k_q < Nqx; k_q += 1)
             {
                 for (int j_q = 0; j_q < Nqx; j_q += 1)
@@ -1275,8 +1290,9 @@ else
                     }
                 }
             }
-}
         }
+    }
+    
     }
 }
 
@@ -1302,7 +1318,7 @@ else
 
 template <const ArgsPack *AP>
 __global__
-void Cu_RefineCells_Prep
+void Cu_RefineCells_Prep_S1
 (
     const int id_max_curr,
     const long int n_maxcblocks,
@@ -1311,16 +1327,43 @@ void Cu_RefineCells_Prep
     int *__restrict__ efficient_map
 )
 {
-    constexpr int N_Q_max = AP->N_Q_max;
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
     if (kap < id_max_curr)
     {
         int ref_kap = cblock_ID_ref[kap];
         if (ref_kap == V_REF_ID_MARK_REFINE || ref_kap == V_REF_ID_MARK_COARSEN)
+            efficient_map[kap] = cblock_ID_nbr[kap];
+    }
+}
+
+template <const ArgsPack *AP>
+__global__
+void Cu_RefineCells_Prep_S2
+(
+    const long int n_maxcblocks,
+    const long int n_mappedblocks,
+    const int *__restrict__ cblock_ID_ref,
+    const int *__restrict__ cblock_ID_nbr,
+    int *__restrict__ efficient_map
+)
+{
+    constexpr int N_Q_max = AP->N_Q_max;
+    int kap = blockIdx.x*blockDim.x + threadIdx.x;
+    
+    if (kap < n_mappedblocks)
+    {
+//         int ref_kap = cblock_ID_ref[kap];
+//         if (ref_kap == V_REF_ID_MARK_REFINE || ref_kap == V_REF_ID_MARK_COARSEN)
+//         {
+//             for (int p = 0; p < N_Q_max; p++)
+//                 efficient_map[kap + p*n_maxcblocks] = cblock_ID_nbr[kap + p*n_maxcblocks];
+//         }
+        int map_kap = efficient_map[kap];
+        if (map_kap > -1)
         {
-            for (int p = 0; p < N_Q_max; p++)
-                efficient_map[kap + p*n_maxcblocks] = cblock_ID_nbr[kap + p*n_maxcblocks];
+            for (int p = 1; p < N_Q_max; p++)
+                efficient_map[kap + p*n_mappedblocks] = cblock_ID_nbr[map_kap + p*n_maxcblocks];
         }
     }
 }
@@ -1329,8 +1372,8 @@ template <const ArgsPack *AP>
 __global__
 void Cu_RefineCells_Prep_Reset
 (
-    const int id_max_curr,
     const long int n_maxcblocks,
+    const long int n_mappedblocks,
     const int *__restrict__ cblock_ID_ref,
     const int *__restrict__ cblock_ID_nbr,
     int *__restrict__ efficient_map
@@ -1339,13 +1382,15 @@ void Cu_RefineCells_Prep_Reset
     constexpr int N_Q_max = AP->N_Q_max;
     int kap = blockIdx.x*blockDim.x + threadIdx.x;
     
-    if (kap < id_max_curr)
+    if (kap < n_mappedblocks)
     {
-        int ref_kap = cblock_ID_ref[kap];
-        if (ref_kap == V_REF_ID_MARK_REFINE || ref_kap == V_REF_ID_MARK_COARSEN)
+        //int ref_kap = cblock_ID_ref[kap];
+        //if (ref_kap == V_REF_ID_MARK_REFINE || ref_kap == V_REF_ID_MARK_COARSEN)
+        int map_kap = efficient_map[kap];
+        if (map_kap > -1)
         {
             for (int p = 0; p < N_Q_max; p++)
-                efficient_map[kap + p*n_maxcblocks] = -1;
+                efficient_map[kap + p*n_mappedblocks] = -1;
         }
     }
 }
@@ -2180,21 +2225,37 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         // Now we need to set up the scatter map for efficiently establishing connectivity. The plan is to 1) loop over cblocks and copy their neighbors down if marked for refinement/coarsening, 2) sort them and perform a unique copy in case of repitions (cblocks near each other may call on the same neighbors), 3) scatter them and use the scattered map to update connectivity only of cblocks in the vincinity of marked cblocks.
         if (proceed_refinement || proceed_coarsening)
         {
-            // Loop over cblocks and copy down the neigbors IDs of marked cblocks in efficient_map. The efficient_map must be reset before this step.
-            Cu_RefineCells_Prep<AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+            // First, determine the initial set of participating cell-blocks.
+            //tic_simple("[S1]");
+            Cu_RefineCells_Prep_S1<AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 id_max_curr, n_maxcblocks,
+                c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
+                c_tmp_1[i_dev]
+            ); 
+            
+            // Collect mapped indicators.
+            auto initial_result = thrust::copy_if(thrust::device, c_tmp_1_dptr[i_dev], c_tmp_1_dptr[i_dev] + id_max_curr, c_tmp_6_dptr[i_dev], is_nonnegative());
+            int n_initial = initial_result - c_tmp_6_dptr[i_dev];
+            // int n_initial = n_maxcblocks;
+            
+            // Loop over cblocks and copy down the neigbors IDs of marked cblocks in efficient_map. The efficient_map must be reset before this step.
+            Cu_RefineCells_Prep_S2<AP> <<<(M_BLOCK+n_initial-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+                n_maxcblocks, n_initial,
                 c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
                 c_tmp_6[i_dev]
             );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S1A]",T_US);
 
             // Count the number of recorded non-negative IDs.
+            //tic_simple("[S1]");
             int n_nonnegative_prev = thrust::count_if(
-                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_maxcblocks*N_Q_max, is_nonnegative()
+                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_initial*N_Q_max, is_nonnegative()
             );
             
             // Regular-copy non-negative IDs in efficient_map.
             thrust::copy_if(
-                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_maxcblocks*N_Q_max, c_tmp_7_dptr[i_dev], is_nonnegative()
+                thrust::device, c_tmp_6_dptr[i_dev], c_tmp_6_dptr[i_dev] + n_initial*N_Q_max, c_tmp_7_dptr[i_dev], is_nonnegative()
             );
 
             // Sort the copied IDs to prepare for the unique-copy.
@@ -2203,16 +2264,19 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             );
             
             // Reset in preparation for unique copy.
-            Cu_RefineCells_Prep_Reset<AP> <<<(M_BLOCK+id_max_curr-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
-                id_max_curr, n_maxcblocks,
+            Cu_RefineCells_Prep_Reset<AP> <<<(M_BLOCK+n_initial-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
+                n_maxcblocks, n_initial,
                 c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev],
                 c_tmp_6[i_dev]
             );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S1B]",T_US);
             //Cu_ResetToValue<<<(M_BLOCK+(n_maxcblocks*N_Q_max)-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
             //    n_maxcblocks*N_Q_max, c_tmp_6[i_dev], -1
             //);
             
             // Perform the unique-copy. At this stage, c_tmp_6 shouldn't exceed n_maxcblocks in value so it is safe to scatter to a new c_tmp.
+            //tic_simple("[S1]");
             auto result_unique_copy = thrust::unique_copy(
                 thrust::device, c_tmp_7_dptr[i_dev], c_tmp_7_dptr[i_dev] + n_nonnegative_prev, c_tmp_6_dptr[i_dev]
             );
@@ -2230,6 +2294,10 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             
             
             
+            // Reset c_tmp_1 since it's now unused.
+            Cu_ResetToValue<<<(M_BLOCK+id_max_curr-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
+                id_max_curr, c_tmp_1[i_dev], -1
+            );
             // Reset c_tmp_6 since it's now unused.
             Cu_ResetToValue<<<(M_BLOCK+n_nonnegative-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
                 n_nonnegative, c_tmp_6[i_dev], -1
@@ -2238,6 +2306,8 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
             Cu_ResetToValue<<<(M_BLOCK+n_nonnegative_prev-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
                 n_nonnegative_prev, c_tmp_7[i_dev], -1
             );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S1C]",T_US);
         }
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();
@@ -2596,34 +2666,42 @@ int Mesh<ufloat_t,ufloat_g_t,AP>::M_RefineAndCoarsenBlocks(int var)
         // Update connectivity.
         if (proceed_refinement || proceed_coarsening)
         {    
+            //tic_simple("[S8A]");
             // Update cell-block connectivity.
             Cu_UpdateConnectivity<AP> <<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 id_max[i_dev][MAX_LEVELS], n_maxcblocks,
                 c_cblock_ID_ref[i_dev], c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev],
                 c_tmp_8[i_dev]
             );
-            gpuErrchk( cudaPeekAtLastError() );
+            //gpuErrchk( cudaPeekAtLastError() );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S8A]",T_US);
             
+            //tic_simple("[S8B]");
             // Update boundary information.
             Cu_UpdateBoundaries<AP> <<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK,M_BLOCK,0,streams[i_dev]>>>(
                 id_max[i_dev][MAX_LEVELS], n_maxcblocks,
-                c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_onb[i_dev]
+                c_cblock_ID_nbr[i_dev], c_cblock_ID_nbr_child[i_dev], c_cblock_ID_mask[i_dev], c_cblock_ID_onb[i_dev],
+                c_tmp_8[i_dev]
             );
-            gpuErrchk( cudaPeekAtLastError() );
+            //gpuErrchk( cudaPeekAtLastError() );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S8B]",T_US);
             
+            //tic_simple("[S8C]");
             // Update cell masks.
             Cu_UpdateMasks_2<AP> <<<(M_TBLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_TBLOCK,M_TBLOCK,0,streams[i_dev]>>>(
                 id_max[i_dev][MAX_LEVELS], n_maxcblocks,
                 c_cblock_ID_nbr[i_dev], c_cblock_ID_ref[i_dev], c_cells_ID_mask[i_dev]
             );
-            gpuErrchk( cudaPeekAtLastError() );
-            
-            
             
             // Reset c_tmp_8 since it's now unused.
             Cu_ResetToValue<<<(M_BLOCK+id_max[i_dev][MAX_LEVELS]-1)/M_BLOCK, M_BLOCK, 0, streams[i_dev]>>>(
                 id_max[i_dev][MAX_LEVELS], c_tmp_8[i_dev], -1
             );
+            //gpuErrchk( cudaPeekAtLastError() );
+            //cudaDeviceSynchronize();
+            //toc_simple("[S8C]",T_US);
         }
 #if (P_SHOW_REFINE==1)
         cudaDeviceSynchronize();

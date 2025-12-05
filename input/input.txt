@@ -1,6 +1,6 @@
 # MESH
 MAX_LEVELS_WALL                 5
-MAX_LEVELS_INTERIOR             1
+MAX_LEVELS_INTERIOR             5
 N_LEVEL_START                   0
 L_c                             1.0
 L_fy                            1.0
@@ -20,9 +20,9 @@ G_VIS_TREE                      0
 G_BIN_APPROACH                  1
 G_BIN_DENSITY                   16
 G_BIN_LEVELS                    10
-G_BIN_SPEC                      2
+G_BIN_SPEC                      7
 G_BIN_MAKE_LINKS                0
-G_FILENAME                      bunny_ascii.stl
+G_FILENAME                      xyzrgbdragon_ascii.stl
 
 # SOLVER
 v0                              7.8125e-5

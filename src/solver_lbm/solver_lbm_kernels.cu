@@ -545,6 +545,7 @@ void Cu_Stream
     const int *__restrict__ cblock_ID_nbr_child,
     const int *__restrict__ cblock_ID_mask,
     const int *__restrict__ cblock_ID_onb_solid,
+    const int bc_type,
     const bool geometry_init
 )
 {
@@ -598,9 +599,11 @@ void Cu_Stream
                     // Load current DDF. Get the face-cell link, if applicable.
                     ufloat_t f_p = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells];
                     ufloat_g_t dQ = (ufloat_g_t)(-1.0);
-                    if (valid_mask == V_CELLMASK_BOUNDARY)
-                        dQ = cells_f_X_b[valid_block*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
-                    
+                    if (valid_mask == V_CELLMASK_BOUNDARY && bc_type>0)
+		    {
+                        //dQ = cells_f_X_b[(size_t)valid_block*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
+                    }
+
                     // Compute incremented local indices.
                     int Ip = I + V_CONN_ID[p + 0*27];
                     int Jp = J + V_CONN_ID[p + 1*27];
@@ -618,7 +621,7 @@ void Cu_Stream
                         f_pb = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
                     
                     // Exchange, if applicable.
-                    if (valid_mask != V_CELLMASK_SOLID && f_pb>=0 && dQ < 0)
+                    if (valid_mask != V_CELLMASK_SOLID && f_pb>0 && dQ<0)
                     {
                         cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells] = f_p;
                         cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + p*n_maxcells] = f_pb;
@@ -648,6 +651,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_Stream(int i_dev, int L)
             mesh->c_cblock_ID_nbr_child[i_dev],
             mesh->c_cblock_ID_mask[i_dev],
             mesh->c_cblock_ID_onb_solid[i_dev],
+	    S_BC_TYPE,
             mesh->geometry_init
         );
     }
@@ -789,7 +793,7 @@ void Cu_ImposeBC
                     }
 
                     // Do interpolated bounce-back, if applicable.
-                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
+                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY && block_mask > -1)
                     {
                         // Get face-cell link.
                         ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
@@ -840,7 +844,7 @@ void Cu_ImposeBC
                     }
                     
                     // Do interpolated bounce-back, if applicable.
-                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY)
+                    if (bc_type > 0 && valid_mask == V_CELLMASK_BOUNDARY && block_mask > -1)
                     {
                         // Get face-cell link.
                         ufloat_g_t dQ = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells_b];

@@ -67,15 +67,28 @@ double GetTCriticalValue(double confidence_level, int sample_size) {
 
 // Compute 95% confidence interval (returns lower and upper bounds)
 template <typename T>
-std::pair<double, double> ComputeConfidenceInterval95(const std::vector<T>& data) {
+std::pair<double, double> ComputeConfidenceInterval95(std::vector<T> data, double &mean, double &stddev, int &nrem, double outlier_sigma=3.0) {
     if (data.size() < 2) {
         throw std::invalid_argument("Need at least two data points for confidence interval");
     }
 
-    double mean = ComputeMean(data);
-    double stddev = ComputeStandardDeviation(data, mean);
+    // Intitial computation of mean and std. dev.
+    mean = ComputeMean(data);
+    stddev = ComputeStandardDeviation(data, mean);
+    int nprev = data.size();
+    
+    // Remove outliers (default 3-sigma rule).
+    data.erase(
+        std::remove_if(data.begin(), data.end(), [&](T x) { return std::abs(x-mean) > outlier_sigma*stddev; }),
+        data.end()
+    );
+    
+    // Recompute mean and std. dev.
+    mean = ComputeMean(data);
+    stddev = ComputeStandardDeviation(data, mean);
     double n = data.size();
     double marginOfError;
+    nrem = nprev-n;
 
     // Use t-distribution critical value for small samples (n <= 30)
     // You can replace this with a lookup or use boost/math for exact t*
@@ -91,6 +104,7 @@ std::string GetFileName(int iter, std::string ver)
 {
     std::string fn = "ERR";
     
+    // For testing spatial binning performance.
     if (ver == "BINS_N")
         fn = "out_n_" + std::to_string(iter) + ".txt";
     if (ver == "BINS_R")
@@ -101,6 +115,34 @@ std::string GetFileName(int iter, std::string ver)
         fn = "out_rc_" + std::to_string(iter) + ".txt";
     if (ver == "BINS_RMC")
         fn = "out_rmc_" + std::to_string(iter) + ".txt";
+    
+    // For testing partial surface voxelization performance.
+    if (ver == "VOXEL_V1_AOS")
+        fn = "out_vv1_aos_" + std::to_string(iter) + ".txt";
+    if (ver == "VOXEL_V1_W_AOS")
+        fn = "out_vv1w_aos_" + std::to_string(iter) + ".txt";
+    if (ver == "VOXEL_V2")
+        fn = "out_vv2_" + std::to_string(iter) + ".txt";
+    if (ver == "VOXEL_V2_W")
+        fn = "out_vv2w_" + std::to_string(iter) + ".txt";
+    if (ver == "VOXEL_V1_SOA")
+        fn = "out_vv1_soa_" + std::to_string(iter) + ".txt";
+    if (ver == "VOXEL_V1_W_SOA")
+        fn = "out_vv1w_soa_" + std::to_string(iter) + ".txt";
+    
+    // For testing single-variable neighbor access on GPUs.
+    if (ver == "CM_V0")
+        fn = "out_cm_v0_" + std::to_string(iter) + ".txt";
+    if (ver == "CM_V1")
+        fn = "out_cm_v1_" + std::to_string(iter) + ".txt";
+    
+    // For testing voxelization after root grid index shuffle.
+    
+    // For testing the full timing of the L5 tests for comparison with Schwarz and Seidel.
+    if (ver == "T_B")
+        fn = "out_bunny_time_" + std::to_string(iter) + ".txt";
+    if (ver == "T_D")
+        fn = "out_dragon_time_" + std::to_string(iter) + ".txt";
     
     return fn;
 }
@@ -170,22 +212,30 @@ int main(int argc, char *argv[])
             
             
             
-            "MemoryAllocation(1)MD:",
-            "MemoryAllocation(2)MD:",
-            "ComputingRayIndicatorsMD:",
-            "GatheredRayIndicatorsMD:",
-            "ScatteredRayIndicatorsMD:",
-            "ComputingBoundingBoxLimitsMD:",
-            "CompactionMD:",
-            "SortByKeyMD:",
-            "ReductionByKeyMD:",
-            "Scatter(1)MD:",
-            "AdjacentDifferenceMD:",
-            "CopyIfMD:",
-            "Scatter(2)MD:",
+//             "MemoryAllocation(1)MD:",
+//             "MemoryAllocation(2)MD:",
+//             "ComputingRayIndicatorsMD:",
+//             "GatheredRayIndicatorsMD:",
+//             "ScatteredRayIndicatorsMD:",
+//             "ComputingBoundingBoxLimitsMD:",
+//             "CompactionMD:",
+//             "SortByKeyMD:",
+//             "ReductionByKeyMD:",
+//             "Scatter(1)MD:",
+//             "AdjacentDifferenceMD:",
+//             "CopyIfMD:",
+//             "Scatter(2)MD:",
             
             
-            
+            "[Pre]:",
+            "[S1]:",
+            "[S2]:",
+            "[S3]:",
+            "[S4]:",
+            "[S5]:",
+            "[S6]:",
+            "[S7]:",
+            "[S8]:",
             
             
             
@@ -202,8 +252,8 @@ int main(int argc, char *argv[])
             
             
             
-            "LinkLengthComputation:",
-            "LinkLengthValidation:"
+//             "LinkLengthComputation:",
+//             "LinkLengthValidation:"
         };
         
         
@@ -252,10 +302,16 @@ int main(int argc, char *argv[])
                 if (data_l.size() > 2)
                 {
                     //std::cout << name << "_" << l  << " | " << data_l << std::endl;
-                    std::pair<double,double> pair_l = ComputeConfidenceInterval95(data_l);
-                    double mean_l = ComputeMean(data_l);
-                    std::cout << name << "_" << l  << " | [" << pair_l.first << ", " << mean_l << ", " << pair_l.second << "]   sym=[" << pair_l.second-mean_l << "," << mean_l-pair_l.first << "]" << std::endl;
+                    
+                    double mean_l;
+                    double stddev_l;
+                    int nrem_l;
+                    std::pair<double,double> pair_l = ComputeConfidenceInterval95(data_l,mean_l,stddev_l,nrem_l);
+                    //std::cout << name << "_" << l  << " | [" << pair_l.first << ", " << mean_l << ", " << pair_l.second << "]   sym=[" << pair_l.second-mean_l << "," << mean_l-pair_l.first << "]   rem=" << nrem_l << std::endl;
+                    std::cout << name << " " << l << " | " << mean_l << " pm " << mean_l-pair_l.first << " / " << pair_l.second-mean_l << " rem=" << nrem_l << std::endl;
                 }
+                else
+                    std::cout << name << " " << l << " | - pm - / - rem=0" << std::endl;
             }
             
         }

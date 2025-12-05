@@ -113,9 +113,6 @@ void Cu_MarkBlocks_CheckMasks_S1
                 }
             }
             
-            
-            
-            // [DEPRECATED]
             if (version==1)
             {
                 // Each cell checks the mask of its neighboring cell, if it exists.

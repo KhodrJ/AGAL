@@ -94,49 +94,66 @@ void Cu_ComputeForcesCV
         {
             ufloat_t f_pi = cells_f_F[i_kap_b*M_CBLOCK + threadIdx.x + LBMpb[p]*n_maxcells];
             rho += f_pi;
+	    /*
             if (V_CONN_ID[p+0*27] == 1)  rhoup += f_pi;
             if (V_CONN_ID[p+0*27] == -1) rhoum += f_pi;
             if (V_CONN_ID[p+1*27] == 1)  rhovp += f_pi;
             if (V_CONN_ID[p+1*27] == -1) rhovm += f_pi;
             if (V_CONN_ID[p+2*27] == 1)  rhowp += f_pi;
             if (V_CONN_ID[p+2*27] == -1) rhowm += f_pi;
-            f_p[p] = f_pi;
+            */
+	    rhoup += f_pi*V_CONN_ID[p+0*27];
+	    rhovp += f_pi*V_CONN_ID[p+1*27];
+            if (N_DIM==3)
+	        rhowp += f_pi*V_CONN_ID[p+2*27];
+	    f_p[p] = f_pi;
         }
-        rhoup = rhoup - rhoum;
-        rhovp = rhovp - rhovm;
-        rhowp = rhowp - rhowm;
+        //rhoup = rhoup - rhoum;
+        //rhovp = rhovp - rhovm;
+        //rhowp = rhowp - rhowm;
         
         
         
         // Add this cells momentum density if it is inside the control volume.
-        if (participatesV && post_step==0 && i_kap_bc<0)
+	if (participatesV && post_step==0 && i_kap_bc<0)
         {
+	    /*
             if (rhoup > 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
             if (rhoup < 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
-            if (rhoup > 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
-            if (rhoup < 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhovp > 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhovp < 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
             if (N_DIM==3)
             {
-                if (rhoup > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
+                if (rhowp > 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
                 if (rhowp < 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
             }
+	    */
+	    s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
+	    s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
+	    if (N_DIM==3)
+	        s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
         }
         if (participatesV && post_step==1 && i_kap_bc<0)
         {
+	    /*
             if (rhoup > 0) s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
             if (rhoup < 0) s_Fp[threadIdx.x + 0*M_TBLOCK] += rhoup;
-            if (rhoup > 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
-            if (rhoup < 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhovp > 0) s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
+            if (rhovp < 0) s_Fp[threadIdx.x + 1*M_TBLOCK] += rhovp;
             if (N_DIM==3)
             {
-                if (rhoup > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
+                if (rhowp > 0) s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
                 if (rhowp < 0) s_Fp[threadIdx.x + 2*M_TBLOCK] += rhowp;
             }
+	    */
+	    s_Fm[threadIdx.x + 0*M_TBLOCK] += rhoup;
+	    s_Fm[threadIdx.x + 1*M_TBLOCK] += rhovp;
+	    if (N_DIM==3)
+	        s_Fm[threadIdx.x + 2*M_TBLOCK] += rhowp;
         }
         
-        
         // Add this DDF's contribution if it leaves/enters the control surface. Perform collision if leaving.
-        ufloat_t omeg = otau_0;
+	ufloat_t omeg = otau_0;
         ufloat_t omegp = (ufloat_t)(1.0) - omeg;
         if (post_step==0)
         {
@@ -145,7 +162,7 @@ void Cu_ComputeForcesCV
             rhowp = rhowp / rho;
         }
         //#pragma unroll
-        for (int p = 0; p < N_Q; p++)
+        for (int p = 1; p < N_Q; p++)
         {
             // Load it first.
             ufloat_t f_pi = f_p[p];
@@ -168,8 +185,9 @@ void Cu_ComputeForcesCV
                 {
                     for (int d = 0; d < N_DIM; d++)
                     {
-                        if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
-                        if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
+		        s_Fm[threadIdx.x + d*M_TBLOCK] += f_pi*V_CONN_ID[p+d*27];
+                        //if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
+                        //if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
                     }
                 }
             }
@@ -182,13 +200,13 @@ void Cu_ComputeForcesCV
                 {
                     for (int d = 0; d < N_DIM; d++)
                     {
-                        if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
-                        if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
+		        s_Fm[threadIdx.x + d*M_TBLOCK] += f_pi*V_CONN_ID[LBMpb[p]+d*27];
+                        //if (V_CONN_ID[LBMpb[p]+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_pi;
+                        //if (V_CONN_ID[LBMpb[p]+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_pi;
                     }
                 }
             }
         }
-        
         
         // Reductions for the sums of force contributions in this cell-block.
         __syncthreads();
@@ -342,26 +360,31 @@ void Cu_ComputeForcesMEA
     // Loop over block Ids.
     if (i_kap_b > -1)
     {
-        int valid_block = cblock_ID_onb[i_kap_b];
-        
+        int valid_block = -1;//cblock_ID_onb[i_kap_b];
+        if (geometry_init)
+	    valid_block = cblock_ID_onb_solid[i_kap_b];
+
         // Latter condition is added only if n>0.
-        if (valid_block==1)
-        {
+        //if (valid_block==1)
+        if (valid_block > -1)
+	{
             // Compute cell indices.
             int I = threadIdx.x % 4;
             int J = (threadIdx.x / 4) % 4;
             int K = 0;
             if (N_DIM==3)
                 K = (threadIdx.x / 4) / 4;
+            ufloat_g_t x = cblock_f_X[i_kap_b + 0*n_maxcblocks] + dx_L*I + 0.5F*dx_L;
+	    ufloat_g_t y = cblock_f_X[i_kap_b + 1*n_maxcblocks] + dx_L*J + 0.5F*dx_L;
             
             // Compute cell coordinates and retrieve macroscopic properties.
             int valid_mask = cells_ID_mask[i_kap_b*M_CBLOCK + threadIdx.x];
             int block_mask = -1;
             if (geometry_init)
                 block_mask = cblock_ID_onb_solid[i_kap_b];
-            
+
             // Initialize the shared memory arrays if this block has boundary cells.
-            if (n_maxblocks_b > 0 && block_mask > -1)
+            //if (n_maxblocks_b > 0 && block_mask > -1)
             {
                 for (int d = 0; d < N_DIM; d++)
                 {
@@ -393,7 +416,7 @@ void Cu_ComputeForcesMEA
                     if (valid_mask == V_CELLMASK_BOUNDARY)
                     {
                         // Check if DDF p is directed towards the solid object.
-                        ufloat_g_t dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
+			ufloat_g_t dist_p = cells_f_X_b[block_mask*M_CBLOCK + threadIdx.x + p*n_maxcells_b];
                         if (dist_p > 0)
                         {
                             // Compute incremented local indices.
@@ -409,23 +432,25 @@ void Cu_ComputeForcesMEA
                             
                             // Get DDF from 'behind' and normalize link.
                             ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + p*n_maxcells];
-                            dist_p /= dx_L;
                             
                             // Add force contributions.
                             if (order == 1)
                             {
                                 for (int d = 0; d < N_DIM; d++)
                                 {
-                                    if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += f_p;
-                                    if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += f_p;
+			            //printf("plot([%17.15f %17.15f],[%17.15f %17.15f],'k');\n", x,x+dx_L*V_CONN_ID[p+0*27], y,y+dx_L*V_CONN_ID[p+1*27]);                                                                     printf("plot(%17.15f,%17.15f,'r*');\n", x+dx_L*dist_p*V_CONN_ID[p+0*27],  y+dx_L*dist_p*V_CONN_ID[p+1*27]);
+				    s_Fp[threadIdx.x + d*M_TBLOCK] += f_p*V_CONN_ID[p+d*27];
+                                    //if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += f_p;
+                                    //if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += f_p;
                                 }
                             }
                             else
                             {
                                 for (int d = 0; d < N_DIM; d++)
                                 {
-                                    if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
-                                    if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+				    s_Fp[threadIdx.x + d*M_TBLOCK] += ( (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m) * V_CONN_ID[p+d*27];
+                                    //if (V_CONN_ID[p+d*27] == 1)  s_Fp[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
+                                    //if (V_CONN_ID[p+d*27] == -1) s_Fm[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_p + (0.5-(ufloat_t)dist_p)*f_m;
                                 }
                             }
                         }
@@ -446,23 +471,25 @@ void Cu_ComputeForcesMEA
                             int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
                             
                             ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
-                            dist_p /= dx_L;
                             
                             // Add force contributions.
                             if (order == 1)
                             {
                                 for (int d = 0; d < N_DIM; d++)
                                 {
-                                    if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_q;
-                                    if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_q;
+				    //printf("plot([%17.15f %17.15f],[%17.15f %17.15f],'k');\n", x,x+dx_L*V_CONN_ID[LBMpb[p]+0*27], y,y+dx_L*V_CONN_ID[LBMpb[p]+1*27]);                                                                     printf("plot(%17.15f,%17.15f,'r*');\n", x+dx_L*dist_p*V_CONN_ID[LBMpb[p]+0*27],  y+dx_L*dist_p*V_CONN_ID[LBMpb[p]+1*27]);
+				    s_Fp[threadIdx.x + d*M_TBLOCK] += f_q*V_CONN_ID[LBMpb[p]+d*27];
+                                    //if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += f_q;
+                                    //if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += f_q;
                                 }
                             }
                             else
                             {
                                 for (int d = 0; d < N_DIM; d++)
                                 {
-                                    if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
-                                    if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+				    s_Fp[threadIdx.x + d*M_TBLOCK] += ( (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m) * V_CONN_ID[LBMpb[p]+d*27];
+                                    //if (V_CONN_ID[p+d*27] == 1)  s_Fm[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
+                                    //if (V_CONN_ID[p+d*27] == -1) s_Fp[threadIdx.x+d*M_TBLOCK] += (0.5+(ufloat_t)dist_p)*f_q + (0.5-(ufloat_t)dist_p)*f_m;
                                 }
                             }
                         }
@@ -472,7 +499,7 @@ void Cu_ComputeForcesMEA
             
             
             // Reductions for the sums of force contributions in this cell-block.
-            if (n_maxblocks_b > 0 && block_mask > -1)
+            //if (n_maxblocks_b > 0 && block_mask > -1)
             {
                 __syncthreads();
                 for (int s=blockDim.x/2; s>0; s>>=1)
@@ -515,7 +542,7 @@ void Cu_ComputeForcesMEA
 template <typename ufloat_t, typename ufloat_g_t, const ArgsPack *AP, const LBMPack *LP>
 int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, int var)
 {
-    if (mesh->n_ids[i_dev][L]>0 && var==0)
+    if (L==MAX_LEVELS-1 && mesh->n_ids[i_dev][L]>0 && var==0)
     {
         Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,0><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
@@ -540,7 +567,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
             S_FORCE_ORDER
         );
     }
-    if (mesh->n_ids[i_dev][L]>0 && var==1)
+    if (L==MAX_LEVELS-1 && mesh->n_ids[i_dev][L]>0 && var==1)
     {
         Cu_ComputeForcesMEA<ufloat_t,ufloat_g_t,AP,LP,1><<<mesh->n_ids[i_dev][L],M_TBLOCK,0,mesh->streams[i_dev]>>>
         (
@@ -565,6 +592,7 @@ int Solver_LBM<ufloat_t,ufloat_g_t,AP,LP>::S_ComputeForcesMEA(int i_dev, int L, 
             S_FORCE_ORDER
         );
     }
+    cudaDeviceSynchronize();
 
     return 0;
 }
@@ -735,7 +763,7 @@ void Cu_ComputePressureOnWall
                         
                         // Get DDF from 'behind' and normalize link. Print out the answer.
                         ufloat_t rho_m = s_F_p[nbr_kap_h];
-                        dist_p /= dx_L;
+                        //dist_p /= dx_L;
                         
                         
                     }
@@ -759,7 +787,7 @@ void Cu_ComputePressureOnWall
                         int nbr_kap_c = Cu_NbrCellId<N_DIM>(Ip,Jp,Kp);
                         
                         ufloat_t f_m = cells_f_F[nbr_kap_b*M_CBLOCK + nbr_kap_c + LBMpb[p]*n_maxcells];
-                        dist_p /= dx_L;
+                        //dist_p /= dx_L;
                     }
                 }
             }
